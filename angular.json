@@ -128,6 +128,128 @@
           "options": {}
         }
       }
+    },
+    "dropzone": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/dropzone",
+      "sourceRoot": "projects/dropzone/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/dropzone",
+            "index": "projects/dropzone/src/index.html",
+            "main": "projects/dropzone/src/main.ts",
+            "polyfills": "projects/dropzone/src/polyfills.ts",
+            "tsConfig": "projects/dropzone/tsconfig.app.json",
+            "aot": false,
+            "assets": [
+              "projects/dropzone/src/favicon.ico",
+              "projects/dropzone/src/assets"
+            ],
+            "styles": [
+              "projects/dropzone/src/styles.scss"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/dropzone/src/environments/environment.ts",
+                  "with": "projects/dropzone/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "extractCss": true,
+              "namedChunks": false,
+              "aot": true,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "dropzone:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "dropzone:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "dropzone:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/dropzone/src/test.ts",
+            "polyfills": "projects/dropzone/src/polyfills.ts",
+            "tsConfig": "projects/dropzone/tsconfig.spec.json",
+            "karmaConfig": "projects/dropzone/karma.conf.js",
+            "assets": [
+              "projects/dropzone/src/favicon.ico",
+              "projects/dropzone/src/assets"
+            ],
+            "styles": [
+              "projects/dropzone/src/styles.scss"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/dropzone/tsconfig.app.json",
+              "projects/dropzone/tsconfig.spec.json",
+              "projects/dropzone/e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/dropzone/e2e/protractor.conf.js",
+            "devServerTarget": "dropzone:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "dropzone:serve:production"
+            }
+          }
+        }
+      }
     }
   },
   "defaultProject": "influencer"
