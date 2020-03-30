@@ -1,12 +1,4 @@
 'use strict';
-const functions = require('firebase-functions')
-
-exports.auth = require('./auth');
-exports.email = require('./email');
-exports.content = require('./content');
-
-
-'use strict';
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
@@ -147,8 +139,6 @@ exports.imageToJPG = functions.storage.object().onFinalize(async (object) => {
 // When the "data" does not include camapign's id, then return list of campaigns that current influencer are related to.
 exports.getCampaign = functions.https.onCall((data, context) => {
 
-
-
   // Authentication / user information is automatically added to the request.
   const uid = context.auth.uid;
   const campaignId = data.campaignId;
@@ -164,4 +154,37 @@ exports.getCampaign = functions.https.onCall((data, context) => {
     return db.collection('influencers').doc(uid).collection('campaigns').get().docs.map(doc => doc.id)
   }
   return db.collection('campaigns').doc(campaignId).get()
+});
+
+
+// called when influencers decide to create a new campaign with related information. u
+exports.createCampaign = functions.https.onCall((data, context) => {
+    // Checking that the user is authenticated.
+    if (!context.auth) {
+      // Throwing an HttpsError so that the client gets the error details.
+      throw new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+          'while authenticated.');
+    }
+
+  // Authentication / user information is automatically added to the request.
+  const uid = context.auth.uid;
+  const campaignId = db.collection("campaigns").document().getId();
+
+  let campaignData  = {
+    campaign_id: campaign_id,
+    brand: data.brand,
+    campaign_name: data.campaign_name,
+    commision_dollar: data.commision_dollar,
+    contacts: data.contacts,
+    content_concept: data.content_concept,
+    end_time: data.end_time,
+    feed_back: data.feed_back,
+    image: data.image,
+    video: data.video,
+    influencer_id: uid
+  };
+
+  db.collection('campaigns').doc(uid).set(campaignData)
+  let docref =  db.collection('campaigns').doc(uid)
+  db.collection('influencers').doc(uid).collection('campaigns').doc(campaignId).update({camapign_ref: docref.path})
 });
