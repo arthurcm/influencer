@@ -1,18 +1,4 @@
-<div class="container">
-    <div class="header">
-        INFLUENCER
-    </div>
-
-    <div *ngIf="auth.user | async as user; else showLogin">
-        <h1>Hello {{ user.displayName }}!</h1>
-        <button (click)="logout()">Logout</button>
-      </div>
-      <ng-template #showLogin>
-        <p>Please login.</p>
-        <button (click)="login()">Login with Google</button>
-      </ng-template>
-</div>
-
+<router-outlet></router-outlet>
 <div class="dropzone" 
      dropzone
      (hovered)="toggleHover($event)"
@@ -22,4 +8,4 @@
 
      <h3>AngularFire Drop Zone</h3>
      <p>Drag and Drop a File</p>
-</div> -->
+</div> 
