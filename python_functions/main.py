@@ -207,9 +207,11 @@ def download_video_from_gcs(bucket_name, source_blob_name, destination_file_name
     return destination_file_name
 
 
-def upload_video_youtube_gcf(request):
+def upload_video_youtube_http_gcf(request):
     """HTTP Cloud Function.
     Note: here we need the request to pass in access token.
+    To deploy: 
+    gcloud functions deploy upload_video_youtube_http_gcf --runtime python37 --trigger-http
     Args:
         request (flask.Request): The request object.
         <http://flask.pocoo.org/docs/1.0/api/#flask.Request>
@@ -219,6 +221,27 @@ def upload_video_youtube_gcf(request):
         <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>.
     """
     request_json = request.get_json(silent=True)
+    _upload_video_youtube_internal(request_json)
+
+
+def upload_video_youtube_pubsub_gcf(event, context):
+    """Background Cloud Function to be triggered by Pub/Sub.
+    To deploy: 
+    gcloud functions deploy upload_video_youtube_pubsub_gcf --runtime python37 --trigger-pubsub
+    Args:
+         event (dict):  The dictionary with data specific to this type of
+         event. The `data` field contains the PubsubMessage message. The
+         `attributes` field will contain custom attributes if there are any.
+         context (google.cloud.functions.Context): The Cloud Functions event
+         metadata. The `event_id` field contains the Pub/Sub message ID. The
+         `timestamp` field contains the publish time.
+    """
+    # we are assuming the data field here is a json. Add error handling later. 
+    request_json = event.data
+    _upload_video_youtube_internal(request_json)
+
+
+def _upload_video_youtube_internal(request_json):
     print(f'request json is {request_json}')
     file = download_video_from_gcs(request_json['bucket_name'], request_json['blob_name'],
                                    destination_file_name='/tmp/' + request_json['blob_name'])
@@ -232,7 +255,6 @@ def upload_video_youtube_gcf(request):
       initialize_upload(youtube, args)
     except HttpError as e:
       print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
-
 
 if __name__ == '__main__':
   argparser.add_argument("--file", required=True, help="Video file to upload")
