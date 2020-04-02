@@ -8,8 +8,9 @@ import sys
 import time
 import json
 
+import hashlib
 from argparse import Namespace
-from flask import escape
+import flask
 from google.cloud import storage
 from google.cloud.storage.blob import Blob
 from apiclient.discovery import build
@@ -170,20 +171,51 @@ def resumable_upload(insert_request):
       print("Sleeping %f seconds and then retrying..." % sleep_seconds)
       time.sleep(sleep_seconds)
 
+
+def get_client_secret():
+    """
+    To enable iam role access (for service accounts) to the secret, run the following:
+    gcloud beta secrets add-iam-policy-binding client_secret
+    --role roles/secretmanager.secretAccessor
+    --member serviceAccount:influencer-272204@appspot.gserviceaccount.com
+    :return: content of client secret string
+    """
+
+    # Import the Secret Manager client library.
+    from google.cloud import secretmanager
+
+    # GCP project in which to store secrets in Secret Manager.
+    project_id = 'influencer-272204'
+
+    # ID of the secret to create.
+    secret_id = 'client_secret'
+
+    # Create the Secret Manager client.
+    client = secretmanager.SecretManagerServiceClient()
+
+    # Build the parent name from the project.
+    parent = client.project_path(project_id)
+
+    resource_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+    response = client.access_secret_version(resource_name)
+    secret_string = response.payload.data.decode('UTF-8')
+    return secret_string
+
+
 def write_client_secret():
-  json_str = """{"web":{"client_id":"65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com","project_id":"influencer\
--272204","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","aut\
-h_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"J6zEfcB1MHBdFaqv8a_HX3Wg","red\
-irect_uris":["https://influencer-272204.firebaseapp.com/__/auth/handler"],"javascript_origins":["http://localhost","ht\
-tp://localhost:5000","https://influencer-272204.firebaseapp.com"]}}"""
-  dictionary = json.loads(json_str)
 
-  # Serializing json
-  json_object = json.dumps(dictionary, indent=4)
+    # Writing to sample.json
+    if not os.path.exists(CLIENT_SECRETS_FILE):
+        json_str = get_client_secret()
+        dictionary = json.loads(json_str)
 
-  # Writing to sample.json
-  with open(CLIENT_SECRETS_FILE, "w") as outfile:
-    outfile.write(json_object)
+        # Serializing json
+        json_object = json.dumps(dictionary, indent=4)
+        with open(CLIENT_SECRETS_FILE, "w") as outfile:
+            outfile.write(json_object)
+            print(f'Sucessfully wrote secret file to {CLIENT_SECRETS_FILE}')
+    else:
+        print('Client secret file found. Continue')
 
 
 def download_video_from_gcs(bucket_name, source_blob_name, destination_file_name):
@@ -227,7 +259,7 @@ def upload_video_youtube_http_gcf(request):
 def upload_video_youtube_pubsub_gcf(event, context):
     """Background Cloud Function to be triggered by Pub/Sub.
     To deploy: 
-    gcloud functions deploy upload_video_youtube_pubsub_gcf --runtime python37 --trigger-pubsub
+    gcloud functions deploy upload_video_youtube_pubsub_gcf --runtime python37 --trigger-topic ytpost
     Args:
          event (dict):  The dictionary with data specific to this type of
          event. The `data` field contains the PubsubMessage message. The
@@ -236,8 +268,12 @@ def upload_video_youtube_pubsub_gcf(event, context):
          metadata. The `event_id` field contains the Pub/Sub message ID. The
          `timestamp` field contains the publish time.
     """
-    # we are assuming the data field here is a json. Add error handling later. 
-    request_json = event.data
+    # we are assuming the data field here is a json. Add error handling later.
+    if not event or not event['data']:
+        return
+    event_message = event['data']
+    print(f'the pubsub message is {event_message}')
+    request_json = json.loads(event_message)
     _upload_video_youtube_internal(request_json)
 
 
@@ -247,7 +283,7 @@ def _upload_video_youtube_internal(request_json):
                                    destination_file_name='/tmp/' + request_json['blob_name'])
     request_json['file'] = file
     args = Namespace(**request_json)
-    request_args = request.args
+    # request_args = request.args
     write_client_secret()
     youtube = get_authenticated_service(args)
     print(args)
@@ -255,6 +291,83 @@ def _upload_video_youtube_internal(request_json):
       initialize_upload(youtube, args)
     except HttpError as e:
       print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+
+
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+
+def redirect_youtube_for_oauth_http_gcf(request):
+    """
+    To deploy:
+    gcloud functions deploy redirect_youtube_for_oauth_http_gcf --runtime python37 --trigger-http
+    This cloud function redirects the user to Google's Oauth server for proper video uploading access tokens.
+    """
+    write_client_secret()
+    # Create a state token to prevent request forgery.
+    # Store it in the session for later validation.
+    state = hashlib.sha256(os.urandom(1024)).hexdigest()
+
+    # Use the client_secret.json file to identify the application requesting
+    # authorization. The client ID (from that file) and access scopes are required.
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE, scopes=[YOUTUBE_UPLOAD_SCOPE], state=state)
+
+    # Indicate where the API server will redirect the user after the user completes
+    # the authorization flow. The redirect URI is required. The value must exactly
+    # match one of the authorized redirect URIs for the OAuth 2.0 client, which you
+    # configured in the API Console. If this value doesn't match an authorized URI,
+    # you will get a 'redirect_uri_mismatch' error.
+    # flow.redirect_uri = 'https://influencer-272204.firebaseapp.com/__/auth/handler'
+    flow.redirect_uri = 'https://us-central1-influencer-272204.cloudfunctions.net/oauth_handler_gcf'
+
+    # Generate URL for request to Google's OAuth 2.0 server.
+    # Use kwargs to set optional request parameters.
+    authorization_url, state = flow.authorization_url(
+        # Enable offline access so that you can refresh an access token without
+        # re-prompting the user for permission. Recommended for web server apps.
+        access_type='offline',
+        # Enable incremental authorization. Recommended as a best practice.
+        include_granted_scopes='true')
+    # Store the state so the callback can verify the auth server response.
+    # flask.session['state'] = state
+    return flask.redirect(authorization_url)
+
+
+def oauth_handler_gcf(request):
+    """
+    Handle the Oauth response after user consents to redirect_youtube_for_oauth_http_gcf().
+    To deploy:
+    gcloud functions deploy oauth_handler_gcf --runtime python37 --trigger-http
+    :param request:
+    :return:
+    """
+    write_client_secret()
+
+    # state = flask.session['state']
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        CLIENT_SECRETS_FILE, scopes=[YOUTUBE_UPLOAD_SCOPE])
+
+    flow.redirect_uri = 'https://us-central1-influencer-272204.cloudfunctions.net/oauth_handler_gcf'
+    #flask.url_for('oauth2callback', _external=True)
+
+    authorization_response = flask.request.url
+    flow.fetch_token(authorization_response=authorization_response)
+
+    # Store the credentials in the session.
+    # ACTION ITEM for developers:
+    #     Store user's access and refresh tokens in your data store if
+    #     incorporating this code into your real app.
+    credentials = flow.credentials
+    flask.session['credentials'] = {
+        'token': credentials.token,
+        'refresh_token': credentials.refresh_token,
+        'token_uri': credentials.token_uri,
+        'client_id': credentials.client_id,
+        'client_secret': credentials.client_secret,
+        'scopes': credentials.scopes}
+    print(credentials)
+    return
+
 
 if __name__ == '__main__':
   argparser.add_argument("--file", required=True, help="Video file to upload")

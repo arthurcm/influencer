@@ -208,8 +208,8 @@ exports.genScheduledYouTubePost = functions.pubsub.topic('per-minute').onPublish
       console.log("no matching posting tasks, continue")
     }
     snapshot.forEach(doc => {
-      console.log('current data is', doc.data())
       let data = JSON.stringify(doc.data())
+      console.log('current data is', data)
       const dataBuffer = Buffer.from(data);
       const messageId = pubSubClient.topic(topicName).publish(dataBuffer);
       console.log(`Message ${messageId} published.`);

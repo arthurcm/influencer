@@ -1,5 +1,6 @@
 oauth2client
 httplib2
+google-cloud-secret-manager
 google-api-python-client
 google-cloud-storage
 google-auth-oauthlib
