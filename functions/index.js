@@ -168,7 +168,7 @@ exports.createCampaign = functions.https.onCall((data, context) => {
 
   // Authentication / user information is automatically added to the request.
   const uid = context.auth.uid;
-  const campaignId = db.collection("campaigns").document().getId();
+  const campaignId = db.createId();
 
   let campaignData  = {
     campaign_id: campaign_id,
@@ -184,8 +184,8 @@ exports.createCampaign = functions.https.onCall((data, context) => {
     influencer_id: uid
   };
 
-  db.collection('campaigns').doc(uid).set(campaignData)
-  let docref =  db.collection('campaigns').doc(uid)
+  db.collection('campaigns').doc(campaignId).set(campaignData)
+  let docref =  db.collection('campaigns').doc(campaignId)
   db.collection('influencers').doc(uid).collection('campaigns').doc(campaignId).update({camapign_ref: docref.path})
 });
 
@@ -206,13 +206,14 @@ exports.genScheduledYouTubePost = functions.pubsub.topic('per-minute').onPublish
   .then(snapshot => {
     if (snapshot.empty) {
       console.log("no matching posting tasks, continue")
+      return 0;
     }
     snapshot.forEach(doc => {
       let data = JSON.stringify(doc.data())
       console.log('current data is', data)
       const dataBuffer = Buffer.from(data);
       const messageId = pubSubClient.topic(topicName).publish(dataBuffer);
-      console.log(`Message ${messageId} published.`);
+      console.log(`Message ${data} published.`);
       // update the posted status to true.
       db.collection('scheduledposts').doc(doc.id).update({posted:true})
     })
@@ -220,6 +221,7 @@ exports.genScheduledYouTubePost = functions.pubsub.topic('per-minute').onPublish
   })
   .catch(err => {
     console.log('Error getting document published', err)
+    return 0;
   })
 });
 

@@ -270,10 +270,14 @@ def upload_video_youtube_pubsub_gcf(event, context):
     """
     # we are assuming the data field here is a json. Add error handling later.
     if not event or not event['data']:
-        return
+        return 0
     event_message = event['data']
     print(f'the pubsub message is {event_message}')
-    request_json = json.loads(event_message)
+    try:
+      request_json = json.loads(event_message)
+    except Exception as e:
+      print(f"Load message error: {event_message}")
+      return 0
     _upload_video_youtube_internal(request_json)
 
 
