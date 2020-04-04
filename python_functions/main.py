@@ -20,6 +20,8 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
+from cloud_sql import sql_handler
+
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
 # we are handling retry logic ourselves.
@@ -194,7 +196,7 @@ def get_client_secret():
     client = secretmanager.SecretManagerServiceClient()
 
     # Build the parent name from the project.
-    parent = client.project_path(project_id)
+    # parent = client.project_path(project_id)
 
     resource_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
     response = client.access_secret_version(resource_name)
@@ -300,6 +302,11 @@ def _upload_video_youtube_internal(request_json):
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 
+from flask import Flask
+
+app = Flask(__name__)
+app.secret_key = "super secret key"
+
 def redirect_youtube_for_oauth_http_gcf(request):
     """
     To deploy:
@@ -342,10 +349,10 @@ def oauth_handler_gcf(request):
     Handle the Oauth response after user consents to redirect_youtube_for_oauth_http_gcf().
     To deploy:
     gcloud functions deploy oauth_handler_gcf --runtime python37 --trigger-http
-    :param request:
-    :return:
     """
+
     write_client_secret()
+    print(f'current request is {request} with uri being {request.url}')
 
     # state = flask.session['state']
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
@@ -355,6 +362,9 @@ def oauth_handler_gcf(request):
     #flask.url_for('oauth2callback', _external=True)
 
     authorization_response = flask.request.url
+    if authorization_response.startswith('http://'):
+        authorization_response = authorization_response.replace('http://', 'https://', 1)
+    print(f'auth response is {authorization_response}')
     flow.fetch_token(authorization_response=authorization_response)
 
     # Store the credentials in the session.
@@ -370,6 +380,10 @@ def oauth_handler_gcf(request):
         'client_secret': credentials.client_secret,
         'scopes': credentials.scopes}
     print(credentials)
+    try:
+      sql_handler.save_token(flask.session['credentials'])
+    except Exception as e:
+      print(f'saving credentials to SQL error: {e}')
     return
 
 
