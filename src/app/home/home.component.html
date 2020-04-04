@@ -4,9 +4,35 @@
     </div>
 
     <div *ngIf="auth.user | async as user;">
-        <h1>Hello {{ user.displayName }}!</h1>
+        <div>Hello {{ user.displayName }}!</div>
         <button mat-stripped-button (click)="logout()">Logout</button>
     </div>
+
+    <div class="active-campaign">
+        <mat-accordion>
+            <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    Personal data
+                  </mat-panel-title>
+                  <mat-panel-description>
+                    Type your name and age
+                  </mat-panel-description>
+                </mat-expansion-panel-header>
+            
+                <mat-form-field>
+                  <mat-label>First name</mat-label>
+                  <input matInput>
+                </mat-form-field>
+            
+                <mat-form-field>
+                  <mat-label>Age</mat-label>
+                  <input matInput type="number" min="1">
+                </mat-form-field>
+            </mat-expansion-panel>
+        </mat-accordion>
+    </div>
+
 </div>
 
 

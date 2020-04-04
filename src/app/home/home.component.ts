@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
+import { AngularFireFunctions } from '@angular/fire/functions';
 
 
 @Component({
@@ -10,9 +11,22 @@ import { Router } from '@angular/router';
 })
 export class HomeComponent implements OnInit {
 
-  constructor(public auth: AngularFireAuth, public router: Router) { }
+  campaigns: [];
+
+  constructor(
+    public auth: AngularFireAuth, 
+    public router: Router,
+    private fns: AngularFireFunctions,
+  ) { 
+
+    const callable = this.fns.httpsCallable('getCampaign');
+    callable({ campaignId: '123' }).subscribe(result => {
+      console.log(result);
+    });
+  }
 
   ngOnInit() {
+    
   }
 
   logout() {

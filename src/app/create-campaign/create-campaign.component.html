@@ -1,0 +1,66 @@
+<div class="page-tile">
+    Add New Camapign
+</div>
+<mat-card class="input-card">
+    <mat-card-header>
+        Basic Info
+    </mat-card-header>
+    <mat-card-content>
+        <div class="input-form">
+            <div>
+                <div class="item-title">Campaign Name:</div>
+                <mat-form-field class="example-full-width">
+                    <input matInput placeholder="">
+                </mat-form-field>
+            </div>
+            
+            <div>
+                <div class="item-title">Brand:</div>
+                <mat-form-field class="example-full-width">
+                    <input matInput placeholder="">
+                </mat-form-field>
+            </div>
+            
+            <div>
+                <div class="item-title">Commision:</div>
+                <mat-form-field class="example-full-width">
+                    <input matInput placeholder="">
+                </mat-form-field>
+            </div>
+            
+            <div>
+                <div class="item-title">Contact Email:</div>
+                <mat-form-field class="example-full-width">
+                    <input matInput placeholder="">
+                </mat-form-field>
+            </div>
+        
+            <div>
+                <div class="item-title">Content Concept:</div>
+                <mat-form-field class="example-full-width">
+                    <textarea matInput placeholder=""></textarea>
+                </mat-form-field>
+            </div>
+        
+            <div>
+                <div class="item-title">End time:</div>
+                <mat-form-field>
+                    <input matInput [matDatepicker]="picker">
+                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                    <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+            </div>
+        </div>
+    </mat-card-content>
+</mat-card>
+
+<mat-card class="input-card">
+    <mat-card-header>
+        Millstones
+    </mat-card-header>
+    <mat-card-content>
+    </mat-card-content>
+</mat-card>
+
+
+<button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>
