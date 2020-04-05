@@ -18,6 +18,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatStepperModule } from '@angular/material/stepper';
 
 import { AngularFireAuthGuardModule } from '@angular/fire/auth-guard';
 import { CampaignComponent } from './campaign/campaign.component';
@@ -48,6 +51,9 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatNativeDateModule,
     MatExpansionModule,
     MatCardModule,
+    MatDividerModule,
+    MatCheckboxModule,
+    MatStepperModule,
   ],
   exports: [],
   providers: [

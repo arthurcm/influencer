@@ -3,7 +3,6 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
 
-
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -11,7 +10,7 @@ import { AngularFireFunctions } from '@angular/fire/functions';
 })
 export class HomeComponent implements OnInit {
 
-  campaigns: [];
+  campaigns: {};
 
   constructor(
     public auth: AngularFireAuth, 
@@ -19,14 +18,16 @@ export class HomeComponent implements OnInit {
     private fns: AngularFireFunctions,
   ) { 
 
-    const callable = this.fns.httpsCallable('getCampaign');
-    callable({ campaignId: '123' }).subscribe(result => {
-      console.log(result);
-    });
   }
 
   ngOnInit() {
-    
+    const callable = this.fns.httpsCallable('getCampaign');
+    callable({}).subscribe(result => {
+      this.campaigns = result['_fieldsProto'];
+      console.log(result);
+      console.log(JSON.stringify(result._docs));
+    });
+
   }
 
   logout() {
