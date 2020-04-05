@@ -1,0 +1,49 @@
+<div>
+    <mat-card class="basic-card">
+        <mat-card-header>
+            Campaign Info
+        </mat-card-header>
+        <mat-card-content>
+            <div>
+                Campaign Name: {{ campaign.campaign_name.stringValue }}
+            </div>
+        
+                <div>
+                    Contacts: {{ campaign.contacts.stringValue }}
+                </div>
+                <div>
+                    Concept: {{ campaign.content_concepts.stringValue }}
+                </div>
+                <div>
+                    Commisions: {{ campaign.commision_dollar.integerValue }}
+                </div>
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card class="millstone-card">
+        <mat-card-header>
+            Millstones
+        </mat-card-header>
+        <mat-card-content>
+            <div  *ngFor="let item of campaign.milestones.arrayValue.values">
+                <mat-checkbox> {{ item.stringValue }}</mat-checkbox>
+            </div>
+            
+        </mat-card-content>
+    </mat-card>
+
+    <mat-horizontal-stepper [linear]="ture" #stepper>
+        <mat-step>
+            <ng-template matStepLabel>Logistic</ng-template>
+        </mat-step>
+        <mat-step>
+          <ng-template matStepLabel>Concept</ng-template>
+        </mat-step>
+        <mat-step>
+            <ng-template matStepLabel>Video</ng-template>
+        </mat-step>
+        <mat-step>
+          <ng-template matStepLabel>Done</ng-template>
+        </mat-step>
+      </mat-horizontal-stepper>
+</div>
