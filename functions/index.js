@@ -190,6 +190,35 @@ exports.getCampaign = functions.https.onCall((data, context) => {
   }
 });
 
+function createCamapignData(campaignId, data, uid, time_stamp){
+  if (!campaignId){
+    throw new functions.https.HttpsError("CampaignId must not be empty!")
+  }
+  if(!uid) {
+    throw new functions.https.HttpsError("New campaign must have a valid uid!")
+  }
+  try{
+    let campaignData  = {
+      campaign_id: campaignId,
+      brand: String(data.brand),
+      campaign_name: String(data.campaign_name),
+      commision_dollar: Number(data.commision_dollar),
+      contacts: String(data.contacts),
+      content_concept: String(data.content_concept),
+      end_time: Number(data.end_time),
+      feed_back: String(data.feed_back),
+      image: String(data.image),
+      video: String(data.video),
+      influencer_id: uid,
+      time_stamp:time_stamp
+    };
+    return campaignData
+  }
+  catch(err){
+    console.log("Error creating campaign data", err)
+    throw new functions.https.HttpsError('Failed to create campaign data');
+  }
+}
 
 // called when influencers decide to create a new campaign with related information. u
 exports.createCampaign = functions.https.onCall((data, context) => {
@@ -207,23 +236,11 @@ exports.createCampaign = functions.https.onCall((data, context) => {
   console.log('creating a new campaign:', campaignRef.id);
   const time_stamp = Date.now()
 
-  let campaignData  = {
-    campaign_id: campaignId,
-    brand: String(data.brand),
-    campaign_name: String(data.campaign_name),
-    commision_dollar: Number(data.commision_dollar),
-    contacts: String(data.contacts),
-    content_concept: String(data.content_concept),
-    end_time: Number(data.end_time),
-    feed_back: String(data.feed_back),
-    image: String(data.image),
-    video: String(data.video),
-    influencer_id: uid,
-    time_stamp:time_stamp
-  };
-  db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc(time_stamp.toString()).set(campaignData)
-  let docref =  db.collection('campaigns').doc(campaignId)
-  db.collection('influencers')
+  let campaignData  = createCamapignData(campaignId, data, uid, time_stamp);
+  let historyRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc();
+  db.collection('campaigns').doc(campaignId).collection('campaignHistory').add(campaignData);
+  let docref =  db.collection('campaigns').doc(campaignId);
+  return db.collection('influencers')
   .doc(uid).collection('campaigns')
   .doc(campaignId)
   .set({
@@ -233,11 +250,12 @@ exports.createCampaign = functions.https.onCall((data, context) => {
   })
   .then(res => {
     console.log('the update influencer results is', res.toString())
-    return 0
+    return res;
   })
   .catch(err => {
     console.error('updating influencer profile failed', err.toString())
-  })
+    return err;
+  });
 });
 
 
@@ -247,36 +265,45 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
   // Checking that the user is authenticated.
   if (!context.auth) {
     // Throwing an HttpsError so that the client gets the error details.
-    throw new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+    return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
         'while authenticated.');
   }
 
   if (!data.campaignId) {
-    throw new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+    return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
         'with a specific campaignId.');
   }
 
   // Authentication / user information is automatically added to the request.
   const uid = context.auth.uid;
+  console.log('input data is', data);
   const campaignId = data.campaignId;
   const time_stamp = Date.now();
-  let campaignHistoryRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory');
-  let latestCampaignSnapshot = campaignHistoryRef.orderBy('time_stamp', 'desc').limit(1).get();
-  data.time_stamp = time_stamp
 
-  // here we create a new version of campaign, using the latest campaign version, and then update the new campaign with update data.
-  db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc(time_stamp).set(latestCampaignSnapshot)
-  db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc(time_stamp).update(data)
+  data.time_stamp = time_stamp;
+  let newCamp = createCamapignData(campaignId, data, uid, time_stamp);
+  console.log('Created new campaign data:', newCamp);
+
+  // Get a new write batch
+  let batch = db.batch();
+
+  let campaignHistoryRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc();
+  batch.set(campaignHistoryRef, newCamp);
 
   // get the updated campaign information, and add it to influencer's profile.
-  let newlyUpdatedCampaignSnapshot = campaignHistoryRef.orderBy('time_stamp', 'desc').limit(1).get();
-  db.collection('influencers')
-  .doc(uid).collection('campaigns')
-  .doc(campaignId)
-  .update({
-    camapgn_data: newlyUpdatedCampaignSnapshot
-  })
-  return 0;
+  let influencerCamRef = db.collection('influencers')
+                           .doc(uid).collection('campaigns')
+                           .doc(campaignId);
+  batch.update(influencerCamRef, {campaign_data: newCamp});
+  return batch.commit()
+        .then(res => {
+          console.log('Transaction completed.')
+          return res;
+        })
+        .catch(err => {
+          console.log('Transaction failed', err);
+          throw err;
+        });
 });
 
 // exports.saveDraft = functions.https.onCall((data, context) => {

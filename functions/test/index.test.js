@@ -35,10 +35,10 @@ create_campaign_wrapped(snap, {
     }
   });
   
-const snap_update = test.firestore.makeDocumentSnapshot({'campaignId':""});
+const snap_get = test.firestore.makeDocumentSnapshot({'campaignId':""});
 
 const get_campaign_wrapped = test.wrap(myfunctions.getCampaign);
-get_campaign_wrapped(snap_update, {
+get_campaign_wrapped(snap_get, {
     auth: {
       uid: '123',
       'token': '12312312'
@@ -51,4 +51,22 @@ get_campaign_wrapped({'campaignId':"95BFQrxAAap5pREDapsc"},
             'token': '12312312'
         }
     });
+
+const snap_update = test.firestore.makeDocumentSnapshot(
+    {
+        "campaignId":"sCUqflxSY8dnAJBmb8pk",
+        "brand": "crapy"
+    }
+   );
+
+const update_campaign_wrapped = test.wrap(myfunctions.updateCampaign);
+update_campaign_wrapped( 
+    {
+        "campaignId":"5Lx527Kl3fEO7vr7WXnd",
+        "brand": "crapy"
+    }, {
+    auth: {
+      uid: '123'
+    }
+});
 test.cleanup();
