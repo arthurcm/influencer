@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
+import { CampaignDetail } from 'src/types/campaign';
 
 @Component({
   selector: 'app-create-campaign',
@@ -10,13 +11,13 @@ import { AngularFireFunctions } from '@angular/fire/functions';
 })
 export class CreateCampaignComponent implements OnInit {
 
-  data = {
+  campaignData: CampaignDetail = {
     brand: 'abc',
     campaign_name: 'name',
-    commision_dollar: '1000',
+    commision_dollar: 1000,
     contacts: 'abc@gmail.com',
     content_concept: 'loremaa avsidojw asdv awea avw',
-    end_time: '2020/05/01',
+    end_time: 123123123,
     feed_back: '',
     image: '',
     video: '',
@@ -34,7 +35,7 @@ export class CreateCampaignComponent implements OnInit {
 
   createCampaign() {
     const callable = this.fns.httpsCallable('createCampaign');
-    callable(this.data).subscribe(result => {
+    callable(this.campaignData).subscribe(result => {
       console.log(result);
     });
   }

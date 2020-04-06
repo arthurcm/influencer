@@ -3,6 +3,7 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
 import { AngularFirestore } from '@angular/fire/firestore';
+import { CampaignDetail } from 'src/types/campaign';
 
 @Component({
   selector: 'app-campaign',
@@ -10,8 +11,8 @@ import { AngularFirestore } from '@angular/fire/firestore';
   styleUrls: ['./campaign.component.scss']
 })
 export class CampaignComponent implements OnInit {
-  campaignId = '123';
-  campaign: {};
+  campaignId = '95BFQrxAAap5pREDapsc';
+  campaign: CampaignDetail;
 
   itemsCollection;
   items;
@@ -32,8 +33,8 @@ export class CampaignComponent implements OnInit {
   ngOnInit() {
     const callable = this.fns.httpsCallable('getCampaign');
     callable({ campaignId: this.campaignId }).subscribe(result => {
-      this.campaign = result['_fieldsProto'];
-      console.log(JSON.stringify(this.campaign));
+      this.campaign = result[0];
+      console.log(result);
     });
   }
 

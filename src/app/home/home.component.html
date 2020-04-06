@@ -14,31 +14,29 @@
         Active Campaign:
         <button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>
     </div>
-    <div class="active-campaign">
-        <mat-accordion>
+    <div class="active-campaign" *ngIf="campaigns">
+        <mat-accordion *ngFor="let campaign of campaigns">
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
                   <mat-panel-title>
-                    {{ campaigns.campaign_name.stringValue }}
+                    {{ campaign.campaign_name }}
                   </mat-panel-title>
                   <mat-panel-description>
                     <span class="material-icons"> av_timer </span>
-                    {{ campaigns.end_time.timestampValue.seconds }}
+                    {{ campaign.camapgn_data.end_time }}
                     (n days left)
                   </mat-panel-description>
                 </mat-expansion-panel-header>
             
                 <div>
+                    <button class="view-button" mat-raised-button color="primary" (click)="viewCampaign(campaign)">View Detail</button>
                     <div>
-                        Contacts: {{ campaigns.contacts.stringValue }}
+                        Contacts: {{ campaign.camapgn_data.contacts }}
                     </div>
                     <div>
-                        Concept: {{ campaigns.content_concepts.stringValue }}
+                        Commisions: $ {{ campaign.camapgn_data.commision_dollar }}
                     </div>
-                    <div>
-                        Commisions: {{ campaigns.commision_dollar.integerValue }}
-                    </div>
-
+                    ....
                 </div>
             </mat-expansion-panel>
         </mat-accordion>
