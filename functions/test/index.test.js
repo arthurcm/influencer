@@ -24,11 +24,24 @@ const snap = test.firestore.makeDocumentSnapshot(
         end_time: 12312321321,
         feed_back: "great",
         image: '',
+        milestones:["1", "2"],
         video: ''
     }, 'campaigns_test/');
 
 // Invoke the function, and specify auth and auth Type (for real time database functions only)
-create_campaign_wrapped(snap, {
+create_campaign_wrapped(
+{
+       "brand":"awesome",
+       "campaign_name":"my campaign",
+       "commision_dollar":"1222",
+       "contacts":"shuo@influencer.com",
+       "content_concept":"final fantasy",
+       "end_time":"12312321321",
+       "feed_back":"great",
+       "milestones":["test", "test"],
+       "image":"",
+       "video":""
+}, {
     auth: {
       uid: '123',
       'token': '12312312'

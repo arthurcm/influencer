@@ -4,13 +4,15 @@
 //createCampaign
 {
     "data":{
-       "brand":"awesome",
+       "brand":"awesome2",
        "campaign_name":"my campaign",
        "commision_dollar":"1222",
        "contacts":"shuo@influencer.com",
        "content_concept":"final fantasy",
        "end_time":"12312321321",
        "feed_back":"great",
+       "influencer_id": "acm_test_id",
+       "milestones":["1", "2"],
        "image":"",
        "video":""
     }
