@@ -32,5 +32,20 @@
     .active-campaign {
         margin: 20px;
         width: calc(100% - 80px);
+
+        .mat-expansion-panel {
+            margin-bottom: 5px;
+
+            .mat-expansion-panel-header-title {
+                width: 300px;
+            }
+            .mat-expansion-panel-header-description {
+                width: 300px;
+            }
+        }
+    }
+
+    .view-button {
+        float: right;
     }
 }

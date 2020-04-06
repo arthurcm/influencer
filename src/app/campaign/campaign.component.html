@@ -1,49 +1,52 @@
 <div>
-    <mat-card class="basic-card">
-        <mat-card-header>
-            Campaign Info
-        </mat-card-header>
-        <mat-card-content>
-            <div>
-                Campaign Name: {{ campaign.campaign_name.stringValue }}
-            </div>
-        
+    <div class="left-panel">
+        <div class="campaign-title">
+            Campaign Name: {{ campaign.campaign_name }}
+        </div>
+        <div class="campaign-time">
+            End time {{ campaign.end_time }}
+        </div>
+        <mat-card *ngIf="campaign" class="basic-card">
+            <mat-card-header>
+                Campaign Info
+            </mat-card-header>
+            <mat-card-content>
                 <div>
-                    Contacts: {{ campaign.contacts.stringValue }}
+                    Contacts: {{ campaign.contacts }}
                 </div>
                 <div>
-                    Concept: {{ campaign.content_concepts.stringValue }}
+                    Commisions: {{ campaign.commision_dollar }}
                 </div>
-                <div>
-                    Commisions: {{ campaign.commision_dollar.integerValue }}
-                </div>
-        </mat-card-content>
-    </mat-card>
+                ...
+            </mat-card-content>
+        </mat-card>
+        <mat-card *ngIf="campaign" class="millstone-card">
+            <mat-card-header>
+                Millstones
+            </mat-card-header>
+            <mat-card-content>
+                <!-- <div  *ngFor="let item of campaign.milestones">
+                    <mat-checkbox> {{ item }}</mat-checkbox>
+                </div> -->
+                
+            </mat-card-content>
+        </mat-card>
+    </div>
 
-    <mat-card class="millstone-card">
-        <mat-card-header>
-            Millstones
-        </mat-card-header>
-        <mat-card-content>
-            <div  *ngFor="let item of campaign.milestones.arrayValue.values">
-                <mat-checkbox> {{ item.stringValue }}</mat-checkbox>
-            </div>
-            
-        </mat-card-content>
-    </mat-card>
-
-    <mat-horizontal-stepper [linear]="ture" #stepper>
-        <mat-step>
-            <ng-template matStepLabel>Logistic</ng-template>
-        </mat-step>
-        <mat-step>
-          <ng-template matStepLabel>Concept</ng-template>
-        </mat-step>
-        <mat-step>
-            <ng-template matStepLabel>Video</ng-template>
-        </mat-step>
-        <mat-step>
-          <ng-template matStepLabel>Done</ng-template>
-        </mat-step>
-      </mat-horizontal-stepper>
+    <div class="right-panel">
+        <mat-horizontal-stepper [linear]="true" #stepper>
+            <mat-step>
+                <ng-template matStepLabel>Logistic</ng-template>
+            </mat-step>
+            <mat-step>
+              <ng-template matStepLabel>Concept</ng-template>
+            </mat-step>
+            <mat-step>
+                <ng-template matStepLabel>Video</ng-template>
+            </mat-step>
+            <mat-step>
+              <ng-template matStepLabel>Done</ng-template>
+            </mat-step>
+          </mat-horizontal-stepper>
+    </div>
 </div>

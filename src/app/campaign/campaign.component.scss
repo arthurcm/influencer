@@ -1,21 +1,46 @@
-.basic-card {
-    margin: 20px;
-    width: 300px;
-    padding: 0px;
+.left-panel {
+    width: 33.3%;
+    display: inline-block;
+    vertical-align: top;
 
-    .mat-card-header {
-        padding: 15px;
-        background-color: lightgrey;
+    .campaign-title {
+        margin:20px;
+        font-size: large;
+    }
+    .campaign-time {
+        margin:20px;
+    }
+    .basic-card {
+        margin: 20px;
+        width: 100%;
+        padding: 0px;
+    
+        .mat-card-header {
+            padding: 15px;
+            background-color: lightgrey;
+        }
+        .mat-card-content {
+            padding: 10px;
+        }
+    }
+    
+    .millstone-card {
+        margin: 20px;
+        width: 100%;
+        padding: 0px;
+    
+        .mat-card-header {
+            padding: 15px;
+            background-color: lightgrey;
+        }
+        .mat-card-content {
+            padding: 10px;
+        }
     }
 }
 
-.millstone-card {
-    margin: 20px;
-    width: 700px;
-    padding: 0px;
-
-    .mat-card-header {
-        padding: 15px;
-        background-color: lightgrey;
-    }
+.right-panel {
+    width: 66.6%;
+    display: inline-block;
+    vertical-align: top;
 }

@@ -21,6 +21,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatStepperModule } from '@angular/material/stepper';
+import { MatGridListModule } from '@angular/material/grid-list';
 
 import { AngularFireAuthGuardModule } from '@angular/fire/auth-guard';
 import { CampaignComponent } from './campaign/campaign.component';
@@ -54,6 +55,7 @@ import { MatNativeDateModule } from '@angular/material/core';
     MatDividerModule,
     MatCheckboxModule,
     MatStepperModule,
+    MatGridListModule,
   ],
   exports: [],
   providers: [
