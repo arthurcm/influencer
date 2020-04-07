@@ -82,4 +82,20 @@ update_campaign_wrapped(
       uid: '123'
     }
 });
+
+
+const feedback_campaign_wrapped = test.wrap(myfunctions.provideFeedback);
+feedback_campaign_wrapped( 
+    {
+        "campaignId":"sCUqflxSY8dnAJBmb8pk",
+        "historyId": "1586129270835",
+        "feed_back": {
+            1: "change this",
+            2: "do that"
+        }
+    }, {
+    auth: {
+      uid: 'HK0fpmQI7WOGUDwdmVpPffis7hY2'
+    }
+});
 test.cleanup();

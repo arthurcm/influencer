@@ -12,6 +12,7 @@ const campaign = require('./campaign');
 exports.createCampaign = campaign.createCampaign;
 exports.getCampaign = campaign.getCampaign;
 exports.updateCampaign = campaign.updateCampaign;
+exports.provideFeedback = campaign.provideFeedback;
 
 
 exports.regiserUser = functions.auth.user().onCreate(async (user) => {

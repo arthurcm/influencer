@@ -66,7 +66,6 @@ function createCamapignData(campaignId, data, uid, time_stamp){
       throw new functions.https.HttpsError("New campaign must have a valid uid!")
     }
 
-
     try{
         var milestones = [];
         if(data.milestones){
@@ -135,6 +134,55 @@ exports.createCampaign = functions.https.onCall((data, context) => {
       console.error('updating influencer profile failed', err.toString())
       return err;
     });
+});
+
+
+// called by brand side to submit feed back. This is a special case of updateCampaign, and is provided to 
+// simplify API layer.
+// it requires three fields: campaignId, historyId, and feed_back
+exports.provideFeedback = functions.https.onCall((data, context) => {
+    // Checking that the user is authenticated.
+    if (!context.auth) {
+        // Throwing an HttpsError so that the client gets the error details.
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'while authenticated.');
+    }
+
+    if (!data.campaignId) {
+      return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+          'with a specific campaignId.');
+    }
+
+    if (!data.historyId) {
+      return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+          'with a specific campaignId along with a history version id.');
+    }
+
+    // Authentication / user information is automatically added to the request.
+    const uid = context.auth.uid;
+    console.log('input data is', data);
+    const campaignId = data.campaignId;
+    const historyId = data.historyId;
+
+    // Get a new write batch
+    let batch = db.batch();
+    let campaignHistoryRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc(historyId)
+    batch.update(campaignHistoryRef, {feed_back: data.feed_back});
+    
+    let influencerCamRef = db.collection('influencers')
+          .doc(uid).collection('campaigns')
+          .doc(campaignId);
+    batch.update(influencerCamRef, {"campaign_data.feed_back": data.feed_back});
+    
+    return batch.commit()
+                .then(res => {
+                  console.log('Transaction completed.')
+                  return res;
+                })
+                .catch(err => {
+                  console.log('Transaction failed', err);
+                  throw err;
+                });
 });
   
   
