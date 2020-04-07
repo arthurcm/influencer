@@ -12,16 +12,24 @@ import { CampaignDetail } from 'src/types/campaign';
 export class CreateCampaignComponent implements OnInit {
 
   campaignData: CampaignDetail = {
-    brand: 'abc',
-    campaign_name: 'name',
-    commision_dollar: 1000,
-    contacts: 'abc@gmail.com',
-    content_concept: 'loremaa avsidojw asdv awea avw',
-    end_time: 123123123,
+    brand: '',
+    campaign_name: '',
+    commision_dollar: -1,
+    contacts: '',
+    content_concept: '',
+    end_time: 1,
     feed_back: '',
     image: '',
     video: '',
+    milestones: [],
   }
+
+  campaignName = '';
+  brand = '';
+  commision = -1;
+  contact = '';
+  endTime = new Date();
+
   constructor(
     public auth: AngularFireAuth, 
     public router: Router,
@@ -33,9 +41,30 @@ export class CreateCampaignComponent implements OnInit {
   ngOnInit() {
   }
 
+  campaignNameChange(value) {
+    this.campaignData.campaign_name = value;
+  }
+
+  brandChange(value) {
+    this.campaignData.brand = value;
+  }
+
+  commisionChange(value) {
+    this.campaignData.commision_dollar = value;
+  }
+  contactChange(value) {
+    this.campaignData.contacts = value;
+  }
+
+  endTimeChange(value: Date) {
+    this.campaignData.end_time = value.getTime();
+  }
+
   createCampaign() {
+    console.log(this.campaignData);
     const callable = this.fns.httpsCallable('createCampaign');
     callable(this.campaignData).subscribe(result => {
+      this.router.navigate(['/home']);
       console.log(result);
     });
   }
