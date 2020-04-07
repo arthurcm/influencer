@@ -25,11 +25,7 @@ exports.getCampaign = functions.https.onCall((data, context) => {
           let doc_snap = doc.data()
           markers.push(doc_snap);
         });
-        
-        // Remove when done!!!
-        // Remove when done!!!
-        // Remove when done!!!
-        console.log('current results are', markers)
+        console.log('Found', markers.length, 'results');
         return markers;   
       })
       .catch(err => {
@@ -44,11 +40,7 @@ exports.getCampaign = functions.https.onCall((data, context) => {
         querySnapshot.docs.forEach(doc => {
           markers.push(doc.data());
         });
-  
-        // Remove when done!!!
-        // Remove when done!!!
-        // Remove when done!!!
-        console.log('current results are', markers)
+        console.log('Found', markers.length, 'results');
         return markers;                 
       })
       .catch(err => {
@@ -58,8 +50,8 @@ exports.getCampaign = functions.https.onCall((data, context) => {
     }
   });
   
-function createCamapignData(campaignId, data, uid, time_stamp){
-    if (!campaignId){
+function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
+    if (!campaign_id){
       throw new functions.https.HttpsError("CampaignId must not be empty!")
     }
     if(!uid) {
@@ -76,7 +68,7 @@ function createCamapignData(campaignId, data, uid, time_stamp){
             console.log('incoming milestone needs to be an array.');
         }
         let campaignData  = {
-            campaign_id: campaignId,
+            campaign_id: campaign_id,
             brand: String(data.brand),
             campaign_name: String(data.campaign_name),
             commision_dollar: Number(data.commision_dollar),
@@ -88,7 +80,8 @@ function createCamapignData(campaignId, data, uid, time_stamp){
             video: String(data.video),
             milestones: milestones,
             influencer_id: uid,
-            time_stamp:time_stamp
+            time_stamp: time_stamp,
+            history_id: String(history_id)
         };
         return campaignData
     }
@@ -110,30 +103,36 @@ exports.createCampaign = functions.https.onCall((data, context) => {
     // Authentication / user information is automatically added to the request.
     const uid = context.auth.uid;
     let campaignRef = db.collection("campaigns").doc();
-    const campaignId = campaignRef.id;
-    console.log('creating a new campaign:', campaignRef.id, data);
+    const campaign_id = campaignRef.id;
     const time_stamp = Date.now()
   
-    let campaignData  = createCamapignData(campaignId, data, uid, time_stamp);
-    let historyRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc();
-    db.collection('campaigns').doc(campaignId).collection('campaignHistory').add(campaignData);
-    let docref =  db.collection('campaigns').doc(campaignId);
+    let historyRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
+    const history_id = historyRef.id;
+    let campaignData  = createCamapignData(campaign_id, data, uid, time_stamp, history_id);
+    
+    // Remove when done!!!
+    // Remove when done!!!
+    // Remove when done!!!
+    console.log('creating a new campaign:', campaignRef.id, campaignData);
+    db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc(history_id).set(campaignData);
+    let docref =  db.collection('campaigns').doc(campaign_id);
     return db.collection('influencers')
-    .doc(uid).collection('campaigns')
-    .doc(campaignId)
-    .set({
-      camapign_ref: docref.path,
-      campaign_name: String(data.campaign_name),
-      camapgn_data: campaignData
-    })
-    .then(res => {
-      console.log('the update influencer results is', res.toString())
-      return res;
-    })
-    .catch(err => {
-      console.error('updating influencer profile failed', err.toString())
-      return err;
-    });
+            .doc(uid).collection('campaigns')
+            .doc(campaign_id)
+            .set({
+              camapign_ref: docref.path,
+              campaign_id: campaign_id,
+              campaign_name: String(data.campaign_name),
+              camapgn_data: campaignData
+            })
+            .then(res => {
+              console.log('the update influencer results is', res.toString())
+              return res;
+            })
+            .catch(err => {
+              console.error('updating influencer profile failed', err.toString())
+              return err;
+            });
 });
 
 
@@ -148,32 +147,31 @@ exports.provideFeedback = functions.https.onCall((data, context) => {
             'while authenticated.');
     }
 
-    if (!data.campaignId) {
+    if (!data.campaign_id) {
       return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-          'with a specific campaignId.');
+          'with a specific campaign_id.');
     }
 
-    if (!data.historyId) {
+    if (!data.history_id) {
       return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-          'with a specific campaignId along with a history version id.');
+          'with a specific campaign_id along with a history version id.');
     }
 
     // Authentication / user information is automatically added to the request.
     const uid = context.auth.uid;
     console.log('input data is', data);
-    const campaignId = data.campaignId;
-    const historyId = data.historyId;
+    const campaign_id = data.campaign_id;
+    const history_id = data.history_id;
 
     // Get a new write batch
     let batch = db.batch();
-    let campaignHistoryRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc(historyId)
+    let campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc(history_id)
     batch.update(campaignHistoryRef, {feed_back: data.feed_back});
     
     let influencerCamRef = db.collection('influencers')
-          .doc(uid).collection('campaigns')
-          .doc(campaignId);
+                            .doc(uid).collection('campaigns')
+                            .doc(campaign_id);
     batch.update(influencerCamRef, {"campaign_data.feed_back": data.feed_back});
-    
     return batch.commit()
                 .then(res => {
                   console.log('Transaction completed.')
@@ -196,7 +194,7 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
           'while authenticated.');
     }
   
-    if (!data.campaignId) {
+    if (!data.campaign_id) {
       return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
           'with a specific campaignId.');
     }
@@ -204,23 +202,23 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
     // Authentication / user information is automatically added to the request.
     const uid = context.auth.uid;
     console.log('input data is', data);
-    const campaignId = data.campaignId;
+    const campaign_id = data.campaign_id;
     const time_stamp = Date.now();
-  
     data.time_stamp = time_stamp;
-    let newCamp = createCamapignData(campaignId, data, uid, time_stamp);
-    console.log('Created new campaign data:', newCamp);
   
     // Get a new write batch
     let batch = db.batch();
   
-    let campaignHistoryRef = db.collection('campaigns').doc(campaignId).collection('campaignHistory').doc();
+    let campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
+    const history_id = campaignHistoryRef.history_id;
+    let newCamp = createCamapignData(campaign_id, data, uid, time_stamp, history_id);
+    console.log('Created new campaign data:', newCamp);
     batch.set(campaignHistoryRef, newCamp);
   
     // get the updated campaign information, and add it to influencer's profile.
     let influencerCamRef = db.collection('influencers')
                              .doc(uid).collection('campaigns')
-                             .doc(campaignId);
+                             .doc(campaign_id);
     batch.update(influencerCamRef, {campaign_data: newCamp});
     return batch.commit()
           .then(res => {

@@ -48,7 +48,7 @@ create_campaign_wrapped(
     }
   });
   
-const snap_get = test.firestore.makeDocumentSnapshot({'campaignId':""});
+const snap_get = test.firestore.makeDocumentSnapshot({'campaign_id':""});
 
 const get_campaign_wrapped = test.wrap(myfunctions.getCampaign);
 get_campaign_wrapped(snap_get, {
@@ -67,15 +67,16 @@ get_campaign_wrapped({'campaignId':"95BFQrxAAap5pREDapsc"},
 
 const snap_update = test.firestore.makeDocumentSnapshot(
     {
-        "campaignId":"sCUqflxSY8dnAJBmb8pk",
+        "campaign_id":"sCUqflxSY8dnAJBmb8pk",
         "brand": "crapy"
     }
    );
 
+console.log('Testing updateCampaign')
 const update_campaign_wrapped = test.wrap(myfunctions.updateCampaign);
 update_campaign_wrapped( 
     {
-        "campaignId":"5Lx527Kl3fEO7vr7WXnd",
+        "campaign_id":"5Lx527Kl3fEO7vr7WXnd",
         "brand": "crapy"
     }, {
     auth: {
@@ -83,19 +84,19 @@ update_campaign_wrapped(
     }
 });
 
-
+console.log('Testing provideFeedback')
 const feedback_campaign_wrapped = test.wrap(myfunctions.provideFeedback);
 feedback_campaign_wrapped( 
     {
-        "campaignId":"sCUqflxSY8dnAJBmb8pk",
-        "historyId": "1586129270835",
+        "campaign_id":"x3vHd6n27eEhYQAWHLi6",
+        "history_id": "y4tsXejHYFqiRbUNGxJG",
         "feed_back": {
             1: "change this",
             2: "do that"
         }
     }, {
     auth: {
-      uid: 'HK0fpmQI7WOGUDwdmVpPffis7hY2'
+      uid: '123'
     }
 });
 test.cleanup();
