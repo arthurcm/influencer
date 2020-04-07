@@ -13,6 +13,7 @@ import { CampaignDetail } from 'src/types/campaign';
 export class CampaignComponent implements OnInit {
   campaignId = '95BFQrxAAap5pREDapsc';
   campaign: CampaignDetail;
+  campaignHistory: CampaignDetail[];
 
   itemsCollection;
   items;
@@ -34,6 +35,7 @@ export class CampaignComponent implements OnInit {
     const callable = this.fns.httpsCallable('getCampaign');
     callable({ campaignId: this.campaignId }).subscribe(result => {
       this.campaign = result[0];
+      this.campaignHistory = result;
       console.log(result);
     });
   }

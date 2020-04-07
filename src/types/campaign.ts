@@ -17,4 +17,5 @@ export interface CampaignDetail {
     campaign_name: string,
     contacts: string,
     commision_dollar: number,
+    milestones?: string[],
 }

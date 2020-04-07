@@ -10,42 +10,42 @@
             <div>
                 <div class="item-title">Campaign Name:</div>
                 <mat-form-field class="example-full-width">
-                    <input matInput placeholder="">
+                    <input matInput placeholder="" [(ngModel)]="campaignName" (ngModelChange)="campaignNameChange($event)">
                 </mat-form-field>
             </div>
             
             <div>
                 <div class="item-title">Brand:</div>
                 <mat-form-field class="example-full-width">
-                    <input matInput placeholder="">
+                    <input matInput placeholder="" [(ngModel)]="brand" (ngModelChange)="brandChange($event)">
                 </mat-form-field>
             </div>
             
             <div>
                 <div class="item-title">Commision:</div>
                 <mat-form-field class="example-full-width">
-                    <input matInput placeholder="">
+                    <input matInput type="number" placeholder="" [(ngModel)]="commision" (ngModelChange)="commisionChange($event)">
                 </mat-form-field>
             </div>
             
             <div>
                 <div class="item-title">Contact Email:</div>
                 <mat-form-field class="example-full-width">
-                    <input matInput placeholder="">
+                    <input matInput placeholder="" [(ngModel)]="contact" (ngModelChange)="contactChange($event)">
                 </mat-form-field>
             </div>
         
-            <div>
+            <!-- <div>
                 <div class="item-title">Content Concept:</div>
                 <mat-form-field class="example-full-width">
                     <textarea matInput placeholder=""></textarea>
                 </mat-form-field>
-            </div>
+            </div> -->
         
             <div>
                 <div class="item-title">End time:</div>
                 <mat-form-field>
-                    <input matInput [matDatepicker]="picker">
+                    <input matInput [matDatepicker]="picker" [(ngModel)]="endTime" (ngModelChange)="endTimeChange($event)">
                     <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
                     <mat-datepicker #picker></mat-datepicker>
                 </mat-form-field>

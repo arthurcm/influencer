@@ -40,6 +40,18 @@
             </mat-step>
             <mat-step>
               <ng-template matStepLabel>Concept</ng-template>
+              <div class="concept-content">
+                  {{
+                      campaign.content_concept
+                  }}
+              </div>
+              <div class="version-list">
+                <mat-list>
+                    <mat-list-item> v1 </mat-list-item>
+                    <mat-list-item> v2 </mat-list-item>
+                    <mat-list-item> v3 </mat-list-item>
+                </mat-list>
+              </div>
             </mat-step>
             <mat-step>
                 <ng-template matStepLabel>Video</ng-template>

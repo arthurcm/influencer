@@ -3,6 +3,7 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
 import { Campaign } from 'src/types/campaign';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-home',
@@ -34,6 +35,12 @@ export class HomeComponent implements OnInit {
     this.auth.signOut().then(result => {
       this.router.navigate(['/login']);
     });
+  }
+
+  displayTime(campaign) {
+    const endTime = moment(campaign.camapgn_data.end_time).format("MMMM Do YYYY");
+    const daysLeft = moment(campaign.camapgn_data.end_time).diff(moment(), 'days');
+    return `End time: ${endTime} (${daysLeft} days left)`
   }
 
   createCampaign() {
