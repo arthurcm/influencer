@@ -210,7 +210,7 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
     let batch = db.batch();
   
     let campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
-    const history_id = campaignHistoryRef.history_id;
+    const history_id = campaignHistoryRef.id;
     let newCamp = createCamapignData(campaign_id, data, uid, time_stamp, history_id);
     console.log('Created new campaign data:', newCamp);
     batch.set(campaignHistoryRef, newCamp);
