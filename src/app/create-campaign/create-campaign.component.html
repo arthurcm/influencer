@@ -59,6 +59,13 @@
         Millstones
     </mat-card-header>
     <mat-card-content>
+        <div *ngFor="let milestone of milestones; index as i">
+            {{i+1}}. 
+            <mat-form-field class="example-full-width">
+                <input matInput placeholder="" [(ngModel)]="milestones[i]" (ngModelChange)="milestoneChange($event, i)">
+            </mat-form-field>
+        </div>
+        <button mat-flat-button (click)="addMilestone()">addMilestone</button>
     </mat-card-content>
 </mat-card>
 

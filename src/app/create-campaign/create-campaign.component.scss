@@ -32,6 +32,13 @@
         padding: 15px;
         background-color: lightgrey;
     }
+
+    .mat-card-content {
+        padding: 15px 30px;
+        .example-full-width {
+            width: 500px;
+        }
+    }
 }
 
 .create-button {

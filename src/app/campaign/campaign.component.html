@@ -1,4 +1,4 @@
-<div>
+<div *ngIf="campaign">
     <div class="left-panel">
         <div class="campaign-title">
             Campaign Name: {{ campaign.campaign_name }}
@@ -25,10 +25,9 @@
                 Millstones
             </mat-card-header>
             <mat-card-content>
-                <!-- <div  *ngFor="let item of campaign.milestones">
+                <div  *ngFor="let item of campaign.milestones">
                     <mat-checkbox> {{ item }}</mat-checkbox>
-                </div> -->
-                
+                </div>
             </mat-card-content>
         </mat-card>
     </div>
@@ -40,10 +39,20 @@
             </mat-step>
             <mat-step>
               <ng-template matStepLabel>Concept</ng-template>
+              <div>
+                <div>
+                    <div class="item-title">Content Concept:</div>
+                    <mat-form-field class="example-full-width">
+                        <textarea matInput [(ngModel)]="newContentConcept" placeholder=""></textarea>
+                    </mat-form-field>
+                    <button mat-stroked-button (click)="AddNewConcept()">Create New Concept</button>
+                </div>
+        
+              </div>
               <div class="concept-content">
-                  {{
-                      campaign.content_concept
-                  }}
+                  Concept: {{ campaign.content_concept }}
+                  Feedback: {{ campaign.feed_back }}
+                  <button mat-stroked-button (click)="leaveFeedback()">Leave Feedback</button>
               </div>
               <div class="version-list">
                 <mat-list>
@@ -55,6 +64,7 @@
             </mat-step>
             <mat-step>
                 <ng-template matStepLabel>Video</ng-template>
+                <app-uploader></app-uploader>
             </mat-step>
             <mat-step>
               <ng-template matStepLabel>Done</ng-template>
