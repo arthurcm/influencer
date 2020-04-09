@@ -12,9 +12,9 @@ const gmailPassword = functions.config().gmail.password;
 const mailTransport = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-    user: gmailEmail,
+        user: gmailEmail,
         pass: gmailPassword,
-  },
+    },
 });
 
 exports.sendWelcomeEmail = functions.auth.user().onCreate(async (user) => {

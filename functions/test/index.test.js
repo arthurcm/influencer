@@ -76,11 +76,11 @@ console.log('Testing updateCampaign')
 const update_campaign_wrapped = test.wrap(myfunctions.updateCampaign);
 update_campaign_wrapped( 
     {
-        "campaign_id":"5Lx527Kl3fEO7vr7WXnd",
+        "campaign_id":"fYOafsUZXjHYNqOJKdSG",
         "brand": "crapy"
     }, {
     auth: {
-      uid: '123'
+      uid: 'HK0fpmQI7WOGUDwdmVpPffis7hY2'
     }
 });
 
@@ -88,12 +88,36 @@ console.log('Testing provideFeedback')
 const feedback_campaign_wrapped = test.wrap(myfunctions.provideFeedback);
 feedback_campaign_wrapped( 
     {
-        "campaign_id":"x3vHd6n27eEhYQAWHLi6",
-        "history_id": "y4tsXejHYFqiRbUNGxJG",
+        "campaign_id":"fYOafsUZXjHYNqOJKdSG",
+        "history_id": "KEZf5E2jYQnohWlCUpmO",
         "feed_back": {
             1: "change this",
             2: "do that"
         }
+    }, {
+    auth: {
+      uid: 'HK0fpmQI7WOGUDwdmVpPffis7hY2'
+    }
+});
+
+console.log('Testing finalizeCampaign')
+const finalize_campaign_wrapped = test.wrap(myfunctions.finalizeCampaign);
+finalize_campaign_wrapped( 
+    {
+        "campaign_id":"dzXZ7bZe7Km55R7Aoqzf",
+        "history_id": "qxLkbGSsY6jsKJeX6O1A"
+    }, {
+    auth: {
+      uid: '123'
+    }
+});
+
+console.log('Testing finalizeVideoDraft')
+const finalize_video_draft_wrapped = test.wrap(myfunctions.finalizeVideoDraft);
+finalize_video_draft_wrapped( 
+    {
+        "campaign_id":"dzXZ7bZe7Km55R7Aoqzf",
+        "history_id": "qxLkbGSsY6jsKJeX6O1A"
     }, {
     auth: {
       uid: '123'

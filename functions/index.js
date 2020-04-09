@@ -13,6 +13,8 @@ exports.createCampaign = campaign.createCampaign;
 exports.getCampaign = campaign.getCampaign;
 exports.updateCampaign = campaign.updateCampaign;
 exports.provideFeedback = campaign.provideFeedback;
+exports.finalizeCampaign = campaign.finalizeCampaign;
+exports.finalizeVideoDraft = campaign.finalizeVideoDraft;
 
 
 exports.regiserUser = functions.auth.user().onCreate(async (user) => {
