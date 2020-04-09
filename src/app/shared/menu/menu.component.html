@@ -1,0 +1,27 @@
+<div class="menu-bar">
+    <button mat-button class="menu-button">Home</button>
+
+    <button mat-button class="menu-button" [matMenuTriggerFor]="belowMenu">Campaign</button>
+    <mat-menu #belowMenu="matMenu" yPosition="below">
+    <button mat-menu-item>Item 1</button>
+    <button mat-menu-item>Item 2</button>
+    </mat-menu>
+
+    <button mat-icon-button class="icon-button" [matMenuTriggerFor]="beforeMenu" aria-label="Example icon-button with a menu">
+    <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #beforeMenu="matMenu" yPosition="below" xPosition="before">
+    <button mat-menu-item>
+        <mat-icon>dialpad</mat-icon>
+        <span>Redial</span>
+    </button>
+    <button mat-menu-item disabled>
+        <mat-icon>voicemail</mat-icon>
+        <span>Check voice mail</span>
+    </button>
+    <button mat-menu-item>
+        <mat-icon>notifications_off</mat-icon>
+        <span>Disable alerts</span>
+    </button>
+    </mat-menu>
+</div>

@@ -1,0 +1,18 @@
+@import 'common';
+
+.menu-bar {
+    height: 50px;
+    background-color: $COLOR;
+    color:white;
+    
+    .menu-button {
+        height: 50px;
+        margin: 0px 10px;
+    }
+
+    .icon-button {
+        float: right;
+        margin: 5px;
+    }
+
+}
