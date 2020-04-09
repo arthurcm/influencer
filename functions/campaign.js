@@ -123,7 +123,7 @@ exports.createCampaign = functions.https.onCall((data, context) => {
               camapign_ref: docref.path,
               campaign_id: campaign_id,
               campaign_name: String(data.campaign_name),
-              camapgn_data: campaignData
+              campaign_data: campaignData
             })
             .then(res => {
               console.log('the update influencer results is', res.toString())

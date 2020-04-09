@@ -38,8 +38,8 @@ export class HomeComponent implements OnInit {
   }
 
   displayTime(campaign) {
-    const endTime = moment(campaign.camapgn_data.end_time).format("MMMM Do YYYY");
-    const daysLeft = moment(campaign.camapgn_data.end_time).diff(moment(), 'days');
+    const endTime = moment(campaign.campaign_data.end_time).format("MMMM Do YYYY");
+    const daysLeft = moment(campaign.campaign_data.end_time).diff(moment(), 'days');
     return `End time: ${endTime} (${daysLeft} days left)`
   }
 
@@ -48,6 +48,6 @@ export class HomeComponent implements OnInit {
   }
 
   viewCampaign(campaign) {
-    this.router.navigate(['/campaign/' + campaign.camapgn_data.campaign_id]);
+    this.router.navigate(['/campaign/' + campaign.campaign_data.campaign_id]);
   }
 }

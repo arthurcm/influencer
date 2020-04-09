@@ -1,5 +1,5 @@
 export interface Campaign {
-    camapgn_data: CampaignDetail,
+    campaign_data: CampaignDetail,
     camapign_ref: string,
     campaign_name: string,
 }
