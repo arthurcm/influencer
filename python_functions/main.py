@@ -20,7 +20,8 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
-from cloud_sql import sql_handler
+# from cloud_sql import sql_handler
+from video_intel import video_text_reg, uri_parser
 
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
@@ -380,32 +381,54 @@ def oauth_handler_gcf(request):
         'client_secret': credentials.client_secret,
         'scopes': credentials.scopes}
     print(credentials)
-    try:
-      sql_handler.save_token(flask.session['credentials'])
-    except Exception as e:
-      print(f'saving credentials to SQL error: {e}')
+    # try:
+    #   sql_handler.save_token(flask.session['credentials'])
+    # except Exception as e:
+    #   print(f'saving credentials to SQL error: {e}')
     return
 
 
-if __name__ == '__main__':
-  argparser.add_argument("--file", required=True, help="Video file to upload")
-  argparser.add_argument("--title", help="Video title", default="Test Title")
-  argparser.add_argument("--description", help="Video description",
-    default="Test Description")
-  argparser.add_argument("--category", default="22",
-    help="Numeric video category. " +
-      "See https://developers.google.com/youtube/v3/docs/videoCategories/list")
-  argparser.add_argument("--keywords", help="Video keywords, comma separated",
-    default="")
-  argparser.add_argument("--privacyStatus", choices=VALID_PRIVACY_STATUSES,
-    default=VALID_PRIVACY_STATUSES[0], help="Video privacy status.")
-  args = argparser.parse_args()
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
-  if not os.path.exists(args.file):
-    exit(f"Please specify a valid file using the --file= parameter. {args.file}")
+# Use the application default credentials
+cred = credentials.ApplicationDefault()
+firebase_admin.initialize_app(cred, {
+    'projectId': 'influencer-272204',
+})
 
-  youtube = get_authenticated_service(args)
-  try:
-    initialize_upload(youtube, args)
-  except HttpError as e:
-    print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+db = firestore.client()
+
+def video_text_reg_gcf(data, context):
+    """
+    For each video uploaded to GCS video bucket, perform text recognition, and store the results back to campaign data.
+    To deploy:
+    gcloud functions deploy video_text_reg_gcf --runtime python37 --trigger-resource influencer-272204.appspot.com --trigger-event google.storage.object.finalize
+    :param data: The Cloud Functions event payload.
+    :param context: (google.cloud.functions.Context): Metadata of triggering event.
+    :return: None
+    """
+    print(f"receving data {data} with {context}")
+    if not data['contentType'].startswith('video/'):
+        print('This is not a video')
+        return None
+
+    name = data['name']
+    bucket = data['bucket']
+    video_uri = f'gs://{bucket}/{name}'
+    try:
+        uid, campaign_id, history_id = uri_parser(name)
+    except Exception as e:
+        print(f'Parsing video URI {video_uri} error: {e}')
+        return None
+
+    try:
+        res = video_text_reg(input_uri=video_uri)
+    except Exception as e:
+        print(f'Annotating video {video_uri} exception: {e}')
+        return None
+
+    return (db.collection(u'campaigns').document(campaign_id)
+            .collection(u'campaignHistory').document(history_id)
+            .set({u'text_reg_res': res}))
