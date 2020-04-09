@@ -11,7 +11,6 @@ import * as moment from 'moment';
     styleUrls: ['./home.component.scss'],
 })
 export class HomeComponent implements OnInit {
-
     campaigns: Campaign[];
 
     constructor(
