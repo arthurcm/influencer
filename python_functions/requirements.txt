@@ -5,6 +5,7 @@ google-api-python-client
 google-cloud-storage
 google-auth-oauthlib
 firebase_admin
+google-cloud-language
 google-cloud-videointelligence
 Flask==1.0.2
 

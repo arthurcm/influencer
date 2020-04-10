@@ -3,8 +3,6 @@ from google.cloud import videointelligence
 
 
 video_client = videointelligence.VideoIntelligenceServiceClient()
-features = [videointelligence.enums.Feature.TEXT_DETECTION]
-
 
 def uri_parser(video_name):
     """
@@ -23,6 +21,7 @@ def video_text_reg(input_uri, confidence_threshold=0.95):
     :param confidence_threshold: confidence threshold to filter out less-reliable detection results.
     :return:
     """
+    features = [videointelligence.enums.Feature.TEXT_DETECTION]
     operation = video_client.annotate_video(input_uri=input_uri, features=features)
 
     print("\nProcessing video for text detection.")
@@ -64,3 +63,26 @@ def video_text_reg(input_uri, confidence_threshold=0.95):
         res.append(cur_res)
     return res
 
+
+def explicit_content_detect(input_uri):
+    features = [videointelligence.enums.Feature.EXPLICIT_CONTENT_DETECTION]
+
+    operation = video_client.annotate_video(input_uri, features=features)
+    print("\nProcessing video for explicit content annotations:")
+
+    result = operation.result(timeout=90)
+    print("\nFinished processing.")
+
+    res = []
+    # first result is retrieved because a single video was processed
+    for frame in result.annotation_results[0].explicit_annotation.frames:
+        likelihood = videointelligence.enums.Likelihood(frame.pornography_likelihood)
+        frame_time = frame.time_offset.seconds + frame.time_offset.nanos / 1e9
+        print("Time: {}s".format(frame_time))
+        print("\tpornography: {}".format(likelihood.name))
+        if likelihood.name == "VERY_LIKELY":
+            cur_res = {}
+            cur_res['frame_time'] = frame_time
+            cur_res['likelihood'] = likelihood.name
+            res.append(cur_res)
+    return res

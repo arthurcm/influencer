@@ -11,6 +11,7 @@ import json
 import hashlib
 from argparse import Namespace
 import flask
+from flask import Flask
 from google.cloud import storage
 from google.cloud.storage.blob import Blob
 from apiclient.discovery import build
@@ -22,6 +23,7 @@ from oauth2client.tools import argparser, run_flow
 
 # from cloud_sql import sql_handler
 from video_intel import video_text_reg, uri_parser
+from nlp_gcp import nlp_text_sentiment
 
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
@@ -400,6 +402,7 @@ firebase_admin.initialize_app(cred, {
 
 db = firestore.client()
 
+
 def video_text_reg_gcf(data, context):
     """
     For each video uploaded to GCS video bucket, perform text recognition, and store the results back to campaign data.
@@ -432,3 +435,31 @@ def video_text_reg_gcf(data, context):
     return (db.collection(u'campaigns').document(campaign_id)
             .collection(u'campaignHistory').document(history_id)
             .set({u'text_reg_res': res}))
+
+
+def nlp_text_sentiment_gcf(request):
+    """
+    To deploy:
+    gcloud functions deploy nlp_text_sentiment_gcf --runtime python37 --trigger-http
+    Args:
+        request (flask.Request): The request object.
+        <http://flask.pocoo.org/docs/1.0/api/#flask.Request>
+    Returns:
+        The response text, or any set of values that can be turned into a
+        Response object using `make_response`
+        <http://flask.pocoo.org/docs/1.0/api/#flask.Flask.make_response>.
+    """
+    request_json = request.get_json(silent=True)
+    request_args = request.args
+
+    if request_json and 'text' in request_json:
+        text = request_json['text']
+    elif request_args and 'name' in request_args:
+        text = request_args['text']
+    else:
+        return Flask.make_response(app, 'Request missing text field', code=400)
+    try:
+        score, magnitude = nlp_text_sentiment(text)
+    except Exception as e:
+        return Flask.make_response(app, f'NLP API error: {e}', code=400)
+    return json.dumps({'score':  str(round(score, 2)), 'magnitude':  str(round(magnitude, 2))})
