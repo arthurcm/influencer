@@ -1,4 +1,3 @@
-aabb
 <div class="dropzone" 
      dropzone
      (hovered)="toggleHover($event)"
@@ -24,5 +23,5 @@ aabb
 <h3>Uploads</h3>
 
 <div *ngFor="let file of files">
-  <upload-task [file]="file"></upload-task>
+  <upload-task [file]="file" [campaign]="campaign" (onUploadSuccess)="uploadSuccess($event)"></upload-task>
 </div>

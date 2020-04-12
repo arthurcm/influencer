@@ -35,29 +35,49 @@ export class ConceptFeedbackComponent implements OnInit {
                     this.campaign = campaign;
                 }
             });
+            this.newFeedback = this.campaign.feed_back;
             console.log(this.campaign);
         });
     }
 
     provideFeedback() {
-
         const data = {
-            campaignId: this.campaignId,
             campaign_id: this.campaignId,
-            historyId: 'KEZf5E2jYQnohWlCUpmO',
-            history_id: 'KEZf5E2jYQnohWlCUpmO',
+            history_id: this.historyId,
             feed_back: this.newFeedback,
         };
-        // this.campaign['campaignId'] = this.campaign.campaign_id;
-
-        // this.campaign['historyId'] = 'KEZf5E2jYQnohWlCUpmO'; // this.campaign.history_id;
-        // this.campaign.feed_back = this.newFeedback;
-
         console.log(this.campaign);
         const callable = this.fns.httpsCallable('provideFeedback');
         callable(data).subscribe(result => {
             console.log(result);
+            this.router.navigate([
+                `/campaign/${this.campaign.campaign_id}`,
+            ]);
         });
     }
 
+    approveConcept() {
+        const callable = this.fns.httpsCallable('provideFeedback');
+        callable(
+            {
+                campaign_id: this.campaignId,
+                history_id: this.historyId,
+                feed_back: this.newFeedback,
+            }
+        ).subscribe(result => {
+            console.log(result);
+            const callable2 = this.fns.httpsCallable('finalizeCampaign');
+            callable2(
+                {
+                    campaign_id: this.campaignId,
+                    history_id: this.historyId,
+                }
+            ).subscribe(result2 => {
+                console.log(result2);
+                this.router.navigate([
+                    `/campaign/${this.campaign.campaign_id}`,
+                ]);
+            });
+        });
+    }
 }

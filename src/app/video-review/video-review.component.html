@@ -1,1 +1,26 @@
-<p>video-review works!</p>
+<div class="concept-content">
+    <mat-card class="input-card" *ngIf="campaign">
+        <mat-card-header>
+            Uploaded Video
+        </mat-card-header>
+        <mat-card-content>
+            <video controls preload="auto" #videoPlayer>
+                <source src="{{campaign.video}}" type="video/mp4" />
+                Browser not supported
+            </video>
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card class="input-card">
+        <mat-card-header>
+            Feedback
+        </mat-card-header>
+        <mat-card-content>
+            <mat-form-field class="full-text-area">
+                <textarea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
+            </mat-form-field>
+            <button mat-button (click)="provideFeedback()">Leave Feedback</button>
+            <button mat-button (click)="approveVideo()">Approve Concept</button>
+        </mat-card-content>
+    </mat-card>
+</div>

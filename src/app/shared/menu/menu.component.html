@@ -1,7 +1,7 @@
 <div class="menu-bar">
-    <button mat-button class="menu-button">Home</button>
+    <button mat-button class="menu-button" (click)="goHome()">Home</button>
 
-    <button mat-button class="menu-button" [matMenuTriggerFor]="belowMenu">Campaign</button>
+    <button mat-button class="menu-button" [matMenuTriggerFor]="belowMenu" (click)="goHome()">Campaign</button>
     <mat-menu #belowMenu="matMenu" yPosition="below">
     <button mat-menu-item>Item 1</button>
     <button mat-menu-item>Item 2</button>
