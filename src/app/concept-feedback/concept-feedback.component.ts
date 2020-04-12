@@ -44,8 +44,8 @@ export class ConceptFeedbackComponent implements OnInit {
         const data = {
             campaignId: this.campaignId,
             campaign_id: this.campaignId,
-            historyId: 'KEZf5E2jYQnohWlCUpmO',
-            history_id: 'KEZf5E2jYQnohWlCUpmO',
+            historyId: this.historyId,
+            history_id: this.historyId,
             feed_back: this.newFeedback,
         };
         // this.campaign['campaignId'] = this.campaign.campaign_id;

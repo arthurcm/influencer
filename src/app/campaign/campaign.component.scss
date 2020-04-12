@@ -1,3 +1,5 @@
+@import 'common';
+
 .left-panel {
     width: 33.3%;
     display: inline-block;
@@ -10,32 +12,23 @@
     .campaign-time {
         margin:20px;
     }
-    .basic-card {
-        margin: 20px;
-        width: 100%;
-        padding: 0px;
-    
-        .mat-card-header {
-            padding: 15px;
-            background-color: lightgrey;
-        }
-        .mat-card-content {
-            padding: 10px;
+}
+
+.basic-card {
+    margin: 20px;
+    padding: 0px;
+
+    .mat-card-header {
+        padding: 15px;
+        background-color: $COLOR_SECONDARY;
+        ::ng-deep {
+            .mat-card-header-text {
+                margin: 0px;
+            }
         }
     }
-    
-    .millstone-card {
-        margin: 20px;
-        width: 100%;
-        padding: 0px;
-    
-        .mat-card-header {
-            padding: 15px;
-            background-color: lightgrey;
-        }
-        .mat-card-content {
-            padding: 10px;
-        }
+    .mat-card-content {
+        padding: 10px;
     }
 }
 
@@ -49,8 +42,67 @@
     width: 66.6%;
     display: inline-block;
     vertical-align: top;
+
+    .concept-version {
+        text-align: center;
+        font-size: small;
+        color: lightgrey;
+    }
+    
+    .concept-box, .feedback-box {
+        width: calc(100% - 60px);
+        min-height: 35px;
+        padding: 5px 5px 5px 10px;
+        margin: 10px;
+        border-radius: 3px;
+        line-height: 30px;
+        position: relative;
+        color: white;
+        background-color: $COLOR_SECONDARY;
+    }
+
+    .concept-box {
+        margin-left: 30px;
+    }
+
+    .feedback-box {
+        margin-right: 30px;
+    }
+
+    .feedback-box:before{
+        content: '';
+        width: 0px;
+        height: 0px;
+        position: absolute;
+        border: 6px solid;
+        border-color: transparent $COLOR_SECONDARY transparent transparent;
+        left: -12px;
+        top: 10px;
+    }
+
+    .concept-box:after{
+        content: '';
+        width: 0px;
+        height: 0px;
+        position: absolute;
+        border: 6px solid;
+        border-color: transparent transparent transparent $COLOR_SECONDARY;
+        right: -12px;
+        top: 10px;
+    }
+
+    .concept-box:hover, .feedback-box:hover{
+        opacity: .9;
+    }
 }
 
+.full-text-area {
+    width: 100%;
+    textarea {
+        resize: none;
+        height: 100px;
+    }
+}
 .version-list {
     width: 33.3%;
     display: inline-block;

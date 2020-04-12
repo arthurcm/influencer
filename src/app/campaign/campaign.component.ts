@@ -20,6 +20,7 @@ export class CampaignComponent implements OnInit {
     itemsCollection;
     items;
 
+    conceptCampaignList: CampaignDetail[];
     newContentConcept = '';
 
     constructor(
@@ -43,6 +44,14 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('getCampaign');
         callable({ campaignId: this.campaignId }).subscribe(result => {
             this.campaign = result[0];
+            // with concept
+            const conceptCampaignList = [];
+            result.forEach(campaign => {
+                if (campaign.content_concept) {
+                    conceptCampaignList.push(campaign);
+                }
+            });
+            this.conceptCampaignList = conceptCampaignList;
             this.campaignHistory = result;
             console.log(result);
         });

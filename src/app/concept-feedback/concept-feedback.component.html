@@ -1,9 +1,23 @@
 <div class="concept-content">
-    Concept: {{ campaign.content_concept }}
-    Feedback: {{ campaign.feed_back }}
-    <mat-form-field class="example-full-width">
-        <textarea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
-    </mat-form-field>
+    <mat-card class="input-card">
+        <mat-card-header>
+            Concept Content
+        </mat-card-header>
+        <mat-card-content>
+            {{ campaign.content_concept }}
+        </mat-card-content>
+    </mat-card>
 
-    <button mat-stroked-button (click)="provideFeedback()">Leave Feedback</button>
+    <mat-card class="input-card">
+        <mat-card-header>
+            Feedback
+        </mat-card-header>
+        <mat-card-content>
+            <mat-form-field class="full-text-area">
+                <textarea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
+            </mat-form-field>
+            <button mat-button (click)="provideFeedback()">Leave Feedback</button>
+            <button mat-button (click)="provideFeedback()">Approve Concept</button>
+        </mat-card-content>
+    </mat-card>
 </div>

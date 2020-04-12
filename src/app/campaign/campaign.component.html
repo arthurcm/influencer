@@ -20,7 +20,7 @@
                 ...
             </mat-card-content>
         </mat-card>
-        <mat-card *ngIf="campaign" class="millstone-card">
+        <mat-card *ngIf="campaign" class="basic-card">
             <mat-card-header>
                 Millstones
             </mat-card-header>
@@ -40,19 +40,33 @@
             <mat-step>
               <ng-template matStepLabel>Concept</ng-template>
               <div>
-                <div>
-                    <div class="item-title">Content Concept:</div>
-                    <mat-form-field class="example-full-width">
-                        <textarea matInput [(ngModel)]="newContentConcept" placeholder=""></textarea>
-                    </mat-form-field>
-                    <button mat-stroked-button (click)="AddNewConcept()">Create New Concept</button>
-                </div>
-        
+                <mat-card class="basic-card">
+                    <mat-card-header>
+                        New Content Concept
+                    </mat-card-header>
+                    <mat-card-content>
+                        <mat-form-field class="full-text-area">
+                            <textarea matInput [(ngModel)]="newContentConcept" placeholder=""></textarea>
+                        </mat-form-field>
+                        <button mat-stroked-button (click)="AddNewConcept()">Create New Concept</button>
+                    </mat-card-content>
+                </mat-card>
               </div>
               <div class="concept-content">
-                  Concept: {{ campaign.content_concept }}
-                  Feedback: {{ campaign.feed_back }}
-                  <button mat-stroked-button (click)="leaveFeedback()">Leave Feedback</button>
+                    <div class="concept-version-container" *ngFor="let campaign of conceptCampaignList; index as i">
+                        <div class="concept-version">
+                            ----------------    v{{conceptCampaignList.length - i}}   ----------------
+                        </div>
+                        <div class="concept-box">
+                            {{ campaign.content_concept }}
+                        </div>
+                        <div class="feedback-box" *ngIf="campaign.feed_back">
+                            {{ campaign.feed_back }}
+                        </div>
+
+                        <button mat-button (click)="leaveFeedback()">Leave Feedback</button>
+                        <button mat-button (click)="leaveFeedback()">Send</button>
+                    </div>
               </div>
               <div class="version-list">
                 <mat-list>
@@ -64,7 +78,35 @@
             </mat-step>
             <mat-step>
                 <ng-template matStepLabel>Video</ng-template>
-                <app-uploader></app-uploader>
+                <mat-card class="basic-card">
+                    <mat-card-header>
+                        Upload New Video
+                    </mat-card-header>
+                    <mat-card-content>
+                        <app-uploader></app-uploader>
+                    </mat-card-content>
+                </mat-card>
+
+                <div class="concept-content">
+                    <div class="concept-version-container" *ngFor="let campaign of conceptCampaignList; index as i">
+                        <div class="concept-version">
+                            ----------------    v{{conceptCampaignList.length - i}}   ----------------
+                        </div>
+                        <div class="concept-box">
+                            <video controls preload="auto" #videoPlayer>
+                                <source src="https://firebasestorage.googleapis.com/v0/b/influencer-272204.appspot.com/o/video%2FHK0fpmQI7WOGUDwdmVpPffis7hY2%2F1586618993177_%5E2BC8733D5C2006CA8CB3926E17C4F5752866A5574DB64E0128%5Epdefault_4f519a3f-cb26-4040-97a0-f7c9e8c7b49d_distr.mp4?alt=media&token=8ed91d53-1986-4090-87a8-9ef4149d33a4" type="video/mp4" />
+                                Browser not supported
+                            </video>
+                        </div>
+                        <div class="feedback-box" *ngIf="campaign.feed_back">
+                            {{ campaign.feed_back }}
+                        </div>
+
+                        <button mat-button (click)="leaveFeedback()">Leave Feedback</button>
+                        <button mat-button (click)="leaveFeedback()">Send</button>
+                    </div>
+              </div>
+                
             </mat-step>
             <mat-step>
               <ng-template matStepLabel>Done</ng-template>
