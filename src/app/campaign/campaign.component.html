@@ -64,8 +64,8 @@
                             {{ campaign.feed_back }}
                         </div>
 
-                        <button mat-button (click)="leaveFeedback()">Leave Feedback</button>
-                        <button mat-button (click)="leaveFeedback()">Send</button>
+                        <button mat-button (click)="leaveFeedback(campaign)">Leave Feedback</button>
+                        <button mat-button (click)="leaveFeedback(campaign)">Send</button>
                     </div>
               </div>
               <div class="version-list">
@@ -83,18 +83,18 @@
                         Upload New Video
                     </mat-card-header>
                     <mat-card-content>
-                        <app-uploader></app-uploader>
+                        <app-uploader [campaign]="campaign" (onUploadSuccess)="uploadSuccess($event)"></app-uploader>
                     </mat-card-content>
                 </mat-card>
 
                 <div class="concept-content">
-                    <div class="concept-version-container" *ngFor="let campaign of conceptCampaignList; index as i">
+                    <div class="concept-version-container" *ngFor="let campaign of videoCampaignList; index as i">
                         <div class="concept-version">
-                            ----------------    v{{conceptCampaignList.length - i}}   ----------------
+                            ----------------    v{{videoCampaignList.length - i}}   ----------------
                         </div>
                         <div class="concept-box">
                             <video controls preload="auto" #videoPlayer>
-                                <source src="https://firebasestorage.googleapis.com/v0/b/influencer-272204.appspot.com/o/video%2FHK0fpmQI7WOGUDwdmVpPffis7hY2%2F1586618993177_%5E2BC8733D5C2006CA8CB3926E17C4F5752866A5574DB64E0128%5Epdefault_4f519a3f-cb26-4040-97a0-f7c9e8c7b49d_distr.mp4?alt=media&token=8ed91d53-1986-4090-87a8-9ef4149d33a4" type="video/mp4" />
+                                <source src="{{campaign.video}}" type="video/mp4" />
                                 Browser not supported
                             </video>
                         </div>
@@ -102,8 +102,8 @@
                             {{ campaign.feed_back }}
                         </div>
 
-                        <button mat-button (click)="leaveFeedback()">Leave Feedback</button>
-                        <button mat-button (click)="leaveFeedback()">Send</button>
+                        <button mat-button (click)="reviewVideo(campaign)">Leave Feedback</button>
+                        <button mat-button (click)="reviewVideo(campaign)">Send</button>
                     </div>
               </div>
                 

@@ -1,5 +1,5 @@
 <div class="concept-content">
-    <mat-card class="input-card">
+    <mat-card class="input-card" *ngIf="campaign">
         <mat-card-header>
             Concept Content
         </mat-card-header>
@@ -17,7 +17,7 @@
                 <textarea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
             </mat-form-field>
             <button mat-button (click)="provideFeedback()">Leave Feedback</button>
-            <button mat-button (click)="provideFeedback()">Approve Concept</button>
+            <button mat-button (click)="approveConcept()">Approve Concept</button>
         </mat-card-content>
     </mat-card>
 </div>

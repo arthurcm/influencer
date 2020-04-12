@@ -21,6 +21,7 @@ export class CampaignComponent implements OnInit {
     items;
 
     conceptCampaignList: CampaignDetail[];
+    videoCampaignList: CampaignDetail[];
     newContentConcept = '';
 
     constructor(
@@ -46,31 +47,57 @@ export class CampaignComponent implements OnInit {
             this.campaign = result[0];
             // with concept
             const conceptCampaignList = [];
+            const videoCampaignList = [];
             result.forEach(campaign => {
                 if (campaign.content_concept) {
                     conceptCampaignList.push(campaign);
+                } else if (campaign.video) {
+                    videoCampaignList.push(campaign);
                 }
             });
             this.conceptCampaignList = conceptCampaignList;
+            this.videoCampaignList = videoCampaignList;
             this.campaignHistory = result;
             console.log(result);
         });
     }
 
     AddNewConcept() {
-        this.campaign.content_concept = this.newContentConcept;
+        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        newCampaign.content_concept = this.newContentConcept;
+        newCampaign.feed_back = '';
         // this.campaign.campaignId = this.campaign.campaign_id;
-        console.log(this.campaign);
+        console.log(newCampaign);
         const callable = this.fns.httpsCallable('updateCampaign');
-        callable(this.campaign).subscribe(result => {
+        callable(newCampaign).subscribe(result => {
             console.log(result);
+            this.conceptCampaignList.splice(0, 0, newCampaign);
         });
     }
 
-
-    leaveFeedback() {
+    leaveFeedback(campaign) {
         this.router.navigate([
-            `/concept-feedback/${this.campaign.campaign_id}/${this.campaign.history_id}`,
+            `/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`,
         ]);
+    }
+
+    reviewVideo(campaign) {
+        this.router.navigate([
+            `/video-review/${campaign.campaign_id}/${campaign.history_id}`,
+        ]);
+    }
+
+    uploadSuccess(videoUrl: string) {
+        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        newCampaign.content_concept = '';
+        newCampaign.feed_back = '';
+        newCampaign.video = videoUrl;
+        // this.campaign.campaignId = this.campaign.campaign_id;
+        console.log(newCampaign);
+        const callable = this.fns.httpsCallable('updateCampaign');
+        callable(newCampaign).subscribe(result => {
+            console.log(result);
+            this.videoCampaignList.splice(0, 0, newCampaign);
+        });
     }
 }

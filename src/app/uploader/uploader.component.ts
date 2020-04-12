@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { CampaignDetail } from 'src/types/campaign';
 
 @Component({
     selector: 'app-uploader',
@@ -7,8 +8,10 @@ import { Component } from '@angular/core';
 })
 export class UploaderComponent {
 
-    isHovering: boolean;
+    @Output() onUploadSuccess = new EventEmitter<string>();
+    @Input() campaign: CampaignDetail;
 
+    isHovering: boolean;
     files: File[] = [];
 
     toggleHover(event: boolean) {
@@ -19,5 +22,10 @@ export class UploaderComponent {
         for (let i = 0; i < files.length; i++) {
             this.files.push(files.item(i));
         }
+    }
+
+    uploadSuccess(downloadURL: string) {
+        console.log(downloadURL);
+        this.onUploadSuccess.emit(downloadURL);
     }
 }
