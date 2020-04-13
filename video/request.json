@@ -1,0 +1,10 @@
+{
+    "inputUri": "gs://influencer-272204.appspot.com/video/HK0fpmQI7WOGUDwdmVpPffis7hY2/fYOafsUZXjHYNqOJKdSG/KEZf5E2jYQnohWlCUpmO/beauty_video_4.mov",
+      "features": ["SPEECH_TRANSCRIPTION"],
+      "videoContext": {
+        "speechTranscriptionConfig": {
+          "enableAutomaticPunctuation": true,
+          "filterProfanity": true
+        }
+      }
+    }
