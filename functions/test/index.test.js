@@ -51,19 +51,20 @@ create_campaign_wrapped(
 const snap_get = test.firestore.makeDocumentSnapshot({campaign_id:''});
 
 const get_campaign_wrapped = test.wrap(myfunctions.getCampaign);
-get_campaign_wrapped(snap_get, {
+get_campaign_wrapped({
+}, {
     auth: {
         uid: '123',
-        token: '12312312',
     },
 });
-get_campaign_wrapped({campaignId:'95BFQrxAAap5pREDapsc'},
-                     {
-                         auth: {
-                             uid: '123',
-                             token: '12312312',
-                         },
-                     });
+get_campaign_wrapped({
+    campaign_id:'dzXZ7bZe7Km55R7Aoqzf',
+},{
+    auth: {
+        uid: '123',
+    },
+});
+
 
 const snap_update = test.firestore.makeDocumentSnapshot(
     {

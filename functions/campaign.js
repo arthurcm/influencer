@@ -5,7 +5,7 @@ const db = admin.firestore();
 // Get campaign meta information when been called.
 // When the "data" includes a campaign's id, then return one camapign's information
 // When the "data" does not include camapign's id, then return list of campaigns that current influencer are related to.
-exports.getCampaign = functions.https.onCall((data, context) => {
+exports.getCampaign = functions.https.onCall(async (data, context) => {
 
     // Authentication / user information is automatically added to the request.
     const uid = context.auth.uid;
@@ -14,12 +14,12 @@ exports.getCampaign = functions.https.onCall((data, context) => {
     if (!context.auth) {
         // Throwing an HttpsError so that the client gets the error details.
         throw new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-          'while authenticated.');
+           'while authenticated.');
     }
     const markers = [];
-    if(!data.campaignId){
+    if(!data.campaign_id){
         console.log('No campaign id was provided, get all campaign meta data that belong to current user.');
-        return db.collection('influencers').doc(uid).collection('campaigns').get()
+        await db.collection('influencers').doc(uid).collection('campaigns').get()
             .then(querySnapshot => {
                 querySnapshot.docs.forEach(doc => {
                     const doc_snap = doc.data();
@@ -32,10 +32,14 @@ exports.getCampaign = functions.https.onCall((data, context) => {
                 console.log('failed to get campaign data!', err);
                 return err;
             });
+        const res = {campaigns: markers};
+        console.log('Get campaign', res);
+        return res;
     }else{
-        const campaignId = data.campaignId;
-        console.log('Querying campaign', campaignId);
-        return db.collection('campaigns').doc(campaignId).collection('campaignHistory').orderBy('time_stamp', 'desc').get()
+        const campaign_id = data.campaign_id;
+        console.log('Querying campaign', campaign_id);
+        await db.collection('campaigns').doc(campaign_id)
+            .collection('campaignHistory').orderBy('time_stamp', 'desc').get()
             .then(querySnapshot => {
                 querySnapshot.docs.forEach(doc => {
                     markers.push(doc.data());
@@ -47,12 +51,47 @@ exports.getCampaign = functions.https.onCall((data, context) => {
                 console.log('failed to get campaign data!', err);
                 return err;
             });
+        let final_history_id = '';
+        let final_campaign = {};
+        let final_video_draft_history_id = '';
+        let final_video_draft = {};
+
+        await db.collection('campaigns').doc(campaign_id).get()
+            .then(camSnapShot => {
+                if (!camSnapShot.exists){
+                    return {};
+                }else{
+                    const campaignData = camSnapShot.data();
+                    final_history_id = camSnapShot.get('final_history_id');
+                    final_campaign = camSnapShot.get('final_campaign');
+                    final_video_draft_history_id = camSnapShot.get('final_video_draft_history_id');
+                    final_video_draft = camSnapShot.get('final_video_draft');
+                    return {
+                        final_history_id,
+                        final_campaign,
+                        final_video_draft_history_id,
+                        final_video_draft,
+                    };
+                }
+            })
+            .catch(err => {
+                console.log('failed to get campaign data!', err);
+                return err;
+            });
+        const res = {
+            campaign_hisotrys: markers,
+            final_history_id,
+            final_campaign,
+            final_video_draft_history_id,
+            final_video_draft,
+        };
+        return res;
     }
 });
 
 function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
     if (!campaign_id){
-        throw new functions.https.HttpsError('CampaignId must not be empty!');
+        throw new functions.https.HttpsError('campaign_id must not be empty!');
     }
     if(!uid) {
         throw new functions.https.HttpsError('New campaign must have a valid uid!');
@@ -138,7 +177,7 @@ exports.createCampaign = functions.https.onCall((data, context) => {
 
 // called by brand side to submit feed back. This is a special case of updateCampaign, and is provided to
 // simplify API layer.
-// it requires three fields: campaignId, historyId, and feed_back
+// it requires three fields: campaign_id, historyId, and feed_back
 exports.provideFeedback = functions.https.onCall((data, context) => {
     // Checking that the user is authenticated.
     if (!context.auth) {
@@ -196,7 +235,7 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
 
     if (!data.campaign_id) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-          'with a specific campaignId.');
+          'with a specific campaign_id.');
     }
 
     // Authentication / user information is automatically added to the request.
@@ -220,7 +259,7 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     batch.update(influencerCamRef, {campaign_data: newCamp});
-    return batch.commit()
+    batch.commit()
         .then(res => {
             console.log('Transaction completed.');
             return res;
@@ -229,6 +268,10 @@ exports.updateCampaign = functions.https.onCall((data, context) => {
             console.log('Transaction failed', err);
             throw err;
         });
+    return {
+        history_id,
+        updated_campaign_data: newCamp,
+    };
 });
 
 
@@ -258,7 +301,7 @@ function writeFinalCampaign_callback(campaignData, uid, campaign_id, history_id)
     const influencerCamRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.update(influencerCamRef, {campaign_data: campaignData});
+    batch.set(influencerCamRef, {campaign_data: campaignData, final_history_id: history_id});
     return batch.commit()
         .then(res => {
             console.log('Transaction completed.');
@@ -280,7 +323,7 @@ function writeFinalVideoDrfat_callback(campaignData, uid, campaign_id, history_i
     const influencerCamRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.update(influencerCamRef, {video_draft_data: campaignData});
+    batch.set(influencerCamRef, {video_draft_data: campaignData, final_video_draft_history_id: history_id});
     return batch.commit()
         .then(res => {
             console.log('Transaction completed.');
@@ -294,7 +337,7 @@ function writeFinalVideoDrfat_callback(campaignData, uid, campaign_id, history_i
 
 
 // called when the existing campaign information is approved or settled (skipped negotiation phase)
-// it requires two fields: campaignId, historyId
+// it requires two fields: campaign_id, historyId
 exports.finalizeCampaign = functions.https.onCall((data, context) => {
     // Checking that the user is authenticated.
     if (!context.auth) {
@@ -321,7 +364,7 @@ exports.finalizeCampaign = functions.https.onCall((data, context) => {
 });
 
 // called when the current uploaded video is finalized or approved.
-// similar to finalizeCampaign, it requires two fields: campaignId, historyId
+// similar to finalizeCampaign, it requires two fields: campaign_id, history_id
 exports.finalizeVideoDraft = functions.https.onCall((data, context) => {
     // Checking that the user is authenticated.
     if (!context.auth) {
@@ -346,19 +389,3 @@ exports.finalizeVideoDraft = functions.https.onCall((data, context) => {
     const history_id = data.history_id;
     return finalizeAndWriteCampaignData(campaign_id, history_id, writeFinalVideoDrfat_callback, uid);
 });
-
-// exports.updateDraft = functions.https.onCall((data, context) => {
-//   // Checking that the user is authenticated.
-//   if (!context.auth) {
-//     // Throwing an HttpsError so that the client gets the error details.
-//     return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-//         'while authenticated.');
-//   }
-
-//   if (!data.campaign_id) {
-//     return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-//         'with a specific campaignId.');
-//   }
-
-// });
-
