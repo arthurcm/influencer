@@ -52,8 +52,14 @@ export class CampaignComponent implements OnInit {
             const videoCampaignList = [];
             this.campaignHistory.forEach(campaign => {
                 if (campaign.content_concept) {
+                    if (result.final_history_id === campaign.history_id) {
+                        campaign['is_final'] = true;
+                    }
                     conceptCampaignList.push(campaign);
                 } else if (campaign.video) {
+                    if (result.final_video_draft_history_id === campaign.history_id) {
+                        campaign['is_final'] = true;
+                    }
                     videoCampaignList.push(campaign);
                 }
             });

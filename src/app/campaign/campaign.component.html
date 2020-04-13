@@ -57,24 +57,23 @@
                         <div class="concept-version">
                             ----------------    v{{conceptCampaignList.length - i}}   ----------------
                         </div>
-                        <div class="concept-box">
+                        <div class="concept-box" [ngClass]="{'is-final': campaign.is_final}">
                             {{ campaign.content_concept }}
                         </div>
-                        <div class="feedback-box" *ngIf="campaign.feed_back">
+                        <div class="feedback-box" *ngIf="campaign.feed_back" [ngClass]="{'is-final': campaign.is_final}">
                             {{ campaign.feed_back }}
                         </div>
-
                         <button mat-button (click)="leaveFeedback(campaign)">Leave Feedback</button>
                         <button mat-button (click)="leaveFeedback(campaign)">Send</button>
                     </div>
               </div>
-              <div class="version-list">
+              <!-- <div class="version-list">
                 <mat-list>
                     <mat-list-item> v1 </mat-list-item>
                     <mat-list-item> v2 </mat-list-item>
                     <mat-list-item> v3 </mat-list-item>
                 </mat-list>
-              </div>
+              </div> -->
             </mat-step>
             <mat-step>
                 <ng-template matStepLabel>Video</ng-template>
@@ -92,13 +91,13 @@
                         <div class="concept-version">
                             ----------------    v{{videoCampaignList.length - i}}   ----------------
                         </div>
-                        <div class="concept-box">
+                        <div class="concept-box" [ngClass]="{'is-final': campaign.is_final}">
                             <video controls preload="auto" #videoPlayer>
                                 <source src="{{campaign.video}}" type="video/mp4" />
                                 Browser not supported
                             </video>
                         </div>
-                        <div class="feedback-box" *ngIf="campaign.feed_back">
+                        <div class="feedback-box" *ngIf="campaign.feed_back" [ngClass]="{'is-final': campaign.is_final}">
                             {{ campaign.feed_back }}
                         </div>
 
