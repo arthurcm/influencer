@@ -24,7 +24,7 @@ export class HomeComponent implements OnInit {
     ngOnInit() {
         const callable = this.fns.httpsCallable('getCampaign');
         callable({}).subscribe(result => {
-            this.campaigns = result;
+            this.campaigns = result.campaigns;
             console.log(result);
         });
     }

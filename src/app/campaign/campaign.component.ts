@@ -43,12 +43,14 @@ export class CampaignComponent implements OnInit {
 
     ngOnInit() {
         const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaignId: this.campaignId }).subscribe(result => {
-            this.campaign = result[0];
+        callable({ campaign_id: this.campaignId }).subscribe(result => {
+            console.log(result);
+            this.campaignHistory = result.campaign_hisotrys;
+            this.campaign = this.campaignHistory[0];
             // with concept
             const conceptCampaignList = [];
             const videoCampaignList = [];
-            result.forEach(campaign => {
+            this.campaignHistory.forEach(campaign => {
                 if (campaign.content_concept) {
                     conceptCampaignList.push(campaign);
                 } else if (campaign.video) {
@@ -57,8 +59,6 @@ export class CampaignComponent implements OnInit {
             });
             this.conceptCampaignList = conceptCampaignList;
             this.videoCampaignList = videoCampaignList;
-            this.campaignHistory = result;
-            console.log(result);
         });
     }
 
@@ -71,7 +71,7 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('updateCampaign');
         callable(newCampaign).subscribe(result => {
             console.log(result);
-            this.conceptCampaignList.splice(0, 0, newCampaign);
+            this.conceptCampaignList.splice(0, 0, result.updated_campaign_data);
         });
     }
 
@@ -97,7 +97,7 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('updateCampaign');
         callable(newCampaign).subscribe(result => {
             console.log(result);
-            this.videoCampaignList.splice(0, 0, newCampaign);
+            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
         });
     }
 }

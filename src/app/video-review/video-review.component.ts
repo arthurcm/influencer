@@ -29,8 +29,8 @@ export class VideoReviewComponent implements OnInit {
 
     ngOnInit(): void {
         const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaignId: this.campaignId }).subscribe(result => {
-            result.forEach(campaign => {
+        callable({ campaign_id: this.campaignId }).subscribe(result => {
+            result.campaign_hisotrys.forEach(campaign => {
                 if (campaign.history_id === this.historyId) {
                     this.campaign = campaign;
                 }
@@ -51,6 +51,9 @@ export class VideoReviewComponent implements OnInit {
             }
         ).subscribe(result => {
             console.log(result);
+            this.router.navigate([
+                `/campaign/${this.campaign.campaign_id}`,
+            ]);
         });
     }
 
