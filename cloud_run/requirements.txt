@@ -4,10 +4,11 @@ google-cloud-secret-manager
 google-api-python-client
 google-cloud-storage
 google-auth-oauthlib
+google-cloud-logging
 firebase_admin
 google-cloud-language
 google-cloud-videointelligence
-Flask
+flask
 
 SQLAlchemy
 PyMySQL==0.9.3

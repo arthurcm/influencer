@@ -112,7 +112,8 @@ class Sqlhandler:
 
         # [START cloud_sql_postgres_sqlalchemy_connection]
         # Preparing a statement before hand can help protect against injections.
-        stmt = sqlalchemy.text(f'insert into authentication (refresh_token, token, client_id) values ({refresh_token}, {token}, {client_id})')
+        stmt = sqlalchemy.text('insert into authentication (refresh_token, token) values (:refresh_token, :token)')
+        stmt = stmt.bindparams(refresh_token=refresh_token, token=token)
         try:
             # Using a with statement ensures that the connection is always released
             # back into the pool at the end of statement (even if an error occurs)
@@ -125,7 +126,7 @@ class Sqlhandler:
             self.logger.exception(e)
             return Response(
                 status=500,
-                response="Unable to update authentication"
+                response=f"Unable to update authentication: {e}"
             )
             # [END_EXCLUDE]
         # [END cloud_sql_postgres_sqlalchemy_connection]

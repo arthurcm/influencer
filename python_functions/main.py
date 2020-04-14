@@ -11,7 +11,6 @@ import json
 import hashlib
 from argparse import Namespace
 import flask
-from flask import Flask
 from google.cloud import storage
 from google.cloud.storage.blob import Blob
 from apiclient.discovery import build
@@ -19,9 +18,9 @@ from apiclient.errors import HttpError
 from apiclient.http import MediaFileUpload
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
-from oauth2client.tools import argparser, run_flow
+from oauth2client.tools import run_flow
 
-# from cloud_sql import sql_handler
+from cloud_run.cloud_sql import sql_handler
 from video_intel import video_text_reg, uri_parser
 from nlp_gcp import nlp_text_sentiment
 
@@ -302,7 +301,6 @@ def _upload_video_youtube_internal(request_json):
       print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
 
 
-import google.oauth2.credentials
 import google_auth_oauthlib.flow
 
 from flask import Flask
@@ -351,7 +349,7 @@ def oauth_handler_gcf(request):
     """
     Handle the Oauth response after user consents to redirect_youtube_for_oauth_http_gcf().
     To deploy:
-    gcloud functions deploy oauth_handler_gcf --runtime python37 --trigger-http
+    gcloud functions deploy oauth_handler_gcf --runtime python37 --trigger-http --set-env-vars OAUTHLIB_RELAX_TOKEN_SCOPE=True
     """
 
     write_client_secret()
@@ -375,7 +373,8 @@ def oauth_handler_gcf(request):
     #     Store user's access and refresh tokens in your data store if
     #     incorporating this code into your real app.
     credentials = flow.credentials
-    flask.session['credentials'] = {
+    # flask.session['credentials'] = {
+    credential_data = {
         'token': credentials.token,
         'refresh_token': credentials.refresh_token,
         'token_uri': credentials.token_uri,
@@ -383,10 +382,10 @@ def oauth_handler_gcf(request):
         'client_secret': credentials.client_secret,
         'scopes': credentials.scopes}
     print(credentials)
-    # try:
-    #   sql_handler.save_token(flask.session['credentials'])
-    # except Exception as e:
-    #   print(f'saving credentials to SQL error: {e}')
+    try:
+      sql_handler.save_token(credential_data)
+    except Exception as e:
+      print(f'saving credentials to SQL error: {e}')
     return
 
 

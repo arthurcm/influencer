@@ -27,6 +27,7 @@ async function streamToString(stream) {
 
 const runtimeOpts = {
     timeoutSeconds: 300,
+    memory: '2GB'
 };
 
 
@@ -67,16 +68,24 @@ async function firestore_callback(campaign_id, history_id, outputpath, tempLocal
     return resPromise;
 }
 
-async function ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile){
+async function ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile, bucket, filePath){
+    await bucket.file(filePath).download({destination: tempLocalFile})
+        .then(() => {
+            console.log('The file has been downloaded to', tempLocalFile);
+            return;
+        })
+        .catch(err => {
+            console.log('failed to download', err);
+            throw err;
+        });
     const cmd = ffmpeg()
         .input(tempLocalFile)
-    // .outputOptions('-c:v copy') // Change these options to whatever suits your needs
+        .outputOptions('-c:v h264') // Change these options to whatever suits your needs
         .size('640x480')
-        .videoBitrate('512k')
+        // .videoBitrate('64k')
     // .outputOptions('-b:a 32k')
         .outputOptions('-f mp4')
-        .outputOptions('-timeout 5')
-        .outputOptions('-preset fast')
+        .outputOptions('-preset:v ultrafast')
         .outputOptions('-movflags frag_keyframe+empty_moov')
     // // https://github.com/fluent-ffmpeg/node-fluent-ffmpeg/issues/346#issuecomment-67299526
         .on('start', (cmdLine) => {
@@ -108,23 +117,32 @@ exports.transcodeVideo = functions.runWith(runtimeOpts).storage.object('video').
     const filePath = object.name;
     console.log('incoming file', filePath);
     const parsedTokens = uriParse(filePath);
-    console.log('URI parsed', parsedTokens);
 
     const baseFileName = `${path.basename(filePath, path.extname(filePath)) }.mov`;
     const tempLocalFile = path.join(os.tmpdir(), baseFileName);
 
     const bucket = admin.storage().bucket(object.bucket);
     console.log('downloading file', filePath, 'from', object.bucket, 'to', tempLocalFile);
-    await bucket.file(filePath).download({destination: tempLocalFile})
-        .then(() => {
-            console.log('The file has been downloaded to', tempLocalFile);
-            return;
-        })
-        .catch(err => {
-            console.log('failed to download', err);
-            throw err;
-        });
     const outputpath = tempLocalFile.replace('.mov', '.mp4');
     // Transcode
-    await ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile);
+    ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile, bucket, filePath);
+});
+
+exports.transcodeVideoAlter = functions.runWith(runtimeOpts).https.onCall((data, context) => {
+    // if(!data.contentType.startsWith('video/')){
+    //     return 'Not video, skip transcoding.';
+    // }
+    const filePath = data.name;
+    console.log('incoming file', filePath);
+    const parsedTokens = uriParse(filePath);
+
+    const baseFileName = `${path.basename(filePath, path.extname(filePath)) }.mov`;
+    const tempLocalFile = path.join(os.tmpdir(), baseFileName);
+
+    const bucket = admin.storage().bucket(data.bucket);
+    console.log('downloading file', filePath, 'from', data.bucket, 'to', tempLocalFile);
+    const outputpath = tempLocalFile.replace('.mov', '.mp4');
+
+    // Transcode
+    return ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile, bucket, filePath);
 });
