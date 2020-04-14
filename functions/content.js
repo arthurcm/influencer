@@ -27,7 +27,7 @@ async function streamToString(stream) {
 
 const runtimeOpts = {
     timeoutSeconds: 300,
-    memory: '2GB'
+    memory: '2GB',
 };
 
 

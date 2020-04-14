@@ -48,6 +48,18 @@ create_campaign_wrapped(
         },
     });
 
+// const delete_campaign_wrapped = test.wrap(myfunctions.deleteCampaign);
+// console.log('Testing campaign delete.');
+// delete_campaign_wrapped(
+//     {
+//         campaign_id:'dK5e3YW4qfTQgBfUOkqX',
+//     }, {
+//         auth: {
+//             uid: 'HK0fpmQI7WOGUDwdmVpPffis7hY2',
+//         },
+//     });
+
+
 const snap_get = test.firestore.makeDocumentSnapshot({campaign_id:''});
 
 const get_campaign_wrapped = test.wrap(myfunctions.getCampaign);

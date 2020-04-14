@@ -10,6 +10,7 @@ const email = require('./email');
 const content = require('./content');
 
 exports.createCampaign = campaign.createCampaign;
+exports.deleteCampaign = campaign.deleteCampaign;
 exports.getCampaign = campaign.getCampaign;
 exports.updateCampaign = campaign.updateCampaign;
 exports.provideFeedback = campaign.provideFeedback;

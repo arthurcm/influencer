@@ -131,7 +131,7 @@ function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
             tracking_number: String(data.tracking_number),
             influencer_id: uid,
             time_stamp,
-            history_id: String(history_id),  
+            history_id: String(history_id),
         };
         return campaignData;
     }
@@ -182,6 +182,42 @@ exports.createCampaign = functions.https.onCall((data, context) => {
         .catch(err => {
             console.error('updating influencer profile failed', err.toString());
             return err;
+        });
+});
+
+
+exports.deleteCampaign = functions.https.onCall((data, context) => {
+    // Checking that the user is authenticated.
+    if (!context.auth) {
+        // Throwing an HttpsError so that the client gets the error details.
+        throw new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+          'while authenticated.');
+    }
+
+    if (!data.campaign_id) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+          'with a specific campaign_id.');
+    }
+
+    // Authentication / user information is automatically added to the request.
+    const uid = context.auth.uid;
+    const campaign_id = data.campaign_id;
+    console.log('Deleting campaign', campaign_id, 'from influencer', uid);
+    const campaignRef = db.collection('campaigns').doc(campaign_id);
+
+    const batch = db.batch();
+    batch.delete(campaignRef);
+    const influencerCamRef = db.collection('influencers').doc(uid)
+        .collection('campaigns').doc(campaign_id);
+    batch.delete(influencerCamRef);
+    return batch.commit()
+        .then(res => {
+            console.log('Transaction completed.');
+            return res;
+        })
+        .catch(err => {
+            console.log('Transaction failed', err);
+            throw err;
         });
 });
 
