@@ -1,10 +1,10 @@
 <div class="menu-bar">
     <button mat-button class="menu-button" (click)="goHome()">Home</button>
 
-    <button mat-button class="menu-button" [matMenuTriggerFor]="belowMenu" (click)="goHome()">Campaign</button>
+    <button mat-button class="menu-button" [matMenuTriggerFor]="belowMenu">Campaign</button>
     <mat-menu #belowMenu="matMenu" yPosition="below">
-    <button mat-menu-item>Item 1</button>
-    <button mat-menu-item>Item 2</button>
+    <button mat-menu-item (click)="createNew()">Create New</button>
+    <button mat-menu-item (click)="goHome()">View All</button>
     </mat-menu>
 
     <button mat-icon-button class="icon-button" [matMenuTriggerFor]="beforeMenu" aria-label="Example icon-button with a menu">

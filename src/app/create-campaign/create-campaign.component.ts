@@ -30,6 +30,7 @@ export class CreateCampaignComponent implements OnInit {
     contact = '';
     endTime = new Date();
     milestones = [];
+    newMilestone = '';
 
     constructor(
         public auth: AngularFireAuth,
@@ -62,12 +63,12 @@ export class CreateCampaignComponent implements OnInit {
     }
 
     addMilestone() {
-        this.campaignData.milestones.push('');
-        this.milestones.push('');
+        this.campaignData.milestones.push(this.newMilestone);
+        this.newMilestone = '';
     }
 
-    milestoneChange(value, index) {
-        this.campaignData.milestones[index] = value;
+    milestoneChange(value) {
+        this.newMilestone = value;
     }
 
     createCampaign() {
