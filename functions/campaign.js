@@ -79,7 +79,7 @@ exports.getCampaign = functions.https.onCall(async (data, context) => {
                 return err;
             });
         const res = {
-            campaign_hisotrys: markers,
+            campaign_historys: markers,
             final_history_id,
             final_campaign,
             final_video_draft_history_id,
@@ -106,6 +106,14 @@ function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
         }else{
             console.log('incoming milestone needs to be an array.');
         }
+        const requirements = [];
+        if(data.requirements){
+            data.requirements.forEach((item) => {
+                requirements.push(item);
+            });
+        }else{
+            console.log('incoming requirements needs to be an array.');
+        }
         const campaignData  = {
             campaign_id,
             brand: String(data.brand),
@@ -118,9 +126,12 @@ function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
             image: String(data.image),
             video: String(data.video),
             milestones,
+            requirements,
+            shipping_address: String(data.shipping_address),
+            tracking_number: String(data.tracking_number),
             influencer_id: uid,
             time_stamp,
-            history_id: String(history_id),
+            history_id: String(history_id),  
         };
         return campaignData;
     }
