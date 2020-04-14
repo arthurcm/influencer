@@ -43,22 +43,28 @@ export class CampaignComponent implements OnInit {
 
     ngOnInit() {
         const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaignId: this.campaignId }).subscribe(result => {
-            this.campaign = result[0];
+        callable({ campaign_id: this.campaignId }).subscribe(result => {
+            console.log(result);
+            this.campaignHistory = result.campaign_hisotrys;
+            this.campaign = this.campaignHistory[0];
             // with concept
             const conceptCampaignList = [];
             const videoCampaignList = [];
-            result.forEach(campaign => {
+            this.campaignHistory.forEach(campaign => {
                 if (campaign.content_concept) {
+                    if (result.final_history_id === campaign.history_id) {
+                        campaign['is_final'] = true;
+                    }
                     conceptCampaignList.push(campaign);
                 } else if (campaign.video) {
+                    if (result.final_video_draft_history_id === campaign.history_id) {
+                        campaign['is_final'] = true;
+                    }
                     videoCampaignList.push(campaign);
                 }
             });
             this.conceptCampaignList = conceptCampaignList;
             this.videoCampaignList = videoCampaignList;
-            this.campaignHistory = result;
-            console.log(result);
         });
     }
 
@@ -71,7 +77,7 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('updateCampaign');
         callable(newCampaign).subscribe(result => {
             console.log(result);
-            this.conceptCampaignList.splice(0, 0, newCampaign);
+            this.conceptCampaignList.splice(0, 0, result.updated_campaign_data);
         });
     }
 
@@ -97,7 +103,7 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('updateCampaign');
         callable(newCampaign).subscribe(result => {
             console.log(result);
-            this.videoCampaignList.splice(0, 0, newCampaign);
+            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
         });
     }
 }

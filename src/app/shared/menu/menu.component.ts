@@ -18,4 +18,8 @@ export class MenuComponent implements OnInit {
     goHome() {
         this.router.navigate(['/home']);
     }
+
+    createNew() {
+        this.router.navigate(['/create-campaign']);
+    }
 }
