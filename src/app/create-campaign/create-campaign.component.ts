@@ -22,6 +22,9 @@ export class CreateCampaignComponent implements OnInit {
         image: '',
         video: '',
         milestones: [],
+        requirements: [],
+        shipping_address: '',
+        tracking_number: '',
     };
 
     campaignName = '';
@@ -31,6 +34,7 @@ export class CreateCampaignComponent implements OnInit {
     endTime = new Date();
     milestones = [];
     newMilestone = '';
+    newRequirement = '';
 
     constructor(
         public auth: AngularFireAuth,
@@ -69,6 +73,15 @@ export class CreateCampaignComponent implements OnInit {
 
     milestoneChange(value) {
         this.newMilestone = value;
+    }
+
+    addRequirement() {
+        this.campaignData.requirements.push(this.newRequirement);
+        this.newRequirement = '';
+    }
+
+    requirementChange(value) {
+        this.newRequirement = value;
     }
 
     createCampaign() {

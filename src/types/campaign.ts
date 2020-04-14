@@ -4,6 +4,14 @@ export interface Campaign {
     campaign_name: string;
 }
 
+export interface CampaignData {
+    campaign_historys: CampaignDetail[];
+    final_history_id: string;
+    final_campaign: CampaignDetail;
+    final_video_draft_history_id: string;
+    final_video_draft: CampaignDetail;
+}
+
 export interface CampaignDetail {
     content_concept?: string;
     image?: string;
@@ -18,5 +26,8 @@ export interface CampaignDetail {
     contacts: string;
     commision_dollar: number;
     milestones?: string[];
+    requirements?: string[];
+    shipping_address?: string;
+    tracking_number?: string;
     history_id?: string;
 }
