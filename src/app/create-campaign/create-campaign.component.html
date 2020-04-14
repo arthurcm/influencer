@@ -56,6 +56,23 @@
 
 <mat-card class="input-card">
     <mat-card-header>
+        Requirements
+    </mat-card-header>
+    <mat-card-content>
+        <div *ngFor="let requirement of campaignData.requirements">
+            <mat-checkbox> {{ requirement }}</mat-checkbox>
+        </div>
+        <mat-form-field class="example-full-width">
+            <input matInput placeholder="" [(ngModel)]="newRequirement" (ngModelChange)="requirementChange($event)">
+        </mat-form-field>
+        <span class="material-icons" (click)="addRequirement()">
+            playlist_add
+        </span>
+    </mat-card-content>
+</mat-card>
+
+<mat-card class="input-card">
+    <mat-card-header>
         Millstones
     </mat-card-header>
     <mat-card-content>

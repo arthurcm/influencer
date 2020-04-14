@@ -31,7 +31,7 @@ export class ConceptFeedbackComponent implements OnInit {
         const callable = this.fns.httpsCallable('getCampaign');
         callable({ campaign_id: this.campaignId }).subscribe(result => {
             console.log(result);
-            result.campaign_hisotrys.forEach(campaign => {
+            result.campaign_historys.forEach(campaign => {
                 if (campaign.history_id === this.historyId) {
                     this.campaign = campaign;
                 }

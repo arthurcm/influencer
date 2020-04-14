@@ -45,7 +45,7 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('getCampaign');
         callable({ campaign_id: this.campaignId }).subscribe(result => {
             console.log(result);
-            this.campaignHistory = result.campaign_hisotrys;
+            this.campaignHistory = result.campaign_historys;
             this.campaign = this.campaignHistory[0];
             // with concept
             const conceptCampaignList = [];
