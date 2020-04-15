@@ -20,7 +20,7 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run_flow
 
-from cloud_run.cloud_sql import sql_handler
+from cloud_run_auth_handler.cloud_sql import sql_handler
 from video_intel import video_text_reg, uri_parser
 from nlp_gcp import nlp_text_sentiment
 

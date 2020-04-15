@@ -1,0 +1,12 @@
+build container:
+ gcloud builds submit --tag gcr.io/influencer-272204/video_transcoding
+
+Local testing container:
+PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/video_transcoding
+
+
+To deploy auth handler with service account access to secret manager:
+gcloud run deploy videotranscoding --image gcr.io/influencer-272204/video_transcoding --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
+
+Manage/update client_secret in secret manager:
+gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
