@@ -19,8 +19,8 @@ exports.finalizeVideoDraft = campaign.finalizeVideoDraft;
 
 exports.sendWelcomeEmail = email.sendWelcomeEmail;
 
-exports.transcodeVideo = content.transcodeVideo;
-exports.transcodeVideoAlter = content.transcodeVideoAlter;
+// exports.transcodeVideo = content.transcodeVideo;
+// exports.transcodeVideoAlter = content.transcodeVideoAlter;
 
 
 exports.regiserUser = functions.auth.user().onCreate(async (user) => {

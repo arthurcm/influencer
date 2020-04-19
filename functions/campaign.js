@@ -114,6 +114,16 @@ function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
         }else{
             console.log('incoming requirements needs to be an array.');
         }
+        let extra_info = {};
+        try{
+            if(data.extra_info) {
+                extra_info = JSON.parse(data.extra_info);
+            }
+        }
+        catch(err){
+            console.log('incoming extra info needs to be json object', err);
+            extra_info = {};
+        }
         const campaignData  = {
             campaign_id,
             brand: String(data.brand),
@@ -127,6 +137,7 @@ function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
             video: String(data.video),
             milestones,
             requirements,
+            extra_info,
             shipping_address: String(data.shipping_address),
             tracking_number: String(data.tracking_number),
             influencer_id: uid,
