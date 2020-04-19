@@ -10,3 +10,11 @@ gcloud run deploy videotranscoding --image gcr.io/influencer-272204/video_transc
 
 Manage/update client_secret in secret manager:
 gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
+
+
+launch GKE:
+gcloud container clusters create video-transcoder1 --zone=us-central1-c --addons=HttpLoadBalancing,CloudRun --machine-type=n1-standard-4 --num-nodes=1 --cluster-version=1.15.9-gke.26 --enable-stackdriver-kubernetes
+
+
+local test on GKE:
+curl -vX POST http://video-transcoder-k8s.default.35.193.22.35.xip.io/transcode_gcs -d @local_test.json --header "Content-Type: application/json"

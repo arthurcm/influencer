@@ -12,6 +12,9 @@ const path = require('path');
 const os = require('os');
 const fs = require('fs');
 
+const BUCKET_NAME = 'gs://influencer-272204.appspot.com/';
+const bucket = admin.storage().bucket(BUCKET_NAME);
+
 async function streamToString(stream) {
     const chunks = [];
     return new Promise((resolve, reject) => {
@@ -31,31 +34,31 @@ function uriParse(video_name){
 }
 
 
-async function firestore_callback(campaign_id, history_id, outputpath, tempLocalFile){
+async function firestore_callback(campaign_id, history_id, transcodeLocalPath, tempLocalFile, uploadPathName){
     const CHUNK_SIZE = 200000; // each doc has to be below 1MB
-    const stat = fs.statSync(outputpath);
+    const stat = fs.statSync(transcodeLocalPath);
     const fileSize = stat.size;
     console.log('after transcoding, file size is', fileSize);
-    const NUM_CHUNKS = Math.ceil(fileSize / CHUNK_SIZE);
+    // const NUM_CHUNKS = Math.ceil(fileSize / CHUNK_SIZE);
+    //
+    // const videoTransRef = db.collection('campaigns').doc(campaign_id)
+    //     .collection('campaignHistory').doc(history_id)
+    //     .collection('videoTrans');
+    // const batch = db.batch();
+    //
+    // // Slice the video into NUM_CHUNKS and append each to the media element.
+    // for (let i = 0; i < NUM_CHUNKS; ++i) {
+    //     const startByte = CHUNK_SIZE * i;
+    //     const fileChunkStr = fs.createReadStream(transcodeLocalPath, {start:startByte, end:startByte+CHUNK_SIZE});
+    //     const curChunkStr = await streamToString(fileChunkStr);  // eslint-disable-line no-await-in-loop
+    //     console.log('processing chunk:', i);
+    //     const vtDocRef = videoTransRef.doc(String(i));
+    //     batch.set(vtDocRef, {video_transcoding:curChunkStr});
+    // }
+    // const resPromise = batch.commit();
 
-    const videoTransRef = db.collection('campaigns').doc(campaign_id)
-        .collection('campaignHistory').doc(history_id)
-        .collection('videoTrans');
-    const batch = db.batch();
-
-    // Slice the video into NUM_CHUNKS and append each to the media element.
-    for (let i = 0; i < NUM_CHUNKS; ++i) {
-        const startByte = CHUNK_SIZE * i;
-        const fileChunkStrean = fs.createReadStream(outputpath, {start:startByte, end:startByte+CHUNK_SIZE});
-        const curChunkStr = await streamToString(fileChunkStrean);  // eslint-disable-line no-await-in-loop
-        console.log('processing chunk:', i);
-        const vtDocRef = videoTransRef.doc(String(i));
-        batch.set(vtDocRef, {video_transcoding:curChunkStr});
-    }
-    const resPromise = batch.commit();
-    fs.unlinkSync(outputpath);
-    fs.unlinkSync(tempLocalFile);
-    return resPromise;
+    // upload the transcoded file to appropriate path.
+    return uploadVideoGCS(uploadPathName, transcodeLocalPath);
 }
 
 // get video dimension from local file
@@ -96,12 +99,23 @@ async function getVideoScale(filePath) {
     return finalHeight;
 }
 
-async function downloadVideoGCS(bucketPath, filePath, tempLocalFile){
-    const bucket = admin.storage().bucket(bucketPath);
+async function downloadVideoGCS(filePath, tempLocalFile){
     await bucket.file(filePath).download({destination: tempLocalFile})
         .then(() => {
             console.log('The file has been downloaded to', tempLocalFile);
-            return;
+            return 'Success!';
+        })
+        .catch(err => {
+            console.log('failed to download', err);
+            throw err;
+        });
+}
+
+async function uploadVideoGCS(filePath, tempLocalFile){
+    await bucket.upload(tempLocalFile, {destination: filePath})
+        .then(() => {
+            console.log('The file has been uploaded to', filePath);
+            return 'Success!';
         })
         .catch(err => {
             console.log('failed to download', err);
@@ -110,16 +124,41 @@ async function downloadVideoGCS(bucketPath, filePath, tempLocalFile){
 }
 
 
-async function ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile, bucketPath, filePath){
-    await downloadVideoGCS(bucketPath, filePath, tempLocalFile);
-    const final_height = await getVideoScale(tempLocalFile);
-    const video_scale_options = util.format('-filter:v scale=%s:-1', String(finalHeight));
-    console.log('Using scale option', video_scale_options);
+async function ffmpeg_transcode(filePath){
 
-    // the options here are recommened settings by Youtube
+    // The following is to handle the auth, campaign id, and history id parsing.
+    let parsedTokens = [];
+    try {
+        parsedTokens = uriParse(filePath);
+    }catch (e) {
+        console.error(('Parsing error', filePath));
+        throw new Error('Parsing error');
+    }
+
+    // this baseName does not have suffix
+    const baseFileName = `${path.basename(filePath, path.extname(filePath))}`;
+    const outputFileName = baseFileName.concat('_transcoded.mp4');
+
+    // this is the bucket path to the input data. Will be used to generate output path etc.
+    const bucketPath = path.dirname(filePath);
+
+    // this is temp local cache to download the incoming file
+    const tempLocalFilePathNosuffix = path.join(os.tmpdir(), baseFileName);
+    const tempLocalFilePath = tempLocalFilePathNosuffix.concat(path.extname(filePath));
+    console.log('Downloading file', filePath, 'from', BUCKET_NAME, 'to', tempLocalFilePath);
+    const transcodeLocalPath =  path.join(os.tmpdir(), outputFileName);
+    console.log('The file will be converted and stored temporarily at', transcodeLocalPath, 'and uploaded to', bucketPath);
+
+    await downloadVideoGCS(filePath, tempLocalFilePath);
+    const finalHeight = await getVideoScale(tempLocalFilePath);
+    const video_scale_options = util.format('-filter:v scale=-2:%s', String(finalHeight));
+    console.log('Using scale option', video_scale_options);
+    const uploadPathName = path.join(bucketPath, String(finalHeight).concat('p'), outputFileName);
+
+    // the options here are recommended settings by Youtube
     // https://gist.github.com/mikoim/27e4e0dc64e384adbcb91ff10a2d3678
     const cmd = ffmpeg()
-        .input(tempLocalFile)
+        .input(tempLocalFilePath)
         .outputOptions('-c:v libx264')
         .outputOptions('-preset slow')
         .outputOptions('-profile:v high')
@@ -139,40 +178,40 @@ async function ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile, bucketP
 
     const promiseList = [];
     cmd.on('error', (err, stdout, stderr) => {
-        console.error('An error occured during encoding', err.message);
+        console.error('An error occurred during encoding', err.message);
         console.error('stdout:', stdout);
         console.error('stderr:', stderr);
         cmd.kill('SIGSTOP');
     })
         .format('mp4')
-        .output(outputpath)
+        .output(transcodeLocalPath)
         // .output(remoteWriteStream, { end:true })
         .on('end', () => {
             console.log('Successfully re-encoded video.');
-            promiseList.push(firestore_callback(parsedTokens.campaign_id, parsedTokens.history_id, outputpath, tempLocalFile));
+            promiseList.push(
+                firestore_callback(parsedTokens.campaign_id, parsedTokens.history_id, transcodeLocalPath,
+                                   tempLocalFilePath, uploadPathName));
         })
         .run(); // as mp4 requires a seekable output (it needs to go back after having written the video file to write the file header).
+
+    try {
+        fs.unlinkSync(transcodeLocalPath);
+        fs.unlinkSync(tempLocalFilePath);
+    } catch(err) {
+        console.error(err);
+    }
     return promiseList[0];
 }
 
 module.exports = {
     handleTranscodingRequestGcs(data) {
         if (!data.contentType.startsWith('video/')) {
-            return 'Not video, skip transcoding.';
+            throw new Error('Not video, skip transcoding.');
         }
         const filePath = data.name;
         console.log('incoming file', filePath);
-        const parsedTokens = uriParse(filePath);
-
-        const baseFileName = `${path.basename(filePath, path.extname(filePath))}.mov`;
-        const tempLocalFile = path.join(os.tmpdir(), baseFileName);
-        console.log('downloading file', filePath, 'from', data.bucket, 'to', tempLocalFile);
-        // Need update here!!!
-        // Need update here!!!
-        // Need update here!!!
-        const outputpath = tempLocalFile.replace('.mov', '.mp4');
 
         // Transcode
-        return ffmpeg_transcode(parsedTokens, outputpath, tempLocalFile, data.bucket, filePath);
+        return ffmpeg_transcode(filePath);
     },
 };
