@@ -11,6 +11,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const rimraf = require('rimraf');
 
 const BUCKET_NAME = 'gs://influencer-272204.appspot.com/';
 const bucket = admin.storage().bucket(BUCKET_NAME);
@@ -95,7 +96,7 @@ async function getVideoScale(filePath) {
             break;
         }
     }
-    console.log('Adjusting resoltuion to', finalHeight, 'p');
+    console.log('Adjusting resolution to', finalHeight, 'p');
     return finalHeight;
 }
 
@@ -141,6 +142,7 @@ async function ffmpeg_transcode(filePath){
 
     // this is the bucket path to the input data. Will be used to generate output path etc.
     const bucketPath = path.dirname(filePath);
+    // rimraf.sync(path.join(os.tmpdir(), 'video'));
 
     // this is temp local cache to download the incoming file
     const tempLocalFilePathNosuffix = path.join(os.tmpdir(), baseFileName);
@@ -193,14 +195,60 @@ async function ffmpeg_transcode(filePath){
                                    tempLocalFilePath, uploadPathName));
         })
         .run(); // as mp4 requires a seekable output (it needs to go back after having written the video file to write the file header).
-
+    createVideoMeta(filePath, true, finalHeight, uploadPathName);
     try {
-        fs.unlinkSync(transcodeLocalPath);
-        fs.unlinkSync(tempLocalFilePath);
+        // fs.unlinkSync(transcodeLocalPath);
+        // fs.unlinkSync(tempLocalFilePath);
     } catch(err) {
         console.error(err);
     }
     return promiseList[0];
+}
+
+function retrieveVideoMetaRef(filePath){
+    // The following is to handle the auth, campaign id, and history id parsing.
+    let parsedTokens = [];
+    try {
+        parsedTokens = uriParse(filePath);
+    }catch (e) {
+        console.error(('Parsing error', filePath));
+        throw new Error('Parsing error for uri:'.concat(filePath));
+    }
+    const campaign_id = parsedTokens.campaign_id;
+
+    // here we will use the campaign history_id to identify unique video versions.
+    const video_id = parsedTokens.history_id;
+    return db.collection('campaigns').doc(campaign_id)
+        .collection('videos').doc(video_id);
+}
+
+function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName) {
+    const video_ref = retrieveVideoMetaRef(filePath);
+    return video_ref
+        .set({
+            uri: filePath,
+            transcoded: Boolean(transcoded),
+            resolution_height: Number(resolution_height),
+            transcoded_path: String(uploadPathName),
+        })
+        .catch(err => {
+            console.log('Error getting video meta information');
+            return err;
+        });
+}
+
+async function getVideoMeta(filePath) {
+    const video_ref = retrieveVideoMetaRef(filePath);
+    return await video_ref
+        .get()
+        .then(doc => {
+            video_meta = doc.data();
+            return video_meta;
+        })
+        .catch(err => {
+            console.log('Error getting video meta information');
+            return err;
+        });
 }
 
 module.exports = {
@@ -209,9 +257,19 @@ module.exports = {
             throw new Error('Not video, skip transcoding.');
         }
         const filePath = data.name;
+        // const skip_transcode = data.skip_transcode;
         console.log('incoming file', filePath);
-
-        // Transcode
         return ffmpeg_transcode(filePath);
     },
+    async getVideoMeta(data) {
+        if(!data.name){
+            throw new Error('Request needs to have data object with name field');
+        }
+        console.log('Create video meta data in firestore for', data);
+        const filePath = data.name;
+
+        // Transcode
+        return getVideoMeta(filePath);
+    },
 };
+
