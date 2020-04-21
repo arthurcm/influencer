@@ -8,22 +8,32 @@ import sys
 import time
 import json
 
-import hashlib
 from argparse import Namespace
 import flask
 from google.cloud import storage
 from google.cloud.storage.blob import Blob
-from apiclient.discovery import build
-from apiclient.errors import HttpError
-from apiclient.http import MediaFileUpload
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaFileUpload
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run_flow
 
-from cloud_run_auth_handler.cloud_sql import sql_handler
 from video_intel import video_text_reg, uri_parser
 from nlp_gcp import nlp_text_sentiment
+from cv_gcp import web_entities_include_geo_results_uri
 
+# Imports the Google Cloud client library
+import google.cloud.logging
+# Imports Python standard library logging
+import logging
+
+# Instantiates a client
+client = google.cloud.logging.Client()
+
+# Connects the logger to the root logging handler; by default this captures
+# all logs at INFO level and higher
+client.setup_logging()
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
 # we are handling retry logic ourselves.
@@ -300,93 +310,10 @@ def _upload_video_youtube_internal(request_json):
     except HttpError as e:
       print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
 
-
-import google_auth_oauthlib.flow
-
 from flask import Flask
 
 app = Flask(__name__)
 app.secret_key = "super secret key"
-
-def redirect_youtube_for_oauth_http_gcf(request):
-    """
-    To deploy:
-    gcloud functions deploy redirect_youtube_for_oauth_http_gcf --runtime python37 --trigger-http
-    This cloud function redirects the user to Google's Oauth server for proper video uploading access tokens.
-    """
-    write_client_secret()
-    # Create a state token to prevent request forgery.
-    # Store it in the session for later validation.
-    state = hashlib.sha256(os.urandom(1024)).hexdigest()
-
-    # Use the client_secret.json file to identify the application requesting
-    # authorization. The client ID (from that file) and access scopes are required.
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=[YOUTUBE_UPLOAD_SCOPE], state=state)
-
-    # Indicate where the API server will redirect the user after the user completes
-    # the authorization flow. The redirect URI is required. The value must exactly
-    # match one of the authorized redirect URIs for the OAuth 2.0 client, which you
-    # configured in the API Console. If this value doesn't match an authorized URI,
-    # you will get a 'redirect_uri_mismatch' error.
-    # flow.redirect_uri = 'https://influencer-272204.firebaseapp.com/__/auth/handler'
-    flow.redirect_uri = 'https://us-central1-influencer-272204.cloudfunctions.net/oauth_handler_gcf'
-
-    # Generate URL for request to Google's OAuth 2.0 server.
-    # Use kwargs to set optional request parameters.
-    authorization_url, state = flow.authorization_url(
-        # Enable offline access so that you can refresh an access token without
-        # re-prompting the user for permission. Recommended for web server apps.
-        access_type='offline',
-        # Enable incremental authorization. Recommended as a best practice.
-        include_granted_scopes='true')
-    # Store the state so the callback can verify the auth server response.
-    # flask.session['state'] = state
-    return flask.redirect(authorization_url)
-
-
-def oauth_handler_gcf(request):
-    """
-    Handle the Oauth response after user consents to redirect_youtube_for_oauth_http_gcf().
-    To deploy:
-    gcloud functions deploy oauth_handler_gcf --runtime python37 --trigger-http --set-env-vars OAUTHLIB_RELAX_TOKEN_SCOPE=True
-    """
-
-    write_client_secret()
-    print(f'current request is {request} with uri being {request.url}')
-
-    # state = flask.session['state']
-    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-        CLIENT_SECRETS_FILE, scopes=[YOUTUBE_UPLOAD_SCOPE])
-
-    flow.redirect_uri = 'https://us-central1-influencer-272204.cloudfunctions.net/oauth_handler_gcf'
-    #flask.url_for('oauth2callback', _external=True)
-
-    authorization_response = flask.request.url
-    if authorization_response.startswith('http://'):
-        authorization_response = authorization_response.replace('http://', 'https://', 1)
-    print(f'auth response is {authorization_response}')
-    flow.fetch_token(authorization_response=authorization_response)
-
-    # Store the credentials in the session.
-    # ACTION ITEM for developers:
-    #     Store user's access and refresh tokens in your data store if
-    #     incorporating this code into your real app.
-    credentials = flow.credentials
-    # flask.session['credentials'] = {
-    credential_data = {
-        'token': credentials.token,
-        'refresh_token': credentials.refresh_token,
-        'token_uri': credentials.token_uri,
-        'client_id': credentials.client_id,
-        'client_secret': credentials.client_secret,
-        'scopes': credentials.scopes}
-    print(credentials)
-    try:
-      sql_handler.save_token(credential_data)
-    except Exception as e:
-      print(f'saving credentials to SQL error: {e}')
-    return
 
 
 import firebase_admin
@@ -420,7 +347,7 @@ def video_text_reg_gcf(data, context):
     bucket = data['bucket']
     video_uri = f'gs://{bucket}/{name}'
     try:
-        uid, campaign_id, history_id = uri_parser(name)
+        uid, campaign_id, history_id, _ = uri_parser(name)
     except Exception as e:
         print(f'Parsing video URI {video_uri} error: {e}')
         return None
@@ -432,8 +359,42 @@ def video_text_reg_gcf(data, context):
         return None
 
     return (db.collection(u'campaigns').document(campaign_id)
-            .collection(u'campaignHistory').document(history_id)
-            .set({u'text_reg_res': res}))
+            .collection(u'videos').document(history_id) # note: here we use the campaign history_id to distinct videos
+            .set({u'text_reg_res': res}, merge=True))
+
+
+def web_entities_detection_gcf(data, context):
+    """
+    For each image uploaded to GCS image bucket, perform entities detection.
+    To deploy:
+    (form local)
+    gcloud functions deploy web_entities_detection_gcf --runtime python37 --trigger-resource influencer-272204.appspot.com --trigger-event google.storage.object.finalize
+    or (remotely)
+    gcloud functions deploy web_entities_detection_gcf --source https://source.developers.google.com/projects/influencer-272204/repos/github_rnap_influencer/moveable-aliases/first/paths/python_functions/ --runtime python37 --trigger-resource influencer-272204.appspot.com --trigger-event google.storage.object.finalize
+
+    :param data: The Cloud Functions event payload.
+    :param context: (google.cloud.functions.Context): Metadata of triggering event.
+    :return: None
+    """
+    logging.info(f"receving data {data} with {context}")
+    if not data['contentType'].startswith('image/'):
+        logging.info('This is not an image')
+        return None
+
+    name = data['name']
+    bucket = data['bucket']
+    image_uri = f'gs://{bucket}/{name}'
+    try:
+        uid, campaign_id, history_id, file_name = uri_parser(name)
+    except Exception as e:
+        print(f'Parsing image URI {image_uri} error: {e}')
+        return None
+    res = web_entities_include_geo_results_uri(image_uri)
+    # note: here we use the campaign history_id to distinct videos
+    return (db.collection(u'campaigns').document(campaign_id)
+            .collection(u'images').document(history_id)
+            .collection(u'single_image').document(file_name)
+            .set({u'entity_detect_res': res}, merge=True))
 
 
 def nlp_text_sentiment_gcf(request):

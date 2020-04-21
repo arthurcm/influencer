@@ -7,6 +7,7 @@ google-auth-oauthlib
 google-cloud-logging
 firebase_admin
 google-cloud-language
+google-cloud-vision
 google-cloud-videointelligence
 flask
 

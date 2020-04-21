@@ -6,12 +6,11 @@ video_client = videointelligence.VideoIntelligenceServiceClient()
 
 def uri_parser(video_name):
     """
-
     :param video_name: example URI: 'video/{uid}/{campaign_id}/{history_id}/beauty_video_1.mov'
     :return:
     """
-    _, uid, campaign_id, history_id, _ = video_name.split('/')
-    return uid, campaign_id, history_id
+    _, uid, campaign_id, history_id, file_name = video_name.split('/')
+    return uid, campaign_id, history_id, file_name
 
 
 def video_text_reg(input_uri, confidence_threshold=0.95):

@@ -230,7 +230,7 @@ function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName
             transcoded: Boolean(transcoded),
             resolution_height: Number(resolution_height),
             transcoded_path: String(uploadPathName),
-        })
+        }, {merge: true})
         .catch(err => {
             console.log('Error getting video meta information');
             return err;
