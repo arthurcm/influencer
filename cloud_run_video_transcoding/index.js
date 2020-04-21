@@ -1,6 +1,8 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 const admin = require('firebase-admin');
 admin.initializeApp();
@@ -13,8 +15,8 @@ app.post('/transcode_gcs', (req, res) => {
     return content.handleTranscodingRequestGcs(data);
 });
 
-app.get('/get_video_meta', (req, res) => {
-    const video_meta = content.getVideoMeta(req.body);
+app.get('/get_video_meta/name/:name', (req, res) => {
+    const video_meta = content.getVideoMeta(req.params);
     console.log('Retrieved video meta data', video_meta);
     return res.send(video_meta);
 });

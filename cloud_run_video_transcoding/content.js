@@ -237,13 +237,17 @@ function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName
         });
 }
 
-async function getVideoMeta(filePath) {
+function getVideoMeta(filePath) {
     const video_ref = retrieveVideoMetaRef(filePath);
-    return await video_ref
+    return video_ref
         .get()
         .then(doc => {
-            video_meta = doc.data();
-            return video_meta;
+            if (!doc.exists) {
+                console.log('No such document!');
+                return {};
+            }
+            console.log('Document data:', doc.data());
+            return doc.data();
         })
         .catch(err => {
             console.log('Error getting video meta information');
@@ -253,7 +257,10 @@ async function getVideoMeta(filePath) {
 
 module.exports = {
     handleTranscodingRequestGcs(data) {
-        if (!data.contentType.startsWith('video/')) {
+        if (!data.contentType){
+            throw new Error('ContentType needs to be video/.');
+        }
+        if (data.contentType && !data.contentType.startsWith('video/')) {
             throw new Error('Not video, skip transcoding.');
         }
         const filePath = data.name;
@@ -261,11 +268,12 @@ module.exports = {
         console.log('incoming file', filePath);
         return ffmpeg_transcode(filePath);
     },
-    async getVideoMeta(data) {
+    getVideoMeta(data) {
         if(!data.name){
+            console.log('Receiving incoming data', data);
             throw new Error('Request needs to have data object with name field');
         }
-        console.log('Create video meta data in firestore for', data);
+        console.log('Get video meta data in firestore for', data);
         const filePath = data.name;
 
         // Transcode
