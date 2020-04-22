@@ -24,6 +24,7 @@
     "@angular/platform-browser-dynamic": "~9.1.0",
     "@angular/router": "~9.1.0",
     "@babel/compat-data": "^7.8.0",
+    "@sendgrid/mail": "^7.0.1",
     "@typescript-eslint/eslint-plugin": "^2.27.0",
     "@typescript-eslint/eslint-plugin-tslint": "^2.27.0",
     "@typescript-eslint/parser": "^2.27.0",

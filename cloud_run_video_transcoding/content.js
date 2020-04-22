@@ -25,12 +25,13 @@ async function streamToString(stream) {
     });
 }
 
-function uriParse(video_name){
-    const tokens = video_name.split('/');
+function uriParse(file_name){
+    const tokens = file_name.split('/');
     return {
         uid: tokens[1],
         campaign_id: tokens[2],
         history_id: tokens[3],
+        file_name: tokens[4],
     };
 }
 
@@ -207,6 +208,20 @@ async function ffmpeg_transcode(filePath){
 
 function retrieveVideoMetaRef(filePath){
     // The following is to handle the auth, campaign id, and history id parsing.
+    return retrieveMediaMetaRef(filePath, 'videos');
+}
+
+function retrieveImageMetaRef(filePath){
+    // The following is to handle the auth, campaign id, and history id parsing.
+    return retrieveMediaMetaRef(filePath, 'images');
+}
+
+function retrieveMediaMetaRef(filePath, mediaType){
+    // mediaType has to be one of "videos", "images"
+    // The following is to handle the auth, campaign id, and history id parsing.
+    if(mediaType !== 'videos' && mediaType !== 'images'){
+        throw new Error('Currently only support videos or images as mediaType');
+    }
     let parsedTokens = [];
     try {
         parsedTokens = uriParse(filePath);
@@ -219,7 +234,7 @@ function retrieveVideoMetaRef(filePath){
     // here we will use the campaign history_id to identify unique video versions.
     const video_id = parsedTokens.history_id;
     return db.collection('campaigns').doc(campaign_id)
-        .collection('videos').doc(video_id);
+        .collection(mediaType).doc(video_id);
 }
 
 function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName) {
@@ -237,20 +252,40 @@ function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName
         });
 }
 
-function getVideoMeta(filePath) {
+async function getVideoMetaInternal(filePath) {
     const video_ref = retrieveVideoMetaRef(filePath);
     return video_ref
         .get()
         .then(doc => {
             if (!doc.exists) {
-                console.log('No such document!');
+                console.log('No such video!');
                 return {};
             }
-            console.log('Document data:', doc.data());
+            console.log('Video meta data:', doc.data());
             return doc.data();
         })
         .catch(err => {
             console.log('Error getting video meta information');
+            return err;
+        });
+}
+
+async function getImageMetaInternal(filePath) {
+    const image_ref = retrieveImageMetaRef(filePath);
+    const tokens = uriParse(filePath);
+    const file_name = tokens.file_name;
+    return image_ref.collection('single_image').doc(file_name)
+        .get()
+        .then(doc => {
+            if (!doc.exists) {
+                console.log('No such image!');
+                return {};
+            }
+            console.log('Image meta data:', doc.data());
+            return doc.data();
+        })
+        .catch(err => {
+            console.log('Error getting image meta information');
             return err;
         });
 }
@@ -268,8 +303,8 @@ module.exports = {
         console.log('incoming file', filePath);
         return ffmpeg_transcode(filePath);
     },
-    getVideoMeta(data) {
-        if(!data.name){
+    async getVideoMeta(data) {
+        if(!data.name || !data.name.startsWith('video/')){
             console.log('Receiving incoming data', data);
             throw new Error('Request needs to have data object with name field');
         }
@@ -277,7 +312,16 @@ module.exports = {
         const filePath = data.name;
 
         // Transcode
-        return getVideoMeta(filePath);
+        return await getVideoMetaInternal(filePath);
+    },
+    async getImageMeta(data) {
+        if(!data.name || !data.name.startsWith('image/')){
+            console.log('Receiving incoming data', data);
+            throw new Error('Request needs to have data object with name field');
+        }
+        const filePath = data.name;
+        console.log('Get single image meta data for ', filePath);
+        return await getImageMetaInternal(filePath);
     },
 };
 

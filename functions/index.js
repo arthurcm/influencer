@@ -6,7 +6,6 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const campaign = require('./campaign');
-const email = require('./email');
 const content = require('./content');
 
 exports.createCampaign = campaign.createCampaign;
@@ -16,12 +15,6 @@ exports.updateCampaign = campaign.updateCampaign;
 exports.provideFeedback = campaign.provideFeedback;
 exports.finalizeCampaign = campaign.finalizeCampaign;
 exports.finalizeVideoDraft = campaign.finalizeVideoDraft;
-
-exports.sendWelcomeEmail = email.sendWelcomeEmail;
-
-// exports.transcodeVideo = content.transcodeVideo;
-// exports.transcodeVideoAlter = content.transcodeVideoAlter;
-
 
 exports.regiserUser = functions.auth.user().onCreate(async (user) => {
     // send welcome email to users when signed up using Auth

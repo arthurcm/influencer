@@ -186,7 +186,7 @@ def resumable_upload(insert_request):
       time.sleep(sleep_seconds)
 
 
-def get_client_secret():
+def get_client_secret(secret_id='client_secret'):
     """
     To enable iam role access (for service accounts) to the secret, run the following:
     gcloud beta secrets add-iam-policy-binding client_secret
@@ -200,9 +200,6 @@ def get_client_secret():
 
     # GCP project in which to store secrets in Secret Manager.
     project_id = 'influencer-272204'
-
-    # ID of the secret to create.
-    secret_id = 'client_secret'
 
     # Create the Secret Manager client.
     client = secretmanager.SecretManagerServiceClient()
@@ -423,3 +420,38 @@ def nlp_text_sentiment_gcf(request):
     except Exception as e:
         return Flask.make_response(app, f'NLP API error: {e}', code=400)
     return json.dumps({'score':  str(round(score, 2)), 'magnitude':  str(round(magnitude, 2))})
+
+
+# using SendGrid's Python Library
+# https://github.com/sendgrid/sendgrid-python
+import os
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+def send_welcome_email(data, context):
+    """
+    gcloud functions deploy send_welcome_email --trigger-event providers/firebase.auth/eventTypes/user.create --trigger-resource influencer-272204 --runtime python37
+    :param data:
+    :param context:
+    :return:
+    """
+    logging.info('Function triggered by creation/deletion of user: %s' % data["uid"])
+    logging.info('Created at: %s' % data["metadata"]["createdAt"])
+
+    if 'email' in data:
+        logging.info('Email: %s' % data["email"])
+        email = data['email']
+        message = Mail(
+            from_email='influencermkting@gmail.com',
+            to_emails=email,
+            subject='Welcome to sign up with us!',
+            plain_text_content='Thanks you for signing up to our platform!')
+        try:
+            sg = SendGridAPIClient(get_client_secret('sendgrid-api-key'))
+            response = sg.send(message)
+            logging.info(response.status_code)
+            return response
+        except Exception as e:
+            logging.info(e.message)
+    else:
+        logging.error('User signed up without email, skip sending email')
