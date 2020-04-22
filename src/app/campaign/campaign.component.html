@@ -1,58 +1,71 @@
 <div *ngIf="campaign">
-    <div class="left-panel">
-        <div class="campaign-title">
-            Campaign Name: {{ campaign.campaign_name }}
-        </div>
-        <div class="campaign-time">
-            End time {{ campaign.end_time }}
-        </div>
-        <mat-card *ngIf="campaign" class="basic-card">
-            <mat-card-header>
-                Campaign Info
-            </mat-card-header>
-            <mat-card-content>
-                <div>
-                    Contacts: {{ campaign.contacts }}
-                </div>
-                <div>
-                    Commisions: {{ campaign.commision_dollar }}
-                </div>
-                ...
-            </mat-card-content>
-        </mat-card>
-        <mat-card *ngIf="campaign" class="basic-card">
-            <mat-card-header>
-                Millstones
-            </mat-card-header>
-            <mat-card-content>
-                <div  *ngFor="let item of campaign.milestones">
-                    <mat-checkbox> {{ item }}</mat-checkbox>
-                </div>
-            </mat-card-content>
-        </mat-card>
+    <div class="campaign-title">
+        Campaign - {{ campaign.campaign_name }}
     </div>
-
     <div class="right-panel">
         <mat-horizontal-stepper [linear]="true" #stepper>
             <mat-step>
-                <ng-template matStepLabel>Logistic</ng-template>
-            </mat-step>
-            <mat-step>
-              <ng-template matStepLabel>Concept</ng-template>
-              <div>
-                <mat-card class="basic-card">
+                <ng-template matStepLabel>Overview</ng-template>
+                <mat-card *ngIf="campaign" class="basic-card">
                     <mat-card-header>
-                        New Content Concept
+                        Campaign Info
                     </mat-card-header>
                     <mat-card-content>
-                        <mat-form-field class="full-text-area">
-                            <textarea matInput [(ngModel)]="newContentConcept" placeholder=""></textarea>
-                        </mat-form-field>
-                        <button mat-stroked-button (click)="AddNewConcept()">Create New Concept</button>
+                        <div>
+                            Contacts: {{ campaign.contacts }}
+                        </div>
+                        <div>
+                            Commisions: {{ campaign.commision_dollar }}
+                        </div>
+                        ...
                     </mat-card-content>
                 </mat-card>
-              </div>
-              <div class="concept-content">
+                <mat-card *ngIf="campaign" class="basic-card">
+                    <mat-card-header>
+                        Millstones
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div  *ngFor="let item of campaign.milestones">
+                            <mat-checkbox> {{ item }}</mat-checkbox>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+                <mat-card *ngIf="campaign" class="basic-card">
+                    <mat-card-header>
+                        Shipping Information
+                    </mat-card-header>
+                    <mat-card-content>
+                    </mat-card-content>
+                </mat-card>
+                <mat-card *ngIf="campaign" class="basic-card">
+                    <mat-card-header>
+                        Requirements
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div  *ngFor="let item of campaign.requirements">
+                            <mat-checkbox> {{ item }}</mat-checkbox>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+            </mat-step>
+            <mat-step>
+                <ng-template matStepLabel>
+                    <div>Concept Review</div>
+                </ng-template>
+                <div>
+                    <mat-card class="basic-card">
+                        <mat-card-header>
+                            New Content Concept
+                        </mat-card-header>
+                        <mat-card-content>
+                            <mat-form-field class="full-text-area">
+                                <textarea matInput [(ngModel)]="newContentConcept" placeholder=""></textarea>
+                            </mat-form-field>
+                            <button mat-stroked-button (click)="AddNewConcept()">Create New Concept</button>
+                        </mat-card-content>
+                    </mat-card>
+                </div>
+                <div class="concept-content">
                     <div class="concept-version-container" *ngFor="let campaign of conceptCampaignList; index as i">
                         <div class="concept-version">
                             ----------------    v{{conceptCampaignList.length - i}}   ----------------
@@ -66,17 +79,13 @@
                         <button mat-button (click)="leaveFeedback(campaign)">Leave Feedback</button>
                         <button mat-button (click)="leaveFeedback(campaign)">Send</button>
                     </div>
-              </div>
-              <!-- <div class="version-list">
-                <mat-list>
-                    <mat-list-item> v1 </mat-list-item>
-                    <mat-list-item> v2 </mat-list-item>
-                    <mat-list-item> v3 </mat-list-item>
-                </mat-list>
-              </div> -->
+                </div>
             </mat-step>
             <mat-step>
-                <ng-template matStepLabel>Video</ng-template>
+                <ng-template matStepLabel>
+                    <div>Conetent Review</div>
+                    <div class="time-info">Review Deadline {{ displayTime(campaign.end_time) }}</div>
+                </ng-template>
                 <mat-card class="basic-card">
                     <mat-card-header>
                         Upload New Video
@@ -92,10 +101,16 @@
                             ----------------    v{{videoCampaignList.length - i}}   ----------------
                         </div>
                         <div class="concept-box" [ngClass]="{'is-final': campaign.is_final}">
-                            <video controls preload="auto" #videoPlayer>
+                            <!-- <video controls preload="auto" #videoPlayer>
                                 <source src="{{campaign.video}}" type="video/mp4" />
                                 Browser not supported
-                            </video>
+                            </video> -->
+
+                            <vg-player>
+                                <video [vgMedia]="media" #media id="singleVideo" preload="auto" controls>
+                                    <source src="{{campaign.video}}" type="video/mp4">
+                                </video>
+                            </vg-player>
                         </div>
                         <div class="feedback-box" *ngIf="campaign.feed_back" [ngClass]="{'is-final': campaign.is_final}">
                             {{ campaign.feed_back }}
@@ -104,11 +119,13 @@
                         <button mat-button (click)="reviewVideo(campaign)">Leave Feedback</button>
                         <button mat-button (click)="reviewVideo(campaign)">Send</button>
                     </div>
-              </div>
-                
+                </div>
             </mat-step>
             <mat-step>
-              <ng-template matStepLabel>Done</ng-template>
+              <ng-template matStepLabel>
+                <div>Post</div>
+                <div class="time-info">Post Date {{ displayTime(campaign.extra_info?.post_time) }}</div>
+              </ng-template>
             </mat-step>
           </mat-horizontal-stepper>
     </div>

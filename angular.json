@@ -37,7 +37,10 @@
                 "src/app/modules"
               ]
             },
-            "scripts": []
+            "scripts": [
+              "node_modules/dashjs/dist/dash.all.min.js",
+              "node_modules/hls.js/dist/hls.min.js"
+            ]
           },
           "configurations": {
             "production": {

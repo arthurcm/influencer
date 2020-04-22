@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
+import { AngularFireAuth } from '@angular/fire/auth';
 
 @Component({
     selector: 'app-menu',
@@ -8,7 +9,8 @@ import { Router } from '@angular/router';
 })
 export class MenuComponent implements OnInit {
     constructor(
-        public router: Router
+        public router: Router,
+        public auth: AngularFireAuth,
     ) { }
 
     ngOnInit(): void {
@@ -21,5 +23,11 @@ export class MenuComponent implements OnInit {
 
     createNew() {
         this.router.navigate(['/create-campaign']);
+    }
+
+    logout() {
+        this.auth.signOut().then(result => {
+            this.router.navigate(['/login']);
+        });
     }
 }

@@ -9,6 +9,7 @@ import { CreateCampaignComponent } from './create-campaign/create-campaign.compo
 import { CampaignComponent } from './campaign/campaign.component';
 import { ConceptFeedbackComponent } from './concept-feedback/concept-feedback.component';
 import { VideoReviewComponent } from './video-review/video-review.component';
+import { VideoPlayerComponent } from './shared/video-player/video-player.component';
 
 const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['login']);
 
@@ -46,6 +47,10 @@ const routes: Routes = [
         component: VideoReviewComponent,
         canActivate: [AngularFireAuthGuard],
         data: { authGuardPipe: redirectUnauthorizedToLogin },
+    },
+    {
+        path: 'video-player',
+        component: VideoPlayerComponent,
     },
     { path: '',
         component: AppComponent,

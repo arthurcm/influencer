@@ -2,7 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
-import { CampaignDetail } from 'src/types/campaign';
+import { CampaignDetail, CampaignExtraInfo } from 'src/types/campaign';
+import { FormControl } from '@angular/forms';
+import * as moment from 'moment';
+// import { default as _rollupMoment, Moment, MomentFormatSpecification, MomentInput } from 'moment';
+// const moment = _rollupMoment || _moment;
 
 @Component({
     selector: 'app-create-campaign',
@@ -25,16 +29,28 @@ export class CreateCampaignComponent implements OnInit {
         requirements: [],
         shipping_address: '',
         tracking_number: '',
+        extra_info: '',
+    };
+
+    extraInfo: CampaignExtraInfo = {
+        platform: '',
     };
 
     campaignName = '';
     brand = '';
     commision = -1;
-    contact = '';
-    endTime = new Date();
+    contactName = '';
+    contactEmail = '';
+    endDate = new Date();
+    endTime = moment();
+    postDate = new Date();
+    postTime = moment();
     milestones = [];
     newMilestone = '';
     newRequirement = '';
+
+    platform = new FormControl([]);
+    platformList: string[] = ['Youtube', 'Instagram', 'Weibo', 'Tiktok'];
 
     constructor(
         public auth: AngularFireAuth,
@@ -58,8 +74,12 @@ export class CreateCampaignComponent implements OnInit {
     commisionChange(value) {
         this.campaignData.commision_dollar = value;
     }
-    contactChange(value) {
-        this.campaignData.contacts = value;
+    contactNameChange(value) {
+        // Alex Subramanyan <asub@yelp.com>
+        this.campaignData.contacts = `${this.contactName} <${this.contactEmail}>`;
+    }
+    contactEmailChange(value) {
+        this.campaignData.contacts = `${this.contactName} <${this.contactEmail}>`;
     }
 
     endTimeChange(value: Date) {
@@ -86,10 +106,22 @@ export class CreateCampaignComponent implements OnInit {
 
     createCampaign() {
         console.log(this.campaignData);
+        this.extraInfo.platform = this.platform.value;
+        this.extraInfo.post_time = Math.round(this.postDate.getTime() / 86400000) * 86400000 +
+            this.postTime.valueOf() % 86400000;
+        this.campaignData.end_time = Math.round(this.endDate.getTime() / 86400000) * 86400000 +
+        this.endTime.valueOf() % 86400000;
+        this.campaignData.extra_info = JSON.stringify(this.extraInfo);
+
+        console.log(this.campaignData);
         const callable = this.fns.httpsCallable('createCampaign');
         callable(this.campaignData).subscribe(result => {
             this.router.navigate(['/home']);
             console.log(result);
         });
+    }
+
+    removeFromList(list, i) {
+        list.splice(i, 1);
     }
 }

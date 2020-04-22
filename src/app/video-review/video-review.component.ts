@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireFunctions } from '@angular/fire/functions';
 import { CampaignDetail } from 'src/types/campaign';
+import { VideoPlayerComponent } from '../shared/video-player/video-player.component';
 
 @Component({
     selector: 'app-video-review',
@@ -11,10 +12,14 @@ import { CampaignDetail } from 'src/types/campaign';
     styleUrls: ['./video-review.component.scss'],
 })
 export class VideoReviewComponent implements OnInit {
+    @ViewChild('videoPlayeer') videoPlayer: VideoPlayerComponent;
+    @ViewChild('feedbackTextArea') textAreas: ElementRef;
+
     campaignId = '';
     historyId = '';
     newFeedback = '';
     campaign: CampaignDetail;
+    sources = [];
 
     constructor(
         public auth: AngularFireAuth,
@@ -35,6 +40,12 @@ export class VideoReviewComponent implements OnInit {
                     this.campaign = campaign;
                 }
             });
+            this.sources = [
+                {
+                    src: this.campaign.video,
+                    type: 'video/mp4',
+                },
+            ];
             this.newFeedback = this.campaign.feed_back;
             console.log(this.campaign);
         });
@@ -82,5 +93,12 @@ export class VideoReviewComponent implements OnInit {
         });
     }
 
+    getTimeStamp() {
+        const time = this.videoPlayer.getCurrentSecond();
+        const minute = Math.floor(time / 60);
+        const second = Math.round(time % 60);
+        this.newFeedback = `${this.newFeedback  }\n [${minute}:${second}] `;
+        this.textAreas.nativeElement.focus();
+    }
 }
 

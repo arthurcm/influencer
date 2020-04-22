@@ -20,6 +20,15 @@
                     <input matInput placeholder="" [(ngModel)]="brand" (ngModelChange)="brandChange($event)">
                 </mat-form-field>
             </div>
+
+            <div>
+                <div class="item-title">Platform:</div>
+                <mat-form-field class="example-full-width">
+                    <mat-select [formControl]="platform" multiple>
+                        <mat-option *ngFor="let p of platformList" [value]="p">{{p}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
             
             <div>
                 <div class="item-title">Commision:</div>
@@ -29,26 +38,38 @@
             </div>
             
             <div>
+                <div class="item-title">Contact Name:</div>
+                <mat-form-field class="example-full-width">
+                    <input matInput placeholder="" [(ngModel)]="contactName" (ngModelChange)="contactNameChange($event)">
+                </mat-form-field>
+            </div>
+
+            <div>
                 <div class="item-title">Contact Email:</div>
                 <mat-form-field class="example-full-width">
-                    <input matInput placeholder="" [(ngModel)]="contact" (ngModelChange)="contactChange($event)">
+                    <input matInput placeholder="" [(ngModel)]="contactEmail" (ngModelChange)="contactEmailChange($event)">
                 </mat-form-field>
             </div>
         
-            <!-- <div>
-                <div class="item-title">Content Concept:</div>
-                <mat-form-field class="example-full-width">
-                    <textarea matInput placeholder=""></textarea>
-                </mat-form-field>
-            </div> -->
-        
             <div>
-                <div class="item-title">End time:</div>
-                <mat-form-field>
-                    <input matInput [matDatepicker]="picker" [(ngModel)]="endTime" (ngModelChange)="endTimeChange($event)">
-                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker></mat-datepicker>
+                <div class="item-title">Review Deadline: </div>
+                <mat-form-field class="date-input">
+                    <input matInput [matDatepicker]="endTimePicker" [(ngModel)]="endDate" (ngModelChange)="endTimeChange($event)">
+                    <mat-datepicker-toggle matSuffix [for]="endTimePicker"></mat-datepicker-toggle>
+                    <mat-datepicker #endTimePicker></mat-datepicker>
                 </mat-form-field>
+                <ngx-mat-timepicker class="time-input" [(ngModel)]="endTime" [showSpinners]="false" [enableMeridian]="false"></ngx-mat-timepicker>
+            </div>
+
+            <div>
+                <div class="item-title">Post Date:</div>
+                <mat-form-field>
+                    <input matInput [matDatepicker]="postTimePicker" [(ngModel)]="postDate" (ngModelChange)="endTimeChange($event)">
+                    <mat-datepicker-toggle matSuffix [for]="postTimePicker"></mat-datepicker-toggle>
+                    <mat-datepicker #postTimePicker></mat-datepicker>
+                </mat-form-field>
+                <ngx-mat-timepicker class="time-input" [(ngModel)]="postTime" [showSpinners]="false" [enableMeridian]="false"></ngx-mat-timepicker>
+           
             </div>
         </div>
     </mat-card-content>
@@ -59,8 +80,9 @@
         Requirements
     </mat-card-header>
     <mat-card-content>
-        <div *ngFor="let requirement of campaignData.requirements">
-            <mat-checkbox> {{ requirement }}</mat-checkbox>
+        <div *ngFor="let requirement of campaignData.requirements; index as i">
+            <mat-checkbox> {{ requirement }}</mat-checkbox> 
+            <span class="material-icons remove-icon" (click)="removeFromList(campaignData.requirements, i)"> close </span>
         </div>
         <mat-form-field class="example-full-width">
             <input matInput placeholder="" [(ngModel)]="newRequirement" (ngModelChange)="requirementChange($event)">
@@ -76,8 +98,9 @@
         Millstones
     </mat-card-header>
     <mat-card-content>
-        <div *ngFor="let milestone of campaignData.milestones">
+        <div *ngFor="let milestone of campaignData.milestones; index as i">
             <mat-checkbox> {{ milestone }}</mat-checkbox>
+            <span class="material-icons remove-icon" (click)="removeFromList(campaignData.milestones, i)"> close </span>
         </div>
         <mat-form-field class="example-full-width">
             <input matInput placeholder="" [(ngModel)]="newMilestone" (ngModelChange)="milestoneChange($event)">
@@ -85,6 +108,15 @@
         <span class="material-icons" (click)="addMilestone()">
             playlist_add
         </span>
+    </mat-card-content>
+</mat-card>
+
+<mat-card class="input-card">
+    <mat-card-header>
+        Contract
+    </mat-card-header>
+    <mat-card-content>
+        Select files to upload.
     </mat-card-content>
 </mat-card>
 
