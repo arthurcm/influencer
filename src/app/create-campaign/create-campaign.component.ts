@@ -5,6 +5,7 @@ import { AngularFireFunctions } from '@angular/fire/functions';
 import { CampaignDetail, CampaignExtraInfo } from 'src/types/campaign';
 import { FormControl } from '@angular/forms';
 import * as moment from 'moment';
+import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
 // import { default as _rollupMoment, Moment, MomentFormatSpecification, MomentInput } from 'moment';
 // const moment = _rollupMoment || _moment;
 
@@ -56,8 +57,9 @@ export class CreateCampaignComponent implements OnInit {
         public auth: AngularFireAuth,
         public router: Router,
         private fns: AngularFireFunctions,
+        public loadingService: LoadingSpinnerService,
     ) {
-    // this.createCampaign();
+        // this.createCampaign();
     }
 
     ngOnInit() {
@@ -113,9 +115,11 @@ export class CreateCampaignComponent implements OnInit {
         this.endTime.valueOf() % 86400000;
         this.campaignData.extra_info = JSON.stringify(this.extraInfo);
 
+        this.loadingService.show();
         console.log(this.campaignData);
         const callable = this.fns.httpsCallable('createCampaign');
         callable(this.campaignData).subscribe(result => {
+            this.loadingService.hide();
             this.router.navigate(['/home']);
             console.log(result);
         });

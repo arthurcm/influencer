@@ -10,6 +10,7 @@ export class UploaderComponent {
 
     @Output() onUploadSuccess = new EventEmitter<string>();
     @Input() campaign: CampaignDetail;
+    @Input() uploadPath: string;
 
     isHovering: boolean;
     files: File[] = [];

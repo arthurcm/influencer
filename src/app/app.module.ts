@@ -54,6 +54,7 @@ import { UploadTaskComponent } from './upload-task/upload-task.component';
 import { UploaderComponent } from './uploader/uploader.component';
 import { VideoPlayerComponent } from './shared/video-player/video-player.component';
 import { HttpClientModule } from '@angular/common/http';
+import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 @NgModule({
     declarations: [
         AppComponent,
@@ -67,6 +68,7 @@ import { HttpClientModule } from '@angular/common/http';
         UploadTaskComponent,
         UploaderComponent,
         VideoPlayerComponent,
+        LoadingSpinnerComponent,
     ],
     imports: [
         BrowserModule,
@@ -111,6 +113,9 @@ import { HttpClientModule } from '@angular/common/http';
     exports: [
         UploaderComponent,
 
+    ],
+    entryComponents: [
+        LoadingSpinnerComponent,
     ],
     providers: [
         MatDatepickerModule,

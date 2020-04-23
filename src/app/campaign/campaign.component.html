@@ -3,7 +3,7 @@
         Campaign - {{ campaign.campaign_name }}
     </div>
     <div class="right-panel">
-        <mat-horizontal-stepper [linear]="true" #stepper>
+        <mat-horizontal-stepper [linear]="false" #stepper>
             <mat-step>
                 <ng-template matStepLabel>Overview</ng-template>
                 <mat-card *ngIf="campaign" class="basic-card">
@@ -91,7 +91,7 @@
                         Upload New Video
                     </mat-card-header>
                     <mat-card-content>
-                        <app-uploader [campaign]="campaign" (onUploadSuccess)="uploadSuccess($event)"></app-uploader>
+                        <app-uploader [uploadPath]="uploadPath"  (onUploadSuccess)="uploadSuccess($event)"></app-uploader>
                     </mat-card-content>
                 </mat-card>
 
@@ -124,7 +124,7 @@
             <mat-step>
               <ng-template matStepLabel>
                 <div>Post</div>
-                <div class="time-info">Post Date {{ displayTime(campaign.extra_info?.post_time) }}</div>
+                <div class="time-info">Post Date {{ displayTime(campaign.extra_info['post_time']) }}</div>
               </ng-template>
             </mat-step>
           </mat-horizontal-stepper>

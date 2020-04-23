@@ -6,6 +6,7 @@ import { Campaign } from 'src/types/campaign';
 import * as moment from 'moment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
+import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
 
 @Component({
     selector: 'app-home',
@@ -24,18 +25,21 @@ export class HomeComponent implements OnInit {
         public auth: AngularFireAuth,
         public router: Router,
         private fns: AngularFireFunctions,
+        public loadingService: LoadingSpinnerService,
     ) {
 
     }
 
     ngOnInit() {
         const callable = this.fns.httpsCallable('getCampaign');
+        this.loadingService.show();
         callable({}).subscribe(result => {
             this.campaigns = result.campaigns.filter(campaign => {
                 return campaign.campaign_data;
             });
             this.campaignDataSource = new MatTableDataSource(this.campaigns);
             console.log(result);
+            this.loadingService.hide();
         });
     }
 
@@ -60,6 +64,7 @@ export class HomeComponent implements OnInit {
     }
 
     deleteCampaign(campaign) {
+        this.loadingService.show();
         const callable = this.fns.httpsCallable('deleteCampaign');
         console.log(campaign);
         callable({
@@ -74,7 +79,7 @@ export class HomeComponent implements OnInit {
             }
             this.campaigns.splice(index, 1);
             this.campaignDataSource = new MatTableDataSource(this.campaigns);
-
+            this.loadingService.hide();
             console.log(this.campaigns);
         });
     }
