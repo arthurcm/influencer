@@ -22,6 +22,16 @@
         height: 100px;
         width: 400px;
     }
+
+    .date-input {
+
+    }
+
+    .time-input {
+        vertical-align: top;
+        display: inline-block;
+        margin-left: 20px;
+    }
 }
 
 .input-card {
@@ -31,6 +41,11 @@
     .mat-card-header {
         padding: 15px;
         background-color: lightgrey;
+    }
+    .remove-icon {
+        vertical-align: top;
+        margin-left: 15px;
+        cursor: pointer;
     }
 
     .mat-card-content {

@@ -30,4 +30,10 @@ export interface CampaignDetail {
     shipping_address?: string;
     tracking_number?: string;
     history_id?: string;
+    extra_info?: string | CampaignExtraInfo;
+}
+
+export interface CampaignExtraInfo {
+    platform?: string;
+    post_time?: number;
 }

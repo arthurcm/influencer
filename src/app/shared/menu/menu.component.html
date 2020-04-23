@@ -11,17 +11,13 @@
     <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #beforeMenu="matMenu" yPosition="below" xPosition="before">
-    <button mat-menu-item>
-        <mat-icon>dialpad</mat-icon>
-        <span>Redial</span>
-    </button>
     <button mat-menu-item disabled>
-        <mat-icon>voicemail</mat-icon>
-        <span>Check voice mail</span>
+        <mat-icon>settings</mat-icon>
+        <span>Settings</span>
     </button>
-    <button mat-menu-item>
-        <mat-icon>notifications_off</mat-icon>
-        <span>Disable alerts</span>
+    <button (click)="logout()" mat-menu-item>
+        <mat-icon>exit_to_app</mat-icon>
+        <span>Logout</span>
     </button>
     </mat-menu>
 </div>

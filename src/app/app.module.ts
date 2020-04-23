@@ -21,8 +21,22 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
+import { MatSelectModule } from '@angular/material/select';
+import { ReactiveFormsModule } from '@angular/forms';
+
+import { NgxMatDatetimePickerModule, NgxMatTimepickerModule, NgxMatNativeDateModule } from '@angular-material-components/datetime-picker';
+import { NgxMatMomentModule } from '@angular-material-components/moment-adapter';
 
 import { FormsModule } from '@angular/forms';
+
+
+import { VgCoreModule } from 'ngx-videogular';
+import { VgControlsModule } from 'ngx-videogular';
+import { VgOverlayPlayModule } from 'ngx-videogular';
+import { VgBufferingModule } from 'ngx-videogular';
+import { VgStreamingModule } from 'ngx-videogular';
 
 import { AngularFireAuthGuardModule } from '@angular/fire/auth-guard';
 import { MatNativeDateModule } from '@angular/material/core';
@@ -38,7 +52,9 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { UploadTaskComponent } from './upload-task/upload-task.component';
 import { UploaderComponent } from './uploader/uploader.component';
-
+import { VideoPlayerComponent } from './shared/video-player/video-player.component';
+import { HttpClientModule } from '@angular/common/http';
+import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 @NgModule({
     declarations: [
         AppComponent,
@@ -51,6 +67,8 @@ import { UploaderComponent } from './uploader/uploader.component';
         VideoReviewComponent,
         UploadTaskComponent,
         UploaderComponent,
+        VideoPlayerComponent,
+        LoadingSpinnerComponent,
     ],
     imports: [
         BrowserModule,
@@ -73,14 +91,31 @@ import { UploaderComponent } from './uploader/uploader.component';
         MatCheckboxModule,
         MatStepperModule,
         MatGridListModule,
+        MatSortModule,
         FormsModule,
         MatListModule,
         MatMenuModule,
         MatIconModule,
+        MatTableModule,
+        MatSelectModule,
+        ReactiveFormsModule,
+        VgCoreModule,
+        VgControlsModule,
+        VgOverlayPlayModule,
+        VgBufferingModule,
+        VgStreamingModule,
+        HttpClientModule,
+        NgxMatDatetimePickerModule,
+        NgxMatTimepickerModule,
+        NgxMatNativeDateModule,
+        NgxMatMomentModule,
     ],
     exports: [
         UploaderComponent,
 
+    ],
+    entryComponents: [
+        LoadingSpinnerComponent,
     ],
     providers: [
         MatDatepickerModule,

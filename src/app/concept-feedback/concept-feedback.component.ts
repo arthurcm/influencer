@@ -4,6 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireFunctions } from '@angular/fire/functions';
 import { CampaignDetail } from 'src/types/campaign';
+import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
 
 @Component({
     selector: 'app-concept-feedback',
@@ -22,12 +23,14 @@ export class ConceptFeedbackComponent implements OnInit {
         private fns: AngularFireFunctions,
         private afs: AngularFirestore,
         private activatedRoute: ActivatedRoute,
+        public loadingService: LoadingSpinnerService,
     ) {
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('campaignId');
         this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
     }
 
     ngOnInit(): void {
+        this.loadingService.show();
         const callable = this.fns.httpsCallable('getCampaign');
         callable({ campaign_id: this.campaignId }).subscribe(result => {
             console.log(result);
@@ -37,6 +40,7 @@ export class ConceptFeedbackComponent implements OnInit {
                 }
             });
             this.newFeedback = this.campaign.feed_back;
+            this.loadingService.hide();
             console.log(this.campaign);
         });
     }
@@ -48,9 +52,11 @@ export class ConceptFeedbackComponent implements OnInit {
             feed_back: this.newFeedback,
         };
         console.log(this.campaign);
+        this.loadingService.show();
         const callable = this.fns.httpsCallable('provideFeedback');
         callable(data).subscribe(result => {
             console.log(result);
+            this.loadingService.hide();
             this.router.navigate([
                 `/campaign/${this.campaign.campaign_id}`,
             ]);
@@ -58,6 +64,7 @@ export class ConceptFeedbackComponent implements OnInit {
     }
 
     approveConcept() {
+        this.loadingService.show();
         const callable = this.fns.httpsCallable('provideFeedback');
         callable(
             {
@@ -75,6 +82,7 @@ export class ConceptFeedbackComponent implements OnInit {
                 }
             ).subscribe(result2 => {
                 console.log(result2);
+                this.loadingService.hide();
                 this.router.navigate([
                     `/campaign/${this.campaign.campaign_id}`,
                 ]);

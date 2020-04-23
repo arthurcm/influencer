@@ -32,21 +32,21 @@
     .active-campaign {
         margin: 20px;
         width: calc(100% - 80px);
-
-        .mat-expansion-panel {
-            margin-bottom: 5px;
-
-            .mat-expansion-panel-header-title {
-                width: 300px;
-            }
-            .mat-expansion-panel-header-description {
-                width: 300px;
-                line-height: 24px;
+        table{
+            width: 100%;
+        }
+        th.mat-column-link, td.mat-column-link {
+            width: 60px;
+            span {
+                cursor: pointer;
             }
         }
-    }
 
-    .view-button {
-        float: right;
+        td.mat-column-end_time, td.mat-column-post_time {
+            line-height: 24px;
+            span {
+                vertical-align: top;
+            }
+        }
     }
 }

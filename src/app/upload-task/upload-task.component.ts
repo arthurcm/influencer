@@ -15,6 +15,7 @@ import { CampaignDetail } from 'src/types/campaign';
 export class UploadTaskComponent implements OnInit {
 
     @Input() file: File;
+    @Input() uploadPath: string;
     @Input() campaign: CampaignDetail;
     @Output() onUploadSuccess = new EventEmitter<string>();
 
@@ -38,7 +39,8 @@ export class UploadTaskComponent implements OnInit {
         this.auth.user.subscribe(result => {
             // The storage path
             // NOTE: need a way to get auth so that we can tie the video's path to authentication
-            const path = `video/${result.uid}/${this.campaign.campaign_id}/${Date.now()}`;
+            const path = `${this.uploadPath}${Date.now()}`;
+            console.log(path);
 
             // Reference to storage bucket
             const ref = this.storage.ref(path);
