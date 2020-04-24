@@ -22,6 +22,8 @@ from oauth2client.tools import run_flow
 from video_intel import video_text_reg, uri_parser
 from nlp_gcp import nlp_text_sentiment
 from cv_gcp import web_entities_include_geo_results_uri
+from gcp_utils import get_secret
+from email_util import send_welcome_email, share_draft_email
 
 # Imports the Google Cloud client library
 import google.cloud.logging
@@ -186,38 +188,11 @@ def resumable_upload(insert_request):
       time.sleep(sleep_seconds)
 
 
-def get_client_secret(secret_id='client_secret'):
-    """
-    To enable iam role access (for service accounts) to the secret, run the following:
-    gcloud beta secrets add-iam-policy-binding client_secret
-    --role roles/secretmanager.secretAccessor
-    --member serviceAccount:influencer-272204@appspot.gserviceaccount.com
-    :return: content of client secret string
-    """
-
-    # Import the Secret Manager client library.
-    from google.cloud import secretmanager
-
-    # GCP project in which to store secrets in Secret Manager.
-    project_id = 'influencer-272204'
-
-    # Create the Secret Manager client.
-    client = secretmanager.SecretManagerServiceClient()
-
-    # Build the parent name from the project.
-    # parent = client.project_path(project_id)
-
-    resource_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
-    response = client.access_secret_version(resource_name)
-    secret_string = response.payload.data.decode('UTF-8')
-    return secret_string
-
-
 def write_client_secret():
 
     # Writing to sample.json
     if not os.path.exists(CLIENT_SECRETS_FILE):
-        json_str = get_client_secret()
+        json_str = get_secret()
         dictionary = json.loads(json_str)
 
         # Serializing json
@@ -422,36 +397,20 @@ def nlp_text_sentiment_gcf(request):
     return json.dumps({'score':  str(round(score, 2)), 'magnitude':  str(round(magnitude, 2))})
 
 
-# using SendGrid's Python Library
-# https://github.com/sendgrid/sendgrid-python
-import os
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-
-def send_welcome_email(data, context):
+def send_welcome_email_gcf(data, context):
     """
-    gcloud functions deploy send_welcome_email --trigger-event providers/firebase.auth/eventTypes/user.create --trigger-resource influencer-272204 --runtime python37
-    :param data:
-    :param context:
-    :return:
+    gcloud functions deploy send_welcome_email_gcf --trigger-event providers/firebase.auth/eventTypes/user.create --trigger-resource influencer-272204 --runtime python37
+    This function sends out a welcoming email for any new user sign up.
     """
-    logging.info('Function triggered by creation/deletion of user: %s' % data["uid"])
-    logging.info('Created at: %s' % data["metadata"]["createdAt"])
+    send_welcome_email(data, context)
 
-    if 'email' in data:
-        logging.info('Email: %s' % data["email"])
-        email = data['email']
-        message = Mail(
-            from_email='influencermkting@gmail.com',
-            to_emails=email,
-            subject='Welcome to sign up with us!',
-            plain_text_content='Thanks you for signing up to our platform!')
-        try:
-            sg = SendGridAPIClient(get_client_secret('sendgrid-api-key'))
-            response = sg.send(message)
-            logging.info(response.status_code)
-            return response
-        except Exception as e:
-            logging.info(e.message)
-    else:
-        logging.error('User signed up without email, skip sending email')
+
+def share_draft_email_gcf(request):
+    """
+    gcloud functions deploy share_draft_email_gcf --trigger-event providers/firebase.auth/eventTypes/user.create --trigger-resource influencer-272204 --runtime python37
+    This function sends out a welcoming email for any new user sign up.
+    """
+    share_draft_email(data, context)
+
+
+

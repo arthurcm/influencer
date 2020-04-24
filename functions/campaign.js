@@ -359,7 +359,12 @@ function writeFinalCampaign_callback(campaignData, uid, campaign_id, history_id)
     const influencerCamRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.set(influencerCamRef, {campaign_data: campaignData, final_history_id: history_id});
+    batch.set(influencerCamRef, {
+        campaign_data: campaignData,
+        final_history_id: history_id
+    }, {
+        merge: true
+    });
     return batch.commit()
         .then(res => {
             console.log('Transaction completed.');
@@ -376,12 +381,17 @@ function writeFinalVideoDrfat_callback(campaignData, uid, campaign_id, history_i
     // Get a new write batch
     const campaignRef = db.collection('campaigns').doc(campaign_id);
     const batch = db.batch();
-    batch.set(campaignRef, {final_video_draft: campaignData,
-        final_video_draft_history_id: history_id}, {merge: true});
+    batch.set(campaignRef, {
+        final_video_draft: campaignData,
+        final_video_draft_history_id: history_id
+    }, {merge: true});
     const influencerCamRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.set(influencerCamRef, {video_draft_data: campaignData, final_video_draft_history_id: history_id});
+    batch.set(influencerCamRef, {
+        video_draft_data: campaignData,
+        final_video_draft_history_id: history_id
+    }, {merge: true});
     return batch.commit()
         .then(res => {
             console.log('Transaction completed.');

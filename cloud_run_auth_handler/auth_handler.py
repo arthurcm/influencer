@@ -61,7 +61,6 @@ app = flask.Flask(__name__)
 app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
 
 
-
 @app.route('/')
 def index():
   return print_index_table()
