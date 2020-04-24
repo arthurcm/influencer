@@ -21,6 +21,12 @@ app.get('/get_video_meta/name/:name', (req, res) => {
     return res.send(video_meta);
 });
 
+app.get('/get_image_meta/name/:name', (req, res) => {
+    const image_meta = content.getImageMeta(req.params);
+    console.log('Retrieved image meta data', image_meta);
+    return res.send(image_meta);
+});
+
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.log('Video transcoder listening on port', port);

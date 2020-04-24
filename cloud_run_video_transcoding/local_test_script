@@ -17,4 +17,5 @@ gcloud container clusters create video-transcoder1 --zone=us-central1-c --addons
 
 
 local test on GKE:
+transcode video
 curl -vX POST http://video-transcoder-k8s.default.35.193.22.35.xip.io/transcode_gcs -d @local_test.json --header "Content-Type: application/json"

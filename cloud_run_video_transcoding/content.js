@@ -291,7 +291,7 @@ async function getImageMetaInternal(filePath) {
 }
 
 module.exports = {
-    handleTranscodingRequestGcs(data) {
+    async handleTranscodingRequestGcs(data) {
         if (!data.contentType){
             throw new Error('ContentType needs to be video/.');
         }
@@ -301,7 +301,7 @@ module.exports = {
         const filePath = data.name;
         // const skip_transcode = data.skip_transcode;
         console.log('incoming file', filePath);
-        return ffmpeg_transcode(filePath);
+        return await ffmpeg_transcode(filePath);
     },
     async getVideoMeta(data) {
         if(!data.name || !data.name.startsWith('video/')){
