@@ -13,4 +13,8 @@ gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/clie
 
 
 local test :
+curl -vX POST https://api-general-4lladlc2eq-uc.a.run.app/share -d @local_test.json --header "Content-Type: application/json"
+
+
+local test :
 curl -vX POST http://localhost:9090/share -d @local_test.json --header "Content-Type: application/json"

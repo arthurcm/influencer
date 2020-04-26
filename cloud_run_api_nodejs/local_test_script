@@ -1,0 +1,21 @@
+build container:
+gcloud builds submit --tag gcr.io/influencer-272204/api_nodejs
+
+Local testing container:
+PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/api_nodejs
+
+
+To deploy auth handler with service account access to secret manager:
+gcloud run deploy api-nodejs --image gcr.io/influencer-272204/api_nodejs --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
+
+
+local test create campaign:
+curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" http://localhost:9090/create_campaign -X POST -d @create_campaign_local_test.json
+
+
+
+get test idToken:
+curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
+
+
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'

@@ -254,40 +254,14 @@ function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName
 
 async function getVideoMetaInternal(filePath) {
     const video_ref = retrieveVideoMetaRef(filePath);
-    return video_ref
-        .get()
-        .then(doc => {
-            if (!doc.exists) {
-                console.log('No such video!');
-                return {};
-            }
-            console.log('Video meta data:', doc.data());
-            return doc.data();
-        })
-        .catch(err => {
-            console.log('Error getting video meta information');
-            return err;
-        });
+    return video_ref.get();
 }
 
 async function getImageMetaInternal(filePath) {
     const image_ref = retrieveImageMetaRef(filePath);
     const tokens = uriParse(filePath);
     const file_name = tokens.file_name;
-    return image_ref.collection('single_image').doc(file_name)
-        .get()
-        .then(doc => {
-            if (!doc.exists) {
-                console.log('No such image!');
-                return {};
-            }
-            console.log('Image meta data:', doc.data());
-            return doc.data();
-        })
-        .catch(err => {
-            console.log('Error getting image meta information');
-            return err;
-        });
+    return image_ref.collection('single_image').doc(file_name).get();
 }
 
 module.exports = {
@@ -301,7 +275,7 @@ module.exports = {
         const filePath = data.name;
         // const skip_transcode = data.skip_transcode;
         console.log('incoming file', filePath);
-        return await ffmpeg_transcode(filePath);
+        return ffmpeg_transcode(filePath);
     },
     async getVideoMeta(data) {
         if(!data.name || !data.name.startsWith('video/')){
@@ -312,7 +286,7 @@ module.exports = {
         const filePath = data.name;
 
         // Transcode
-        return await getVideoMetaInternal(filePath);
+        return getVideoMetaInternal(filePath);
     },
     async getImageMeta(data) {
         if(!data.name || !data.name.startsWith('image/')){
@@ -321,7 +295,7 @@ module.exports = {
         }
         const filePath = data.name;
         console.log('Get single image meta data for ', filePath);
-        return await getImageMetaInternal(filePath);
+        return getImageMetaInternal(filePath);
     },
 };
 

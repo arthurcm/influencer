@@ -7,6 +7,5 @@ WORKDIR /app
 RUN pip install -r requirements.txt
 ENV PORT 8080
 ENV HOST 0.0.0.0
-ENV OAUTHLIB_RELAX_TOKEN_SCOPE true
 ENTRYPOINT ["python"]
 CMD ["main.py"]
