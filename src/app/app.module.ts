@@ -25,6 +25,8 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
 import { MatSelectModule } from '@angular/material/select';
 import { ReactiveFormsModule } from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatRadioModule } from '@angular/material/radio';
 
 import { NgxMatDatetimePickerModule, NgxMatTimepickerModule, NgxMatNativeDateModule } from '@angular-material-components/datetime-picker';
 import { NgxMatMomentModule } from '@angular-material-components/moment-adapter';
@@ -55,6 +57,9 @@ import { UploaderComponent } from './uploader/uploader.component';
 import { VideoPlayerComponent } from './shared/video-player/video-player.component';
 import { HttpClientModule } from '@angular/common/http';
 import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
+import { UploadVideoDialogComponent } from './campaign/upload-video-dialog/upload-video-dialog.component';
+import { UploadImageDialogComponent } from './campaign/upload-image-dialog/upload-image-dialog.component';
+import { ImageReviewComponent } from './image-review/image-review.component';
 @NgModule({
     declarations: [
         AppComponent,
@@ -69,6 +74,9 @@ import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinne
         UploaderComponent,
         VideoPlayerComponent,
         LoadingSpinnerComponent,
+        UploadVideoDialogComponent,
+        UploadImageDialogComponent,
+        ImageReviewComponent,
     ],
     imports: [
         BrowserModule,
@@ -99,6 +107,8 @@ import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinne
         MatTableModule,
         MatSelectModule,
         ReactiveFormsModule,
+        MatDialogModule,
+        MatRadioModule,
         VgCoreModule,
         VgControlsModule,
         VgOverlayPlayModule,
@@ -109,6 +119,7 @@ import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinne
         NgxMatTimepickerModule,
         NgxMatNativeDateModule,
         NgxMatMomentModule,
+
     ],
     exports: [
         UploaderComponent,
@@ -116,6 +127,8 @@ import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinne
     ],
     entryComponents: [
         LoadingSpinnerComponent,
+        UploadVideoDialogComponent,
+        UploadImageDialogComponent,
     ],
     providers: [
         MatDatepickerModule,

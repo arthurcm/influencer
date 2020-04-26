@@ -1,0 +1,42 @@
+@import 'common';
+
+.input-card {
+    margin: 20px;
+    padding: 0px;
+
+    .mat-card-header {
+        padding: 15px;
+        background-color: $COLOR_SECONDARY;
+        ::ng-deep {
+            .mat-card-header-text {
+                margin: 0px;
+            }
+        }
+    }
+    .mat-card-content {
+        padding: 10px;
+    }
+}
+
+.full-text-area {
+    width: 100%;
+    textarea {
+        resize: none;
+        height: 100px;
+    }
+}
+
+.image-card {
+    width: 300px;
+    margin: 10px;
+    vertical-align: top;
+    display: inline-block;
+}
+
+.image-title {
+    margin: 20px;
+}
+
+.image-content {
+    margin: 10px;
+}

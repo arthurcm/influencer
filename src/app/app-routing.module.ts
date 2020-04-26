@@ -10,6 +10,7 @@ import { CampaignComponent } from './campaign/campaign.component';
 import { ConceptFeedbackComponent } from './concept-feedback/concept-feedback.component';
 import { VideoReviewComponent } from './video-review/video-review.component';
 import { VideoPlayerComponent } from './shared/video-player/video-player.component';
+import { ImageReviewComponent } from './image-review/image-review.component';
 
 const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['login']);
 
@@ -45,6 +46,12 @@ const routes: Routes = [
     {
         path: 'video-review/:campaignId/:historyId',
         component: VideoReviewComponent,
+        canActivate: [AngularFireAuthGuard],
+        data: { authGuardPipe: redirectUnauthorizedToLogin },
+    },
+    {
+        path: 'image-review/:campaignId/:historyId',
+        component: ImageReviewComponent,
         canActivate: [AngularFireAuthGuard],
         data: { authGuardPipe: redirectUnauthorizedToLogin },
     },

@@ -5,7 +5,7 @@ import { AngularFireFunctions } from '@angular/fire/functions';
 import { CampaignDetail, CampaignExtraInfo } from 'src/types/campaign';
 import { FormControl } from '@angular/forms';
 import * as moment from 'moment';
-import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
+import { LoadingSpinnerService } from '../services/loading-spinner.service';
 // import { default as _rollupMoment, Moment, MomentFormatSpecification, MomentInput } from 'moment';
 // const moment = _rollupMoment || _moment;
 
@@ -38,6 +38,7 @@ export class CreateCampaignComponent implements OnInit {
     };
 
     campaignName = '';
+    campaignType = 'video';
     brand = '';
     commision = -1;
     contactName = '';
@@ -108,6 +109,7 @@ export class CreateCampaignComponent implements OnInit {
 
     createCampaign() {
         console.log(this.campaignData);
+        this.extraInfo.type = this.campaignType;
         this.extraInfo.platform = this.platform.value;
         this.extraInfo.post_time = Math.round(this.postDate.getTime() / 86400000) * 86400000 +
             this.postTime.valueOf() % 86400000;

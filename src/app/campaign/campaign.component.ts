@@ -6,9 +6,12 @@ import { AngularFirestore } from '@angular/fire/firestore';
 import { CampaignDetail } from 'src/types/campaign';
 import { Route } from '@angular/compiler/src/core';
 import { AngularFireStorage } from '@angular/fire/storage';
-import { HttpHeaders, HttpClient, HttpParams } from '@angular/common/http';
 import * as moment from 'moment';
-import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
+import { LoadingSpinnerService } from '../services/loading-spinner.service';
+import { CampaignService } from '../services/campaign.service';
+import { MatDialog } from '@angular/material/dialog';
+import { UploadVideoDialogComponent } from './upload-video-dialog/upload-video-dialog.component';
+import { UploadImageDialogComponent } from './upload-image-dialog/upload-image-dialog.component';
 
 @Component({
     selector: 'app-campaign',
@@ -28,6 +31,8 @@ export class CampaignComponent implements OnInit {
     newContentConcept = '';
     uploadPath = '';
 
+    campaignType = '';
+
     constructor(
         public auth: AngularFireAuth,
         public router: Router,
@@ -35,8 +40,9 @@ export class CampaignComponent implements OnInit {
         private afs: AngularFirestore,
         private activatedRoute: ActivatedRoute,
         private storage: AngularFireStorage,
-        private http: HttpClient,
         public loadingService: LoadingSpinnerService,
+        public campaignService: CampaignService,
+        public dialog: MatDialog,
     ) {
     // this.itemsCollection = afs.collection<object>('campaigns');
     // this.items = this.itemsCollection.valueChanges();
@@ -45,7 +51,6 @@ export class CampaignComponent implements OnInit {
     // })
 
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('id');
-        // this.getVideoMetaData('video/HK0fpmQI7WOGUDwdmVpPffis7hY2/dzXZ7bZe7Km55R7Aoqzf/qxLkbGSsY6jsKJeX6O1A/beauty_video_4.mov');
         // this.transcodeVideo('video/HK0fpmQI7WOGUDwdmVpPffis7hY2/dK5e3YW4qfTQgBfUOkqX/1586836863114');
     }
 
@@ -69,16 +74,27 @@ export class CampaignComponent implements OnInit {
                     if (result.final_video_draft_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
+                    if (this.campaign.extra_info['type'] === 'image') {
+                        this.campaign.images = JSON.parse(this.campaign.video);
+                    }
                     videoCampaignList.push(campaign);
                 }
+
             });
             this.conceptCampaignList = conceptCampaignList;
             this.videoCampaignList = videoCampaignList;
 
             this.loadingService.hide();
 
-            this.auth.user.subscribe(reuslt => {
-                this.uploadPath = `video/${result.uid}/${this.campaign.campaign_id}/`;
+            this.auth.user.subscribe(user => {
+                if (this.campaign.extra_info['type'] !== 'image') {
+                    this.uploadPath = `video/${user.uid}/${this.campaign.campaign_id}/`;
+                    this.campaignType = 'video';
+                } else {
+                    this.uploadPath = `image/${user.uid}/${this.campaign.campaign_id}/`;
+                    this.campaignType = 'image';
+                }
+
             });
         });
     }
@@ -111,11 +127,75 @@ export class CampaignComponent implements OnInit {
         ]);
     }
 
-    uploadSuccess(videoUrl: string) {
+    reviewImages(campaign) {
+        this.router.navigate([
+            `/image-review/${campaign.campaign_id}/${campaign.history_id}`,
+        ]);
+    }
+
+    shareImages(campaign) {
+        const url = `/image-review/${campaign.campaign_id}/${campaign.history_id}`;
+        this.campaignService.shareContent('shanshuo0918@gmail.com', 'shanshuo0918@gmail.com', url).subscribe(result => {
+            console.log(result);
+        });
+    }
+
+    shareConcept(campaign) {
+        const url = `/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`;
+        this.campaignService.shareContent('shanshuo0918@gmail.com', 'shanshuo0918@gmail.com', url).subscribe(result => {
+            console.log(result);
+        });
+    }
+
+    shareVideo(campaign) {
+        const url = `/video-review/${campaign.campaign_id}/${campaign.history_id}`;
+        this.campaignService.shareContent('shanshuo0918@gmail.com', 'shanshuo0918@gmail.com', url).subscribe(result => {
+            console.log(result);
+        });
+    }
+
+    uploadYoutubeSuccess(youtubeLink) {
         const newCampaign = JSON.parse(JSON.stringify(this.campaign));
         newCampaign.content_concept = '';
         newCampaign.feed_back = '';
-        newCampaign.video = videoUrl;
+        newCampaign.video = youtubeLink;
+        newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
+        this.loadingService.show();
+
+        console.log(newCampaign);
+        const callable = this.fns.httpsCallable('updateCampaign');
+        callable(newCampaign).subscribe(result => {
+            console.log(result);
+            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
+            this.loadingService.hide();
+        });
+    }
+
+    uploadSuccess(video) {
+        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        newCampaign.content_concept = '';
+        newCampaign.feed_back = '';
+        newCampaign.video = video['url'];
+        newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
+        this.loadingService.show();
+        // this.campaign.campaignId = this.campaign.campaign_id;
+        console.log(newCampaign);
+        const callable = this.fns.httpsCallable('updateCampaign');
+        callable(newCampaign).subscribe(result => {
+            console.log(result);
+            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
+            this.campaignService.transcodeVideo(video['path']).subscribe(reuslt => {
+                console.log(result);
+            });
+            this.loadingService.hide();
+        });
+    }
+
+    uploadImageSuccess(images) {
+        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        newCampaign.content_concept = '';
+        newCampaign.feed_back = '';
+        newCampaign.video = JSON.stringify(images);
         newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
         this.loadingService.show();
         // this.campaign.campaignId = this.campaign.campaign_id;
@@ -128,45 +208,39 @@ export class CampaignComponent implements OnInit {
         });
     }
 
-    getVideoMetaData(videoUrl: string) {
-        const data = {
-            name: videoUrl,
-            contentType: 'video/mp4',
-        };
+    uploadImages() {
+        const dialogRef = this.dialog.open(UploadImageDialogComponent, {
+            width: '600px',
+            data: {
+                uploadPath: this.uploadPath,
+            },
+        });
 
-        const url = `http://video-transcoder-k8s.default.35.193.22.35.xip.io/get_video_meta/name/${encodeURIComponent(videoUrl)}`;
-
-        const httpParms = new HttpParams().set('name', encodeURIComponent(videoUrl)).set('contentType', encodeURIComponent('video/mp4'));
-        const httpOptions = {
-            headers: new HttpHeaders({
-                'Content-Type':  'application/json',
-            }),
-            // params: httpParms,
-        };
-        console.log(data);
-
-        this.http.get<any>(url, httpOptions).subscribe(result => {
-            console.log(result);
+        dialogRef.afterClosed().subscribe(result => {
+            console.log(`Dialog result: ${result}`);
+            if (result && result['images']) {
+                this.uploadImageSuccess(result['images']);
+            }
         });
     }
 
-    transcodeVideo(videoUrl) {
-        const data = {
-            name: videoUrl,
-            contentType: 'video/mp4',
-        };
+    uploadVideo() {
+        const dialogRef = this.dialog.open(UploadVideoDialogComponent, {
+            width: '600px',
+            data: {
+                uploadPath: this.uploadPath,
+            },
+        });
 
-        const url = 'http://video-transcoder-k8s.default.35.193.22.35.xip.io/transcode_gcs';
-
-        const httpOptions = {
-            headers: new HttpHeaders({
-                'Content-Type':  'application/json',
-            }),
-        };
-        console.log(data);
-
-        this.http.post<any>(url, data, httpOptions).subscribe(result => {
-            console.log(result);
+        dialogRef.afterClosed().subscribe(result => {
+            console.log(`Dialog result: ${result}`);
+            if (result) {
+                if (result['type'] === 'local') {
+                    this.uploadSuccess(result['file']);
+                } else if (result['type'] === 'youtube') {
+                    this.uploadYoutubeSuccess(result['link']);
+                }
+            }
         });
     }
 

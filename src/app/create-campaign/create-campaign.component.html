@@ -13,7 +13,15 @@
                     <input matInput placeholder="" [(ngModel)]="campaignName" (ngModelChange)="campaignNameChange($event)">
                 </mat-form-field>
             </div>
-            
+
+            <div>
+                <div class="item-title">Campaign Type:</div>
+                <mat-radio-group [(ngModel)]="campaignType" aria-label="Select an option">
+                    <mat-radio-button value="video">Video</mat-radio-button>
+                    <mat-radio-button value="image">Image</mat-radio-button>
+                </mat-radio-group>
+            </div>
+
             <div>
                 <div class="item-title">Brand:</div>
                 <mat-form-field class="example-full-width">
