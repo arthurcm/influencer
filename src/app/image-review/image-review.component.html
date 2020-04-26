@@ -1,0 +1,26 @@
+<div class="concept-content">
+    <div class="image-title">Uploaded Images</div>
+    <div class="image-content">
+        <mat-card class="image-card" *ngFor="let image of images">
+            <img mat-card-image src="{{image.url}}">
+            <mat-card-content>
+              Some detections
+            </mat-card-content>
+        </mat-card>
+    </div>
+
+    <div>
+        <mat-card class="input-card">
+            <mat-card-header>
+                Feedback
+            </mat-card-header>
+            <mat-card-content>
+                <mat-form-field class="full-text-area">
+                    <textarea #feedbackTextArea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
+                </mat-form-field>
+                <button mat-button (click)="provideFeedback()">Leave Feedback</button>
+                <button mat-button (click)="approveImage()">Approve Concept</button>
+            </mat-card-content>
+        </mat-card>
+    </div>
+</div>

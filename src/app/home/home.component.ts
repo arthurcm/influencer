@@ -6,7 +6,7 @@ import { Campaign } from 'src/types/campaign';
 import * as moment from 'moment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
-import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
+import { LoadingSpinnerService } from '../services/loading-spinner.service';
 
 @Component({
     selector: 'app-home',
@@ -19,7 +19,7 @@ export class HomeComponent implements OnInit {
 
     @ViewChild(MatSort, {static: true}) sort: MatSort;
 
-    displayedColumns = ['campaign_name', 'end_time', 'post_time', 'brand', 'commision_dollar', 'link'];
+    displayedColumns = ['type', 'campaign_name', 'end_time', 'post_time', 'brand', 'commision_dollar', 'link'];
 
     constructor(
         public auth: AngularFireAuth,

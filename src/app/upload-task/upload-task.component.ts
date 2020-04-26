@@ -17,7 +17,7 @@ export class UploadTaskComponent implements OnInit {
     @Input() file: File;
     @Input() uploadPath: string;
     @Input() campaign: CampaignDetail;
-    @Output() onUploadSuccess = new EventEmitter<string>();
+    @Output() onUploadSuccess = new EventEmitter<any>();
 
     task: AngularFireUploadTask;
 
@@ -57,7 +57,10 @@ export class UploadTaskComponent implements OnInit {
                 finalize( async () =>  {
                     this.downloadURL = await ref.getDownloadURL().toPromise();
                     console.log(this.downloadURL);
-                    this.onUploadSuccess.emit(this.downloadURL);
+                    this.onUploadSuccess.emit({
+                        url: this.downloadURL,
+                        path,
+                    });
                     // Note: here we need to get campaign information so that we can upload the
                     // contents or add campaign information to content meta data
                     // this.db.collection('video').add( { downloadURL: this.downloadURL, path });

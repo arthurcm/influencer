@@ -3,9 +3,10 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireFunctions } from '@angular/fire/functions';
-import { CampaignDetail } from 'src/types/campaign';
+import { CampaignDetail, VideoMetaData } from 'src/types/campaign';
 import { VideoPlayerComponent } from '../shared/video-player/video-player.component';
-import { LoadingSpinnerService } from '../shared/loading-spinner/loading-spinner.service';
+import { LoadingSpinnerService } from '../services/loading-spinner.service';
+import { CampaignService } from '../services/campaign.service';
 
 @Component({
     selector: 'app-video-review',
@@ -22,6 +23,8 @@ export class VideoReviewComponent implements OnInit {
     campaign: CampaignDetail;
     sources = [];
 
+    videoMeta: VideoMetaData;
+
     constructor(
         public auth: AngularFireAuth,
         public router: Router,
@@ -29,6 +32,7 @@ export class VideoReviewComponent implements OnInit {
         private afs: AngularFirestore,
         private activatedRoute: ActivatedRoute,
         public loadingService: LoadingSpinnerService,
+        private campaignService: CampaignService,
     ) {
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('campaignId');
         this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
@@ -36,6 +40,15 @@ export class VideoReviewComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadingService.show();
+
+        this.campaignService.getVideoMetaData(
+            // 'video/HK0fpmQI7WOGUDwdmVpPffis7hY2/dzXZ7bZe7Km55R7Aoqzf/qxLkbGSsY6jsKJeX6O1A/beauty_video_4.mov'
+            'video/HK0fpmQI7WOGUDwdmVpPffis7hY2/5Wr6tLkEsgMEHeybtCek/1587830912337'
+        ).subscribe(result => {
+            this.videoMeta = result;
+            console.log(result);
+        });
+
         const callable = this.fns.httpsCallable('getCampaign');
         callable({ campaign_id: this.campaignId }).subscribe(result => {
             result.campaign_historys.forEach(campaign => {

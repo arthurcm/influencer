@@ -1,0 +1,28 @@
+<h2 mat-dialog-title>Upload New Video</h2>
+
+<mat-dialog-content class="mat-typography">
+    <div class="field-title">
+        Please choose method to upload.
+    </div>
+    <mat-radio-group class="option-group" [(ngModel)]="videoType" aria-label="Select an option">
+        <mat-radio-button value="local">Upload from your laptop</mat-radio-button>
+        <mat-radio-button value="youtube">Upload from Youtube</mat-radio-button>
+    </mat-radio-group>
+    <mat-divider></mat-divider>
+    <div *ngIf="videoType == 'local'">
+        <app-uploader [uploadPath]="uploadPath"  (onUploadSuccess)="uploadSuccess($event)"></app-uploader>
+    </div>
+
+    <div *ngIf="videoType == 'youtube'">
+        <div class="field-title">
+            Please copy your video file path
+        </div>
+        <mat-form-field class="full-text-area">
+            <textarea matInput [(ngModel)]="youtubeLink" placeholder=""></textarea>
+        </mat-form-field>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button  [disabled]="disableSave()" (click)="saveVideo()">Create</button>
+</mat-dialog-actions>

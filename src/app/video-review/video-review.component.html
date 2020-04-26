@@ -12,17 +12,34 @@
         </mat-card-content>
     </mat-card>
 
-    <mat-card class="input-card">
-        <mat-card-header>
-            Feedback
-        </mat-card-header>
-        <mat-card-content>
-            <button (click)="getTimeStamp()">Insert time</button>
-            <mat-form-field class="full-text-area">
-                <textarea #feedbackTextArea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
-            </mat-form-field>
-            <button mat-button (click)="provideFeedback()">Leave Feedback</button>
-            <button mat-button (click)="approveVideo()">Approve Concept</button>
-        </mat-card-content>
-    </mat-card>
+    <div>
+        <div class="left">
+            <mat-card class="input-card">
+                <mat-card-header>
+                    Auto Detection
+                </mat-card-header>
+                <mat-card-content>
+                    <div *ngIf="videoMeta">
+                        <div *ngFor="let text of videoMeta.text_reg_res"> [{{text.seg_start_time}}] {{text.text}} </div>
+                    </div>
+                </mat-card-content>
+            </mat-card>
+        </div>
+        <div class="right">
+            <mat-card class="input-card">
+                <mat-card-header>
+                    Feedback
+                </mat-card-header>
+                <mat-card-content>
+                    <button (click)="getTimeStamp()">Insert time</button>
+                    <mat-form-field class="full-text-area">
+                        <textarea #feedbackTextArea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
+                    </mat-form-field>
+                    <button mat-button (click)="provideFeedback()">Leave Feedback</button>
+                    <button mat-button (click)="approveVideo()">Approve Concept</button>
+                </mat-card-content>
+            </mat-card>
+        </div>
+    </div>
+
 </div>

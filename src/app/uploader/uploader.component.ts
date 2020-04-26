@@ -8,7 +8,7 @@ import { CampaignDetail } from 'src/types/campaign';
 })
 export class UploaderComponent {
 
-    @Output() onUploadSuccess = new EventEmitter<string>();
+    @Output() onUploadSuccess = new EventEmitter<any>();
     @Input() campaign: CampaignDetail;
     @Input() uploadPath: string;
 
@@ -25,8 +25,8 @@ export class UploaderComponent {
         }
     }
 
-    uploadSuccess(downloadURL: string) {
-        console.log(downloadURL);
-        this.onUploadSuccess.emit(downloadURL);
+    uploadSuccess(file) {
+        console.log(file);
+        this.onUploadSuccess.emit(file);
     }
 }

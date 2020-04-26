@@ -15,6 +15,7 @@ export interface CampaignData {
 export interface CampaignDetail {
     content_concept?: string;
     image?: string;
+    images?: any[];
     feed_back?: string;
     end_time: number;
     campaign_id?: string;
@@ -34,6 +35,16 @@ export interface CampaignDetail {
 }
 
 export interface CampaignExtraInfo {
+    type?: string;
     platform?: string;
     post_time?: number;
+}
+
+
+export interface VideoMetaData {
+    resolution_height: number;
+    text_reg_res: any[];
+    transcoded: boolean;
+    transcoded_path: string;
+    uri: string;
 }
