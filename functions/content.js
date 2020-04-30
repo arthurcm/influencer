@@ -37,6 +37,7 @@ function uriParse(video_name){
         uid: tokens[1],
         campaign_id: tokens[2],
         history_id: tokens[3],
+        file_name: tokens[4]
     };
 }
 

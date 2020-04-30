@@ -12,10 +12,11 @@ gcloud run deploy api-nodejs --image gcr.io/influencer-272204/api_nodejs --platf
 local test create campaign:
 curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" http://localhost:9090/create_campaign -X POST -d @create_campaign_local_test.json
 
-
+Test on cloud run:
+curl  -H "Content-Type: application/json" -H "Authorization:<idToken>"" -X PUT http://localhost:9090/finalize_media_draft/campaign_id/Hi4ZBC0bofNhjSc9uoUG/history_id/JgxTvni4tUKsM34oAU1W
 
 get test idToken:
 curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
 
-
+get refreshed idToken:
 curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'

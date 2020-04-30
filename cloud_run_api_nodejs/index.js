@@ -45,14 +45,19 @@ app.post('/create_campaign', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/get_campaign/campaign_id/:campaign_id', (req, res) => {
+app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
     console.log('Receiving campaign id', campaign_id);
     if(!campaign_id){
         res.status(400).send('Have to have a valid campaign_id');
     }
-    return campaign.getCampaign(req.params, uid, res);
+    return campaign.getCampaign(req.params, uid, res)
+        .then(result => {
+            res.status(200).send('Got campaign'.concat(result.toString()));
+            return result;
+        })
+        .catch(next);;
 });
 
 app.get('/get_campaign', (req, res, next) => {
@@ -65,7 +70,7 @@ app.get('/get_campaign', (req, res, next) => {
         .catch(next);
 });
 
-app.delete('/delete_campaign/campaign_id/:campaign_id', (req, res) => {
+app.delete('/delete_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     console.log('Receiving campaign id', req.params.campaign_id);
     return campaign.deleteCampaign(req.params, uid)
@@ -74,14 +79,10 @@ app.delete('/delete_campaign/campaign_id/:campaign_id', (req, res) => {
             res.status(200).send(result.toString());
             return result;
         })
-        .catch(err => {
-            console.log('Transaction failed', err);
-            throw err;
-        });
+        .catch(next);
 });
 
 app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
-    console.log('/feedback received a request', req.body);
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
     const uid = res.locals.uid;
@@ -98,14 +99,10 @@ app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, 
             res.status(200).send(result.toString());
             return result;
         })
-        .catch(err => {
-            console.log('Transaction failed', err);
-            throw err;
-        });
+        .catch(next);
 });
 
 app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
-    console.log('/finalize_campaign received a request', req.body);
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
     const uid = res.locals.uid;
@@ -122,14 +119,10 @@ app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (r
             res.status(200).send(result.toString());
             return result;
         })
-        .catch(err => {
-            console.log('Transaction failed', err);
-            throw err;
-        });
+        .catch(next);
 });
 
 app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
-    console.log('/finalize_media_draft received a request', req.body);
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
     const uid = res.locals.uid;
@@ -146,10 +139,66 @@ app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id',
             res.status(200).send(result.toString());
             return result;
         })
-        .catch(err => {
-            console.log('Transaction failed', err);
-            throw err;
-        });
+        .catch(next);
+});
+
+
+app.post('/create_feedback_thread', (req, res, next)=>{
+    console.log('/create_feedback_thread received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    console.log('incoming uid is ', res.locals.uid);
+    return campaign.createFeedbackThread(data, uid)
+        .then(result => {
+            res.status(200).send('Thread created'.concat(result.toString()));
+            return result;
+        })
+        .catch(next);
+});
+
+app.post('/reply_feedback_thread', (req, res, next)=>{
+    console.log('/reply_feedback_thread received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    console.log('incoming uid is ', res.locals.uid);
+    return campaign.replyToFeedbackThread(data, uid)
+        .then(result => {
+            res.status(200).send('Reply successful'.concat(result.toString()));
+            return result;
+        })
+        .catch(next);
+});
+
+app.delete('/delete_thread/media_object_path/:media_object_path/thread_id/:thread_id', (req, res, next) => {
+    const uid = res.locals.uid;
+    console.log('Receiving thread_id', req.params.thread_id);
+    return campaign.deleteThread(req.params, uid)
+        .then(result => {
+            console.log('Transaction completed.');
+            res.status(200).send(result.toString());
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/resolve_thread/media_object_path/:media_object_path/thread_id/:thread_id', (req, res, next) => {
+    const media_object_path = req.params.media_object_path;
+    const thread_id = req.params.thread_id;
+    const uid = res.locals.uid;
+    console.log('Receiving media_object_path', media_object_path, 'and thread_id', thread_id);
+    if(!thread_id){
+        res.status(400).send('Require a valid thread_id');
+    }
+    if(!media_object_path){
+        res.status(400).send('Require a valid media_object_path');
+    }
+    return campaign.resolveThread(media_object_path, thread_id)
+        .then(result => {
+            console.log('Transaction completed.');
+            res.status(200).send(result.toString());
+            return result;
+        })
+        .catch(next);
 });
 
 

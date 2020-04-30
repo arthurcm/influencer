@@ -206,16 +206,26 @@ async function ffmpeg_transcode(filePath){
     return promiseList[0];
 }
 
+
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
 function retrieveVideoMetaRef(filePath){
     // The following is to handle the auth, campaign id, and history id parsing.
     return retrieveMediaMetaRef(filePath, 'videos');
 }
 
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
 function retrieveImageMetaRef(filePath){
     // The following is to handle the auth, campaign id, and history id parsing.
     return retrieveMediaMetaRef(filePath, 'images');
 }
 
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
 function retrieveMediaMetaRef(filePath, mediaType){
     // mediaType has to be one of "videos", "images"
     // The following is to handle the auth, campaign id, and history id parsing.
@@ -251,17 +261,25 @@ function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName
             return err;
         });
 }
-
-async function getVideoMetaInternal(filePath) {
+function getVideoMetaInternal(filePath) {
     const video_ref = retrieveVideoMetaRef(filePath);
     return video_ref.get();
 }
 
-async function getImageMetaInternal(filePath) {
+
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+function retrieveSingleImageMetaRef(filePath) {
     const image_ref = retrieveImageMetaRef(filePath);
     const tokens = uriParse(filePath);
     const file_name = tokens.file_name;
-    return image_ref.collection('single_image').doc(file_name).get();
+    return image_ref.collection('single_image').doc(file_name);
+}
+
+
+function getImageMetaInternal(filePath) {
+    return retrieveImageMetaRef(filePath).get();
 }
 
 module.exports = {
@@ -297,5 +315,7 @@ module.exports = {
         console.log('Get single image meta data for ', filePath);
         return getImageMetaInternal(filePath);
     },
+    retrieveImageMetaRef,
+    retrieveVideoMetaRef,
 };
 

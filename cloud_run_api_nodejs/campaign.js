@@ -3,6 +3,64 @@ const admin = require('firebase-admin');
 const db = admin.firestore();
 
 
+function uriParse(video_name){
+    const tokens = video_name.split('/');
+    return {
+        uid: tokens[1],
+        campaign_id: tokens[2],
+        history_id: tokens[3],
+        file_name: tokens[4]
+    };
+}
+
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+function retrieveVideoMetaRef(filePath){
+    // The following is to handle the auth, campaign id, and history id parsing.
+    return retrieveMediaMetaRef(filePath, 'videos');
+}
+
+function retrieveSingleImageMetaRef(filePath) {
+    const image_ref = retrieveImageMetaRef(filePath);
+    const tokens = uriParse(filePath);
+    const file_name = tokens.file_name;
+    return image_ref.collection('single_image').doc(file_name);
+}
+
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+function retrieveImageMetaRef(filePath){
+    // The following is to handle the auth, campaign id, and history id parsing.
+    return retrieveMediaMetaRef(filePath, 'images');
+}
+
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+function retrieveMediaMetaRef(filePath, mediaType){
+    // mediaType has to be one of "videos", "images"
+    // The following is to handle the auth, campaign id, and history id parsing.
+    if(mediaType !== 'videos' && mediaType !== 'images'){
+        throw new Error('Currently only support videos or images as mediaType');
+    }
+    let parsedTokens = [];
+    try {
+        parsedTokens = uriParse(filePath);
+    }catch (e) {
+        console.error(('Parsing error', filePath));
+        throw new Error('Parsing error for uri:'.concat(filePath));
+    }
+    const campaign_id = parsedTokens.campaign_id;
+
+    // here we will use the campaign history_id to identify unique video versions.
+    const video_id = parsedTokens.history_id;
+    return db.collection('campaigns').doc(campaign_id)
+        .collection(mediaType).doc(video_id);
+}
+
+
 async function getAllCampaign(uid) {
     console.log('Get all campaign meta data that belong to current user.');
     return db.collection('influencers').doc(uid).collection('campaigns').get()
@@ -183,6 +241,117 @@ function deleteCampaign(data, uid){
 }
 
 
+// this is to define a single feed back object.
+// This object will have a structure with the following assumptions:
+// each media object can have multiple threads of feedbacks
+// each thread can have a list of feedbacks
+// each feedback is an object defined by the function below.
+function createFeedbackObject(feedback_str, media_object_path, like=0, dislike=0,
+                              video_offset=0, image_bounding_box={}, extra_data={}){
+    let FieldValue = admin.firestore.FieldValue;
+    return {
+        feedback_str,
+        like,
+        dislike,
+        video_offset,
+        image_bounding_box,
+        media_object_path,
+        extra_data,
+        timestamp: FieldValue.serverTimestamp()
+    };
+}
+
+
+// for creating a new thread of feedbacks
+function createFeedbackThread(data, uid){
+    if (!data.feedback_str) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty feedback_str.');
+    }
+    if (!data.media_object_path) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty media_object_path.');
+    }
+    const feedback_str = data.feedback_str;
+    const media_object_path = data.media_object_path;
+    let FieldValue = admin.firestore.FieldValue;
+    const feedback_obj = createFeedbackObject(feedback_str, media_object_path);
+    const new_thread = {
+        media_object_path,
+        resolved: false,
+        deleted: false,
+        timestamp: FieldValue.serverTimestamp(),
+    };
+
+    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    let thread_ref = media_object_ref.collection('feedback_threads').doc();
+    const batch = db.batch();
+    batch.set(thread_ref, new_thread);
+    let feedback_ref = thread_ref.collection('feedback_list').doc();
+    batch.set(feedback_ref, feedback_obj);
+    return batch.commit();
+}
+
+function replyToFeedbackThread(data, uid){
+    if (!data.feedback_str) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty feedback_str.');
+    }
+    if (!data.media_object_path) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty media_object_path.');
+    }
+    if (!data.thread_id) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a legal thread_id.');
+    }
+    const feedback_str = data.feedback_str;
+    const media_object_path = data.media_object_path;
+    const thread_id = data.thread_id;
+    const feedback_obj = createFeedbackObject(feedback_str, media_object_path);
+    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    return media_object_ref
+        .collection('feedback_threads').doc(thread_id)
+        .collection('feedback_list').add(feedback_obj);
+}
+
+function deleteThread(data, uid){
+    if (!data.media_object_path) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific media_object_path.');
+    }
+    if (!data.thread_id) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific thread_id.');
+    }
+    const media_object_path = data.media_object_path;
+    const thread_id = data.thread_id;
+    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    return media_object_ref.collection('feedback_threads').doc(thread_id)
+        .update({deleted : true});
+}
+
+
+function resolveThread(media_object_path, thread_id){
+    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    return media_object_ref.collection('feedback_threads').doc(thread_id)
+        .update({resolved :  true});
+}
+
+
+function retrieveMediaObjRef(media_object_path){
+    let media_object_ref = null;
+    if(media_object_path.startsWith('video/')){
+        media_object_ref = retrieveVideoMetaRef(media_object_path);
+    }else if(media_object_path.startsWith('image/')){
+        media_object_ref = retrieveSingleImageMetaRef(media_object_path);
+    }else{
+        throw new Error('Not supported object type');
+    }
+    return media_object_ref;
+}
+
+
 // called by brand side to submit feed back. This is a special case of updateCampaign, and is provided to
 // simplify API layer.
 // it requires three fields: campaign_id, historyId, and feed_back
@@ -337,4 +506,8 @@ module.exports = {
     updateCampaign,
     finalizeCampaign,
     finalizeVideoDraft,
+    createFeedbackThread,
+    replyToFeedbackThread,
+    resolveThread,
+    deleteThread,
 };
