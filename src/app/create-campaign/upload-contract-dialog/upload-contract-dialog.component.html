@@ -1,0 +1,15 @@
+<h2 mat-dialog-title>Upload Contract</h2>
+
+<mat-dialog-content class="mat-typography">
+    <div>
+        <app-uploader [uploadPath]="uploadPath"  (onUploadSuccess)="uploadSuccess($event)"></app-uploader>
+    </div>
+    <mat-divider></mat-divider>
+    <div class="field-title">
+        {{uploadContract.length}} Contract(s) Uploaded
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button  [disabled]="disableSave()" (click)="saveImages()">Create</button>
+</mat-dialog-actions>

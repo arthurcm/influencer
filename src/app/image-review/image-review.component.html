@@ -1,7 +1,16 @@
 <div class="concept-content">
     <div class="image-title">Uploaded Images</div>
-    <div class="image-content">
-        <mat-card class="image-card" *ngFor="let image of images">
+    <mat-card class="input-card" *ngIf="images">
+        <mat-card-header>
+            Caption
+        </mat-card-header>
+        <mat-card-content>
+            {{images.caption}}
+        </mat-card-content>
+    </mat-card>
+
+    <div class="image-content" *ngIf="images">
+        <mat-card class="image-card" *ngFor="let image of images.images">
             <img mat-card-image src="{{image.url}}">
             <mat-card-content>
               Some detections

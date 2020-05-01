@@ -3,7 +3,7 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireFunctions } from '@angular/fire/functions';
-import { CampaignDetail, VideoMetaData } from 'src/types/campaign';
+import { CampaignDetail, VideoMetaData, ImageContent } from 'src/types/campaign';
 import { VideoPlayerComponent } from '../shared/video-player/video-player.component';
 import { LoadingSpinnerService } from '../services/loading-spinner.service';
 import { CampaignService } from '../services/campaign.service';
@@ -20,7 +20,7 @@ export class ImageReviewComponent implements OnInit {
     historyId = '';
     newFeedback = '';
 
-    images: [];
+    images: ImageContent;
 
     constructor(
         public auth: AngularFireAuth,
@@ -47,7 +47,7 @@ export class ImageReviewComponent implements OnInit {
                 }
             });
             this.images = JSON.parse(this.campaign.video);
-            this.images.forEach(image => {
+            this.images.images.forEach(image => {
                 this.campaignService.getImageMetaData(image['page']).subscribe(detection => {
                     console.log(detection);
                 });

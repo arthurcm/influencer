@@ -22,6 +22,16 @@
                 </mat-card>
                 <mat-card *ngIf="campaign" class="basic-card">
                     <mat-card-header>
+                        Contracts
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div *ngFor="let contract of campaign.extra_info['contracts']">
+                            {{contract.path}}
+                        </div>
+                    </mat-card-content>
+                </mat-card>
+                <mat-card *ngIf="campaign" class="basic-card">
+                    <mat-card-header>
                         Millstones
                     </mat-card-header>
                     <mat-card-content>
@@ -93,7 +103,8 @@
                             ----------------    v{{videoCampaignList.length - i}}   ----------------
                         </div>
                         <div class="concept-box" [ngClass]="{'is-final': campaign.is_final}">
-                            <div class="image-container" *ngFor="let image of campaign.images">
+                            <div>{{campaign.images.caption}}</div>
+                            <div class="image-container" *ngFor="let image of campaign.images.images">
                                 <div class="img-holder" >
                                     <img class="image" src="{{image.url}}">
                                 </div>
