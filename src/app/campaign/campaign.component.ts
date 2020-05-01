@@ -12,6 +12,7 @@ import { CampaignService } from '../services/campaign.service';
 import { MatDialog } from '@angular/material/dialog';
 import { UploadVideoDialogComponent } from './upload-video-dialog/upload-video-dialog.component';
 import { UploadImageDialogComponent } from './upload-image-dialog/upload-image-dialog.component';
+import { SendMessageDialogComponent } from './send-message-dialog/send-message-dialog.component';
 
 @Component({
     selector: 'app-campaign',
@@ -75,7 +76,7 @@ export class CampaignComponent implements OnInit {
                         campaign['is_final'] = true;
                     }
                     if (this.campaign.extra_info['type'] === 'image') {
-                        this.campaign.images = JSON.parse(this.campaign.video);
+                        campaign.images = JSON.parse(campaign.video);
                     }
                     videoCampaignList.push(campaign);
                 }
@@ -134,24 +135,60 @@ export class CampaignComponent implements OnInit {
     }
 
     shareImages(campaign) {
-        const url = `/image-review/${campaign.campaign_id}/${campaign.history_id}`;
-        this.campaignService.shareContent('shanshuo0918@gmail.com', 'shanshuo0918@gmail.com', url).subscribe(result => {
-            console.log(result);
+        const dialogRef = this.dialog.open(SendMessageDialogComponent, {
+            width: '600px',
+            data: {
+
+            },
+        });
+
+        dialogRef.afterClosed().subscribe(message => {
+            if (message) {
+                const url = `/image-review/${campaign.campaign_id}/${campaign.history_id}`;
+                this.campaignService.shareContent(message.receiver, 'shanshuo0918@gmail.com', url).subscribe(result => {
+                    console.log(result);
+                });
+            }
         });
     }
 
     shareConcept(campaign) {
-        const url = `/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`;
-        this.campaignService.shareContent('shanshuo0918@gmail.com', 'shanshuo0918@gmail.com', url).subscribe(result => {
-            console.log(result);
+
+        const dialogRef = this.dialog.open(SendMessageDialogComponent, {
+            width: '600px',
+            data: {
+
+            },
         });
+
+        dialogRef.afterClosed().subscribe(message => {
+            if (message) {
+                const url = `/video-review/${campaign.campaign_id}/${campaign.history_id}`;
+                this.campaignService.shareContent(message.receiver, 'shanshuo0918@gmail.com', url).subscribe(result => {
+                    console.log(result);
+                });
+            }
+        });
+
     }
 
     shareVideo(campaign) {
-        const url = `/video-review/${campaign.campaign_id}/${campaign.history_id}`;
-        this.campaignService.shareContent('shanshuo0918@gmail.com', 'shanshuo0918@gmail.com', url).subscribe(result => {
-            console.log(result);
+        const dialogRef = this.dialog.open(SendMessageDialogComponent, {
+            width: '600px',
+            data: {
+
+            },
         });
+
+        dialogRef.afterClosed().subscribe(message => {
+            if (message) {
+                const url = `/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`;
+                this.campaignService.shareContent(message.receiver, 'shanshuo0918@gmail.com', url).subscribe(result => {
+                    console.log(result);
+                });
+            }
+        });
+
     }
 
     uploadYoutubeSuccess(youtubeLink) {
@@ -203,6 +240,7 @@ export class CampaignComponent implements OnInit {
         const callable = this.fns.httpsCallable('updateCampaign');
         callable(newCampaign).subscribe(result => {
             console.log(result);
+            result.updated_campaign_data.images = JSON.parse(result.updated_campaign_data.video);
             this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
             this.loadingService.hide();
         });
@@ -218,8 +256,8 @@ export class CampaignComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(result => {
             console.log(`Dialog result: ${result}`);
-            if (result && result['images']) {
-                this.uploadImageSuccess(result['images']);
+            if (result) {
+                this.uploadImageSuccess(result);
             }
         });
     }

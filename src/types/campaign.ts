@@ -38,6 +38,7 @@ export interface CampaignExtraInfo {
     type?: string;
     platform?: string;
     post_time?: number;
+    contracts: UploadFile[];
 }
 
 
@@ -47,4 +48,14 @@ export interface VideoMetaData {
     transcoded: boolean;
     transcoded_path: string;
     uri: string;
+}
+
+export interface UploadFile {
+    url: string;
+    path: string;
+}
+
+export interface ImageContent {
+    images: UploadFile[];
+    caption: string;
 }

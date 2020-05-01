@@ -6,6 +6,8 @@ import { CampaignDetail, CampaignExtraInfo } from 'src/types/campaign';
 import { FormControl } from '@angular/forms';
 import * as moment from 'moment';
 import { LoadingSpinnerService } from '../services/loading-spinner.service';
+import { UploadContractDialogComponent } from './upload-contract-dialog/upload-contract-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
 // import { default as _rollupMoment, Moment, MomentFormatSpecification, MomentInput } from 'moment';
 // const moment = _rollupMoment || _moment;
 
@@ -35,6 +37,7 @@ export class CreateCampaignComponent implements OnInit {
 
     extraInfo: CampaignExtraInfo = {
         platform: '',
+        contracts: [],
     };
 
     campaignName = '';
@@ -51,6 +54,8 @@ export class CreateCampaignComponent implements OnInit {
     newMilestone = '';
     newRequirement = '';
 
+    uploadedContract = [];
+
     platform = new FormControl([]);
     platformList: string[] = ['Youtube', 'Instagram', 'Weibo', 'Tiktok'];
 
@@ -59,6 +64,7 @@ export class CreateCampaignComponent implements OnInit {
         public router: Router,
         private fns: AngularFireFunctions,
         public loadingService: LoadingSpinnerService,
+        public dialog: MatDialog,
     ) {
         // this.createCampaign();
     }
@@ -109,6 +115,7 @@ export class CreateCampaignComponent implements OnInit {
 
     createCampaign() {
         console.log(this.campaignData);
+        this.extraInfo.contracts = this.uploadedContract;
         this.extraInfo.type = this.campaignType;
         this.extraInfo.platform = this.platform.value;
         this.extraInfo.post_time = Math.round(this.postDate.getTime() / 86400000) * 86400000 +
@@ -129,5 +136,24 @@ export class CreateCampaignComponent implements OnInit {
 
     removeFromList(list, i) {
         list.splice(i, 1);
+    }
+
+
+    uploadContract() {
+        this.auth.user.subscribe(user => {
+            const dialogRef = this.dialog.open(UploadContractDialogComponent, {
+                width: '600px',
+                data: {
+                    uploadPath: `contract/${user.uid}/`,
+                },
+            });
+
+            dialogRef.afterClosed().subscribe(result => {
+                console.log(`Dialog result: ${result}`);
+                if (result && result['contract']) {
+                    this.uploadedContract = result['contract'];
+                }
+            });
+        });
     }
 }

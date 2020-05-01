@@ -124,9 +124,9 @@
         Contract
     </mat-card-header>
     <mat-card-content>
-        Select files to upload. WIP
+        <div *ngFor="let contract of uploadedContract"> Contract </div>
+        <button mat-flat-button color="primary" (click)="uploadContract()"> Upload Contract </button>
     </mat-card-content>
 </mat-card>
-
 
 <button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>

@@ -59,7 +59,9 @@ import { HttpClientModule } from '@angular/common/http';
 import { LoadingSpinnerComponent } from './shared/loading-spinner/loading-spinner.component';
 import { UploadVideoDialogComponent } from './campaign/upload-video-dialog/upload-video-dialog.component';
 import { UploadImageDialogComponent } from './campaign/upload-image-dialog/upload-image-dialog.component';
+import { SendMessageDialogComponent } from './campaign/send-message-dialog/send-message-dialog.component';
 import { ImageReviewComponent } from './image-review/image-review.component';
+import { UploadContractDialogComponent } from './create-campaign/upload-contract-dialog/upload-contract-dialog.component';
 @NgModule({
     declarations: [
         AppComponent,
@@ -76,6 +78,8 @@ import { ImageReviewComponent } from './image-review/image-review.component';
         LoadingSpinnerComponent,
         UploadVideoDialogComponent,
         UploadImageDialogComponent,
+        SendMessageDialogComponent,
+        UploadContractDialogComponent,
         ImageReviewComponent,
     ],
     imports: [
@@ -129,6 +133,8 @@ import { ImageReviewComponent } from './image-review/image-review.component';
         LoadingSpinnerComponent,
         UploadVideoDialogComponent,
         UploadImageDialogComponent,
+        SendMessageDialogComponent,
+        UploadContractDialogComponent,
     ],
     providers: [
         MatDatepickerModule,

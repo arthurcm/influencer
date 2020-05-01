@@ -22,19 +22,20 @@ export class UploadImageDialogComponent {
 
     uploadImages = [];
 
+    caption = '';
+
     uploadSuccess(image) {
         this.uploadImages.push(image);
     }
-
 
     disableSave() {
         return this.uploadImages.length < 0;
     }
 
-
     saveImages() {
         this.dialogRef.close({
             images: this.uploadImages,
+            caption: this.caption,
         });
     }
 }
