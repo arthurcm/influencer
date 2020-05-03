@@ -7,7 +7,7 @@ app.use(cors());
 const admin = require('firebase-admin');
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
-    databaseURL: 'https://influencer-272204.firebaseio.com'
+    databaseURL: 'https://influencer-272204.firebaseio.com',
 });
 
 // middleware for token verification
@@ -39,7 +39,7 @@ app.post('/create_campaign', (req, res, next) => {
     console.log('incoming uid is ', res.locals.uid);
     return campaign.createCampaign(data, uid)
         .then(result => {
-            res.status(200).send('Campaign created'.concat(result.toString()));
+            res.status(200).send(result.toString());
             return result;
         })
         .catch(next);
@@ -54,10 +54,10 @@ app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     }
     return campaign.getCampaign(req.params, uid, res)
         .then(result => {
-            res.status(200).send('Got campaign'.concat(result.toString()));
+            res.status(200).send(result.toString());
             return result;
         })
-        .catch(next);;
+        .catch(next);
 });
 
 app.get('/get_campaign', (req, res, next) => {
@@ -150,8 +150,22 @@ app.post('/create_feedback_thread', (req, res, next)=>{
     console.log('incoming uid is ', res.locals.uid);
     return campaign.createFeedbackThread(data, uid)
         .then(result => {
-            res.status(200).send('Thread created'.concat(result.toString()));
+            res.status(200).send(result.toString());
             return result;
+        })
+        .catch(next);
+});
+
+app.get('/get_threads/media_object_path/:media_object_path', async (req, res, next) => {
+    const uid = res.locals.uid;
+    console.log('receiving', req.params.media_object_path);
+    return campaign.getAllThreads(req.params, uid)
+        .then(result => {
+            console.log('Transaction completed.');
+            return Promise.all(result).then(values => {
+                res.status(200).send(values);
+                return results;
+            });
         })
         .catch(next);
 });
@@ -163,7 +177,7 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
     console.log('incoming uid is ', res.locals.uid);
     return campaign.replyToFeedbackThread(data, uid)
         .then(result => {
-            res.status(200).send('Reply successful'.concat(result.toString()));
+            res.status(200).send(result.toString());
             return result;
         })
         .catch(next);

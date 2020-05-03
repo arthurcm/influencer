@@ -9,7 +9,7 @@ function uriParse(video_name){
         uid: tokens[1],
         campaign_id: tokens[2],
         history_id: tokens[3],
-        file_name: tokens[4]
+        file_name: tokens[4],
     };
 }
 
@@ -113,7 +113,7 @@ async function getCampaign(data, uid, res) {
                     final_campaign,
                     final_video_draft_history_id,
                     final_video_draft,
-                })
+                });
                 return {
                     final_history_id,
                     final_campaign,
@@ -246,10 +246,11 @@ function deleteCampaign(data, uid){
 // each media object can have multiple threads of feedbacks
 // each thread can have a list of feedbacks
 // each feedback is an object defined by the function below.
-function createFeedbackObject(feedback_str, media_object_path, like=0, dislike=0,
+function createFeedbackObject(feedback_str, media_object_path, displayName='', like=0, dislike=0,
                               video_offset=0, image_bounding_box={}, extra_data={}){
-    let FieldValue = admin.firestore.FieldValue;
+    const FieldValue = admin.firestore.FieldValue;
     return {
+        displayName,
         feedback_str,
         like,
         dislike,
@@ -257,7 +258,7 @@ function createFeedbackObject(feedback_str, media_object_path, like=0, dislike=0
         image_bounding_box,
         media_object_path,
         extra_data,
-        timestamp: FieldValue.serverTimestamp()
+        timestamp: FieldValue.serverTimestamp(),
     };
 }
 
@@ -274,8 +275,9 @@ function createFeedbackThread(data, uid){
     }
     const feedback_str = data.feedback_str;
     const media_object_path = data.media_object_path;
-    let FieldValue = admin.firestore.FieldValue;
-    const feedback_obj = createFeedbackObject(feedback_str, media_object_path);
+    const displayName = data.displayName;
+    const FieldValue = admin.firestore.FieldValue;
+    const feedback_obj = createFeedbackObject(feedback_str, media_object_path, displayName);
     const new_thread = {
         media_object_path,
         resolved: false,
@@ -283,13 +285,33 @@ function createFeedbackThread(data, uid){
         timestamp: FieldValue.serverTimestamp(),
     };
 
-    let media_object_ref = retrieveMediaObjRef(media_object_path);
-    let thread_ref = media_object_ref.collection('feedback_threads').doc();
+    const media_object_ref = retrieveMediaObjRef(media_object_path);
+    const thread_ref = media_object_ref.collection('feedback_threads').doc();
     const batch = db.batch();
     batch.set(thread_ref, new_thread);
-    let feedback_ref = thread_ref.collection('feedback_list').doc();
+    const feedback_ref = thread_ref.collection('feedback_list').doc();
     batch.set(feedback_ref, feedback_obj);
     return batch.commit();
+}
+
+async function getAllThreads(data, uid) {
+    if (!data.media_object_path) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty media_object_path.');
+    }
+    const media_object_ref = retrieveMediaObjRef(data.media_object_path);
+    const thread_ref = media_object_ref.collection('feedback_threads');
+    const snapshot = await thread_ref.orderBy('timestamp', 'desc').get();
+    return await snapshot.docs.map(async thread_doc => {
+        const feedback_collection = await thread_doc.ref.collection('feedback_list').get();
+        const feedback_list = await feedback_collection.docs.map(doc => doc.data());
+        const thread_data = thread_doc.data();
+        return {
+            thread_id: thread_doc.id,
+            thread: thread_data,
+            feedback_list,
+        };
+    });
 }
 
 function replyToFeedbackThread(data, uid){
@@ -307,9 +329,10 @@ function replyToFeedbackThread(data, uid){
     }
     const feedback_str = data.feedback_str;
     const media_object_path = data.media_object_path;
+    const displayName = data.displayName;
     const thread_id = data.thread_id;
-    const feedback_obj = createFeedbackObject(feedback_str, media_object_path);
-    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    const feedback_obj = createFeedbackObject(feedback_str, media_object_path, displayName);
+    const media_object_ref = retrieveMediaObjRef(media_object_path);
     return media_object_ref
         .collection('feedback_threads').doc(thread_id)
         .collection('feedback_list').add(feedback_obj);
@@ -326,14 +349,14 @@ function deleteThread(data, uid){
     }
     const media_object_path = data.media_object_path;
     const thread_id = data.thread_id;
-    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    const media_object_ref = retrieveMediaObjRef(media_object_path);
     return media_object_ref.collection('feedback_threads').doc(thread_id)
         .update({deleted : true});
 }
 
 
 function resolveThread(media_object_path, thread_id){
-    let media_object_ref = retrieveMediaObjRef(media_object_path);
+    const media_object_ref = retrieveMediaObjRef(media_object_path);
     return media_object_ref.collection('feedback_threads').doc(thread_id)
         .update({resolved :  true});
 }
@@ -510,4 +533,5 @@ module.exports = {
     replyToFeedbackThread,
     resolveThread,
     deleteThread,
+    getAllThreads,
 };
