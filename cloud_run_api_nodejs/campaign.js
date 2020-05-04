@@ -384,12 +384,12 @@ function feedback(data, uid, campaign_id, history_id){
     // Get a new write batch
     const batch = db.batch();
     const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc(history_id);
-    batch.update(campaignHistoryRef, {feed_back: data.feed_back});
+    batch.set(campaignHistoryRef, {feed_back: data.feed_back}, {merge: true});
 
     const influencerCamRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.update(influencerCamRef, {'campaign_data.feed_back': data.feed_back});
+    batch.set(influencerCamRef, {'campaign_data.feed_back': data.feed_back}, {merge: true});
     return batch.commit();
 }
 
