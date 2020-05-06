@@ -1,0 +1,30 @@
+<button mat-flat-button (click)="showAddNewThread()">Comment</button>
+<div *ngIf="shouldShowAddNewThread">
+    <mat-form-field class="full-text-area">
+        <textarea #feedbackTextArea matInput [(ngModel)]="newComment" placeholder=""></textarea>
+    </mat-form-field>
+    <button mat-button>Cancel</button>
+    <button mat-button (click)="createComment()">Submit</button>
+</div>
+<mat-divider></mat-divider>
+
+<div *ngFor="let thread of allThreads">
+    <div> {{thread.feedback_list[thread.feedback_list.length - 1].feedback_str}}</div>
+    
+    <button mat-flat-button (click)="showReplyThread(thread)">Reply</button>
+    <div *ngIf="thread.showEdit">
+        <mat-form-field class="full-text-area">
+            <textarea #feedbackTextArea matInput [(ngModel)]="newComment" placeholder=""></textarea>
+        </mat-form-field>
+        <button mat-button>Cancel</button>
+        <button mat-button (click)="replyThread(thread)">Submit</button>
+    </div>
+
+    <div *ngFor="let feedback of thread.feedback_list; trackBy: trackItem"> 
+        <div *ngIf="!feedback.original">
+            {{feedback.feedback_str}} ({{feedback.timestamp['_seconds']}})
+        </div>
+    </div>
+
+    <mat-divider></mat-divider>
+</div>

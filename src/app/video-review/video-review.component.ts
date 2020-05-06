@@ -24,6 +24,7 @@ export class VideoReviewComponent implements OnInit {
     sources = [];
 
     videoMeta: VideoMetaData;
+    videoPath: string;
 
     constructor(
         public auth: AngularFireAuth,
@@ -38,19 +39,12 @@ export class VideoReviewComponent implements OnInit {
         this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
     }
 
-    ngOnInit(): void {
+    async ngOnInit() {
         this.loadingService.show();
 
-        this.campaignService.getVideoMetaData(
-            // 'video/HK0fpmQI7WOGUDwdmVpPffis7hY2/dzXZ7bZe7Km55R7Aoqzf/qxLkbGSsY6jsKJeX6O1A/beauty_video_4.mov'
-            'video/HK0fpmQI7WOGUDwdmVpPffis7hY2/5Wr6tLkEsgMEHeybtCek/1587830912337'
-        ).subscribe(result => {
-            this.videoMeta = result;
-            console.log(result);
-        });
 
         const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaign_id: this.campaignId }).subscribe(result => {
+        callable({ campaign_id: this.campaignId }).subscribe(async result => {
             result.campaign_historys.forEach(campaign => {
                 if (campaign.history_id === this.historyId) {
                     this.campaign = campaign;
@@ -62,6 +56,17 @@ export class VideoReviewComponent implements OnInit {
                     type: 'video/mp4',
                 },
             ];
+
+            const videoIndex = this.campaign.video.indexOf('/video');
+
+            this.videoPath = 'video/HK0fpmQI7WOGUDwdmVpPffis7hY2/51zqgUMOw45MibQSNhKk/1588350956040';
+            this.campaignService.getVideoMetaData(
+                this.videoPath
+            ).subscribe(result => {
+                this.videoMeta = result;
+                console.log(result);
+            });
+
             this.newFeedback = this.campaign.feed_back;
             console.log(this.campaign);
             this.loadingService.hide();
