@@ -6,7 +6,7 @@ export const environment = {
     production: false,
     firebase: {
         apiKey: 'AIzaSyDUBT_LoUy-yZSbGkODOexwxN5jJgwaMw4',
-        authDomain: 'influencer-272204.firebaseapp.com',
+        authDomain: 'www.lifo.ai',
         databaseURL: 'https://influencer-272204.firebaseio.com',
         projectId: 'influencer-272204',
         storageBucket: 'influencer-272204.appspot.com',

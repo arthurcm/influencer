@@ -42,4 +42,13 @@
         </div>
     </div>
 
+    <mat-card class="input-card" *ngIf="campaign">
+        <mat-card-header>
+            Thread
+        </mat-card-header>
+        <mat-card-content>
+            <app-media-thread [mediaPath]="videoPath"></app-media-thread>
+        </mat-card-content>
+    </mat-card>
+
 </div>

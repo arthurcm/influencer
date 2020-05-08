@@ -1,7 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpHeaders, HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpHeaders, HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
 import { VideoMetaData } from 'src/types/campaign';
+import { AngularFireAuth } from '@angular/fire/auth';
+import { catchError } from 'rxjs/operators';
+import { Thread } from 'src/types/thread';
 
 @Injectable({
     providedIn: 'root',
@@ -10,6 +13,7 @@ export class CampaignService {
 
     constructor(
         private http: HttpClient,
+        public auth: AngularFireAuth,
     ) {}
 
     shareContent(toEmail: string, fromEmail: string, url: string) {
@@ -56,7 +60,9 @@ export class CampaignService {
         };
         console.log(data);
 
-        return this.http.get<any>(url, httpOptions);
+        return this.http.get<any>(url, httpOptions).pipe(
+            catchError(this.handleError)
+        );
     }
 
     transcodeVideo(videoUrl: string, videoType: string = 'video/mp4'): Observable<VideoMetaData> {
@@ -71,5 +77,85 @@ export class CampaignService {
             }),
         };
         return this.http.post<any>(url, data, httpOptions);
+    }
+
+    private handleError(error: HttpErrorResponse) {
+        if (error.error instanceof ErrorEvent) {
+            // A client-side or network error occurred. Handle it accordingly.
+            console.error('An error occurred:', error.error.message);
+        } else {
+            // The backend returned an unsuccessful response code.
+            // The response body may contain clues as to what went wrong,
+            console.error(
+                `Backend returned code ${error.status}, ` +
+            `body was: ${error.error}`);
+        }
+        // return an observable with a user-facing error message
+        return throwError(
+            'Something bad happened; please try again later.');
+    };
+
+    async getThread(path: string) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `https://api-nodejs-4lladlc2eq-uc.a.run.app/get_threads/media_object_path/${encodeURIComponent(path)}`;
+        return this.http.get<Thread[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async createThread(path: string, feedback: string) {
+        const request = {
+            media_object_path: path,
+            feedback_str: feedback,
+        };
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = 'https://api-nodejs-4lladlc2eq-uc.a.run.app/create_feedback_thread';
+        return this.http.post<any>(reqeustUrl, request, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async replyThread(path: string, feedback: string, threadId: string) {
+        const request = {
+            media_object_path: path,
+            feedback_str: feedback,
+            thread_id: threadId,
+        };
+        const token = await (await this.auth.currentUser).getIdToken();
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = 'https://api-nodejs-4lladlc2eq-uc.a.run.app/reply_feedback_thread';
+        return this.http.post<any>(reqeustUrl, request, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+
+    }
+
+    deleteThread(path: string, threadId: string) {
+        const httpOptions = {
+            headers: new HttpHeaders({
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `https://api-general-4lladlc2eq-uc.a.run.app/delete_thread/media_object_path/${path}/thread_id/${threadId}`;
+        return this.http.delete<any>(reqeustUrl, httpOptions);
     }
 }

@@ -62,6 +62,7 @@ import { UploadImageDialogComponent } from './campaign/upload-image-dialog/uploa
 import { SendMessageDialogComponent } from './campaign/send-message-dialog/send-message-dialog.component';
 import { ImageReviewComponent } from './image-review/image-review.component';
 import { UploadContractDialogComponent } from './create-campaign/upload-contract-dialog/upload-contract-dialog.component';
+import { MediaThreadComponent } from './media-thread/media-thread.component';
 @NgModule({
     declarations: [
         AppComponent,
@@ -81,6 +82,7 @@ import { UploadContractDialogComponent } from './create-campaign/upload-contract
         SendMessageDialogComponent,
         UploadContractDialogComponent,
         ImageReviewComponent,
+        MediaThreadComponent,
     ],
     imports: [
         BrowserModule,
