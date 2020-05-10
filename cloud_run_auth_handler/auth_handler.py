@@ -238,7 +238,7 @@ def write_client_secret():
         json_object = json.dumps(dictionary, indent=4)
         with open(CLIENT_SECRETS_FILE, "w") as outfile:
             outfile.write(json_object)
-            print(f'Sucessfully wrote secret file to {CLIENT_SECRETS_FILE}')
+            print(f'Successfully wrote secret file to {CLIENT_SECRETS_FILE}')
     else:
         print('Client secret file found. Continue')
 

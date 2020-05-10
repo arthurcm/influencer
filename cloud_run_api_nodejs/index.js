@@ -42,7 +42,7 @@ app.post('/create_campaign', (req, res, next) => {
     console.log('incoming uid is ', res.locals.uid);
     return campaign.createCampaign(data, uid)
         .then(result => {
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -79,7 +79,7 @@ app.delete('/delete_campaign/campaign_id/:campaign_id', (req, res, next) => {
     return campaign.deleteCampaign(req.params, uid)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -99,7 +99,7 @@ app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, 
     return campaign.feedback(req.body, uid, campaign_id, history_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -118,7 +118,7 @@ app.put('/share/feedback/campaign_id/:campaign_id/history_id/:history_id', (req,
     return campaign.feedback(req.body, 'no_uid', campaign_id, history_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -138,7 +138,7 @@ app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (r
     return campaign.finalizeCampaign(uid, campaign_id, history_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -159,7 +159,7 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
     return campaign.finalizeCampaign('no_uid', campaign_id, history_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -180,7 +180,7 @@ app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id',
     return campaign.finalizeVideoDraft(uid, campaign_id, history_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -200,7 +200,7 @@ app.put('/share/finalize_media_draft/campaign_id/:campaign_id/history_id/:histor
     return campaign.finalizeVideoDraft('no_uid', campaign_id, history_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -214,7 +214,7 @@ app.post('/create_feedback_thread', (req, res, next)=>{
     console.log('incoming uid is ', res.locals.uid);
     return campaign.createFeedbackThread(data, uid)
         .then(result => {
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -226,7 +226,7 @@ app.post('/share/create_feedback_thread', (req, res, next)=>{
     const data = req.body;
     return campaign.createFeedbackThread(data, 'no_uid')
         .then(result => {
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -269,7 +269,7 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
     console.log('incoming uid is ', res.locals.uid);
     return campaign.replyToFeedbackThread(data, uid)
         .then(result => {
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -280,7 +280,7 @@ app.post('/share/reply_feedback_thread', (req, res, next)=>{
     const data = req.body;
     return campaign.replyToFeedbackThread(data, 'no_uid')
         .then(result => {
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -292,7 +292,7 @@ app.delete('/delete_thread/media_object_path/:media_object_path/thread_id/:threa
     return campaign.deleteThread(req.params, uid)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -304,7 +304,7 @@ app.delete('/share/delete_thread/media_object_path/:media_object_path/thread_id/
     return campaign.deleteThread(req.params, 'no_uid')
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -325,7 +325,7 @@ app.put('/resolve_thread/media_object_path/:media_object_path/thread_id/:thread_
     return campaign.resolveThread(media_object_path, thread_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
@@ -346,7 +346,7 @@ app.put('/share/resolve_thread/media_object_path/:media_object_path/thread_id/:t
     return campaign.resolveThread(media_object_path, thread_id)
         .then(result => {
             console.log('Transaction completed.');
-            res.status(200).send(result.toString());
+            res.status(200).send('{"status" : "OK"}');
             return result;
         })
         .catch(next);
