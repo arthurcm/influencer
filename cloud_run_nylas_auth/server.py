@@ -147,8 +147,8 @@ def authorize():
     nylas_client = APIClient(app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
                              app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"])
     if not nylas_code:
-        id_token = flask.request.args.get('id_token')
-        # id_token = flask.request.headers.get('Authorization')
+        # id_token = flask.request.args.get('id_token')
+        id_token = flask.request.headers.get('Authorization')
         if not id_token:
             logging.error('Valid id_token required')
             response = flask.jsonify('Valid id_token required')
