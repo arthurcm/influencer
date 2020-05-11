@@ -5,7 +5,7 @@ Local testing container:
 PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/api_nodejs
 
 
-To deploy auth handler with service account access to secret manager:
+To deploy api-nodejs with service account access to secret manager:
 gcloud run deploy api-nodejs --image gcr.io/influencer-272204/api_nodejs --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
 
 

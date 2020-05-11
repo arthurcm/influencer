@@ -1,6 +1,7 @@
 {
   "name": "api-nodejs",
   "description": "Cloud run for nodejs api",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },

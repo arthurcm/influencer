@@ -19,3 +19,14 @@ gcloud container clusters create video-transcoder1 --zone=us-central1-c --addons
 local test on GKE:
 transcode video
 curl -vX POST http://video-transcoder-k8s.default.35.193.22.35.xip.io/transcode_gcs -d @local_test.json --header "Content-Type: application/json"
+
+
+get test idToken:
+curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
+
+get refreshed idToken:
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'
+
+
+local test get_content_meta:
+curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" http://localhost:9090/get_content_meta/name/image%2FHK0fpmQI7WOGUDwdmVpPffis7hY2%2FdzXZ7bZe7Km55R7Aoqzf%2FqxLkbGSsY6jsKJeX6O1A%2Fgakki.jpg -X GET

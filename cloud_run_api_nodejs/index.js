@@ -40,13 +40,18 @@ app.post('/create_campaign', (req, res, next) => {
     const data = req.body;
     const uid = res.locals.uid;
     console.log('incoming uid is ', res.locals.uid);
-    return campaign.createCampaign(data, uid)
+    let results = campaign.createCampaign(data, uid);
+    const campaign_id = results.campaign_id;
+    const history_id = results.history_id;
+    let batch = results.batch_promise;
+    return batch.commit()
         .then(result => {
-            res.status(200).send('{"status" : "OK"}');
+            res.status(200).send({campaign_id, history_id});
             return result;
         })
         .catch(next);
 });
+
 
 app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
@@ -57,7 +62,12 @@ app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     }
     return campaign.getCampaign(req.params, uid, res)
         .then(result => {
-            res.status(200).send(result.toString());
+            const history_list = result[0];
+            const finalized_campaign_data = result[1];
+            res.status(200).send({
+                history_list,
+                finalized_campaign_data,
+            });
             return result;
         })
         .catch(next);
@@ -68,6 +78,22 @@ app.get('/get_campaign', (req, res, next) => {
     return campaign.getAllCampaign(uid)
         .then(result => {
             res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/update_campaign/campaign_id/:campaign_id', (req, res, next) => {
+    console.log('/update_campaign received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    const campaign_id = req.params.campaign_id;
+    let results = campaign.updateCampaign(campaign_id, data, uid);
+    const history_id = results.history_id;
+    let batch = results.batch_promise;
+    return batch.commit()
+        .then(result => {
+            res.status(200).send({campaign_id, history_id});
             return result;
         })
         .catch(next);
@@ -95,6 +121,9 @@ app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, 
     }
     if(!history_id){
         res.status(400).send('Require a valid history_id');
+    }
+    if(!req.body || !req.body.feed_back){
+        res.status(400).send('Require a none empty feed back');
     }
     return campaign.feedback(req.body, uid, campaign_id, history_id)
         .then(result => {
@@ -124,6 +153,7 @@ app.put('/share/feedback/campaign_id/:campaign_id/history_id/:history_id', (req,
         .catch(next);
 });
 
+
 app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
@@ -143,7 +173,6 @@ app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (r
         })
         .catch(next);
 });
-
 
 
 app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {

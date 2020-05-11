@@ -282,12 +282,96 @@ function getImageMetaInternal(filePath) {
     return retrieveImageMetaRef(filePath).get();
 }
 
+function retrieveMediaObjRef(media_object_path){
+    let media_object_ref = null;
+    if(media_object_path.startsWith('video/')){
+        media_object_ref = retrieveVideoMetaRef(media_object_path);
+    }else if(media_object_path.startsWith('image/')){
+        media_object_ref = retrieveSingleImageMetaRef(media_object_path);
+    }else{
+        throw new Error('Not supported object type');
+    }
+    return media_object_ref;
+}
+
+function createTextMeta(data){
+    const hash_tags = [];
+    if(data.hash_tags) {
+        data.hash_tags.forEach((item) => {
+            hash_tags.push(item);
+        });
+    }
+    let extra_info = {};
+    try{
+        if(data.extra_info) {
+            extra_info = JSON.parse(data.extra_info);
+        }
+    }
+    catch(err){
+        console.log('incoming extra info needs to be json object', err);
+        extra_info = {};
+    }
+    return {
+        title: String(data.title),
+        description: String(data.description),
+        hash_tags,
+        extra_info,
+    };
+}
+
+function getContentMeta(data, uid){
+    if(!data.name || (!data.name.startsWith('image/') && !data.name.startsWith('video/'))){
+        console.log('Receiving incoming data', data);
+        throw new Error('Request needs to have data object with valid name field');
+    }
+    const file_path = data.name;
+    console.log('Get single image meta data for ', file_path);
+    return retrieveMediaObjRef(file_path).get();
+}
+
+function addContentTextMeta(data, uid){
+    if(!data.name || (!data.name.startsWith('image/') && !data.name.startsWith('video/'))){
+        console.log('Receiving incoming data', data);
+        throw new Error('Request needs to have data object with valid name field');
+    }
+    const file_path = data.name;
+    console.log('Get single image meta data for ', file_path);
+    const contentRef = retrieveMediaObjRef(file_path);
+    const content_text_meta = createTextMeta(data);
+    return contentRef.set({content_text_meta} , {merge: true});
+}
+
+function updateContentTextMeta(data, uid){
+    if(!data.name || (!data.name.startsWith('image/') && !data.name.startsWith('video/'))){
+        console.log('Receiving incoming data', data);
+        throw new Error('Request needs to have data object with valid name field');
+    }
+    const file_path = data.name;
+    console.log('Get single image meta data for ', file_path);
+    const contentRef = retrieveMediaObjRef(file_path);
+    const content_text_meta = createTextMeta(data);
+    return contentRef.update({content_text_meta});
+}
+
+
+function deleteContentMeta(data, uid){
+    if (!data.name) {
+        console.log('Receiving incoming data', data);
+        throw new Error('Request needs to have data object with valid name field');
+    }
+
+    const file_path = data.name;
+    console.log('Deleting content meta data', file_path);
+    return retrieveMediaObjRef(file_path).delete();
+}
+
+
 module.exports = {
     async handleTranscodingRequestGcs(data) {
-        if (!data.contentType){
+        if (!data.name){
             throw new Error('ContentType needs to be video/.');
         }
-        if (data.contentType && !data.contentType.startsWith('video/')) {
+        if (data.name && !data.name.startsWith('video/')) {
             throw new Error('Not video, skip transcoding.');
         }
         const filePath = data.name;
@@ -315,7 +399,9 @@ module.exports = {
         console.log('Get single image meta data for ', filePath);
         return getImageMetaInternal(filePath);
     },
-    retrieveImageMetaRef,
-    retrieveVideoMetaRef,
+    getContentMeta,
+    deleteContentMeta,
+    addContentTextMeta,
+    updateContentTextMeta,
 };
 

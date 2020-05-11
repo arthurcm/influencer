@@ -61,7 +61,7 @@ function retrieveMediaMetaRef(filePath, mediaType){
 }
 
 
-async function getAllCampaign(uid) {
+function getAllCampaign(uid) {
     console.log('Get all campaign meta data that belong to current user.');
     return db.collection('influencers').doc(uid).collection('campaigns').get()
         .then(querySnapshot => {
@@ -76,29 +76,24 @@ async function getAllCampaign(uid) {
 }
 
 // Get campaign meta information when been called.
-async function getCampaign(data, uid, res) {
+function getCampaign(data, uid, res) {
     const markers = [];
     const campaign_id = data.campaign_id;
     console.log('Querying campaign', campaign_id);
-    await db.collection('campaigns').doc(campaign_id)
-        .collection('campaignHistory').orderBy('time_stamp', 'desc').get()
+    let latest_history_ref = db.collection('campaigns').doc(campaign_id)
+        .collection('campaignHistory').orderBy('timestamp', 'desc').get()
         .then(querySnapshot => {
             querySnapshot.docs.forEach(doc => {
                 markers.push(doc.data());
             });
             console.log('Found', markers.length, 'results');
             return markers;
-        })
-        .catch(err => {
-            console.log('failed to get campaign data!', err);
-            return err;
         });
     let final_history_id = '';
     let final_campaign = {};
     let final_video_draft_history_id = '';
     let final_video_draft = {};
-
-    return db.collection('campaigns').doc(campaign_id).get()
+    let final_campaign_ref = db.collection('campaigns').doc(campaign_id).get()
         .then(camSnapShot => {
             if (!camSnapShot.exists){
                 return {};
@@ -107,13 +102,6 @@ async function getCampaign(data, uid, res) {
                 final_campaign = camSnapShot.get('final_campaign');
                 final_video_draft_history_id = camSnapShot.get('final_video_draft_history_id');
                 final_video_draft = camSnapShot.get('final_video_draft');
-                res.send( {
-                    campaign_historys: markers,
-                    final_history_id,
-                    final_campaign,
-                    final_video_draft_history_id,
-                    final_video_draft,
-                });
                 return {
                     final_history_id,
                     final_campaign,
@@ -121,14 +109,11 @@ async function getCampaign(data, uid, res) {
                     final_video_draft,
                 };
             }
-        })
-        .catch(err => {
-            console.log('failed to get campaign data!', err);
-            return err;
         });
+    return Promise.all([latest_history_ref, final_campaign_ref]);
 }
 
-function createCampaignData(campaign_id, data, uid, time_stamp, history_id){
+function createCampaignData(campaign_id, data, uid, history_id){
     if (!campaign_id){
         throw new functions.https.HttpsError('campaign_id must not be empty!');
     }
@@ -144,6 +129,14 @@ function createCampaignData(campaign_id, data, uid, time_stamp, history_id){
             });
         }else{
             console.log('incoming milestone needs to be an array.');
+        }
+        const image = [];
+        if(data.image){
+            data.image.forEach((item) => {
+                image.push(item);
+            });
+        }else{
+            console.log('incoming image field needs to be an array.');
         }
         const requirements = [];
         if(data.requirements){
@@ -163,6 +156,7 @@ function createCampaignData(campaign_id, data, uid, time_stamp, history_id){
             console.log('incoming extra info needs to be json object', err);
             extra_info = {};
         }
+        const FieldValue = admin.firestore.FieldValue;
         const campaignData  = {
             campaign_id,
             brand: String(data.brand),
@@ -172,7 +166,7 @@ function createCampaignData(campaign_id, data, uid, time_stamp, history_id){
             content_concept: String(data.content_concept),
             end_time: Number(data.end_time),
             feed_back: String(data.feed_back),
-            image: String(data.image),
+            image,
             video: String(data.video),
             milestones,
             requirements,
@@ -180,7 +174,7 @@ function createCampaignData(campaign_id, data, uid, time_stamp, history_id){
             shipping_address: String(data.shipping_address),
             tracking_number: String(data.tracking_number),
             influencer_id: uid,
-            time_stamp,
+            timestamp: FieldValue.serverTimestamp(),
             history_id: String(history_id),
         };
         return campaignData;
@@ -192,18 +186,16 @@ function createCampaignData(campaign_id, data, uid, time_stamp, history_id){
 }
 
 // called when influencers decide to create a new campaign with related information. u
-async function createCampaign(data, uid){
-
+function createCampaign(data, uid){
     const campaignRef = db.collection('campaigns').doc();
     const campaign_id = campaignRef.id;
     console.log('Creating a new campaign with id', campaign_id);
-    const time_stamp = Date.now();
 
     const batch = db.batch();
 
     const historyRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = historyRef.id;
-    const campaignData  = createCampaignData(campaign_id, data, uid, time_stamp, history_id);
+    const campaignData  = createCampaignData(campaign_id, data, uid, history_id);
     const campaignDocRef = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').doc(history_id);
     batch.set(campaignDocRef, campaignData);
@@ -218,9 +210,36 @@ async function createCampaign(data, uid){
         campaign_data: campaignData,
     });
     console.log('creating campaign with id', campaign_id);
-    return await batch.commit();
+    return {
+        campaign_id,
+        history_id,
+        batch_promise: batch
+    };
 }
 
+// called when an existing campaign gets updated, this include anything that campaign data touches on.
+// the data is expected to have the same schema (subset) of campaign data.
+function updateCampaign(campaign_id, data, uid){
+    console.log('input data is', data, 'updating campaign', campaign_id);
+    // Get a new write batch
+    const batch = db.batch();
+
+    const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
+    const history_id = campaignHistoryRef.id;
+    const newCamp = createCampaignData(campaign_id, data, uid, history_id);
+    console.log('Created new campaign data:', newCamp);
+    batch.set(campaignHistoryRef, newCamp);
+
+    // get the updated campaign information, and add it to influencer's profile.
+    const influencerCamRef = db.collection('influencers')
+        .doc(uid).collection('campaigns')
+        .doc(campaign_id);
+    batch.update(influencerCamRef, {campaign_data: newCamp});
+    return {
+        history_id,
+        batch_promise: batch,
+    };
+}
 
 function deleteCampaign(data, uid){
     if (!data.campaign_id) {
@@ -389,53 +408,13 @@ function feedback(data, uid, campaign_id, history_id){
     const influencerCamRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.set(influencerCamRef, {'campaign_data.feed_back': data.feed_back}, {merge: true});
+    if (uid === 'no_uid'){
+        batch.set(influencerCamRef, {'campaign_data.brand_feed_back': data.feed_back}, {merge: true});
+    }else {
+        batch.set(influencerCamRef, {'campaign_data.feed_back': data.feed_back}, {merge: true});
+    }
     return batch.commit();
 }
-
-
-// called when an existing campaign gets updated, this include anything that campaign data touches on.
-// the data is expected to have the same schema (subset) of campaign data.
-function updateCampaign(data, uid){
-    if (!data.campaign_id) {
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-          'with a specific campaign_id.');
-    }
-
-    console.log('input data is', data);
-    const campaign_id = data.campaign_id;
-    const time_stamp = Date.now();
-    data.time_stamp = time_stamp;
-
-    // Get a new write batch
-    const batch = db.batch();
-
-    const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
-    const history_id = campaignHistoryRef.id;
-    const newCamp = createCampaignData(campaign_id, data, uid, time_stamp, history_id);
-    console.log('Created new campaign data:', newCamp);
-    batch.set(campaignHistoryRef, newCamp);
-
-    // get the updated campaign information, and add it to influencer's profile.
-    const influencerCamRef = db.collection('influencers')
-        .doc(uid).collection('campaigns')
-        .doc(campaign_id);
-    batch.update(influencerCamRef, {campaign_data: newCamp});
-    batch.commit()
-        .then(res => {
-            console.log('Transaction completed.');
-            return res;
-        })
-        .catch(err => {
-            console.log('Transaction failed', err);
-            throw err;
-        });
-    return {
-        history_id,
-        updated_campaign_data: newCamp,
-    };
-}
-
 
 async function finalizeAndWriteCampaignData(campaign_id, history_id, callback, uid){
     let campaignData = null;
