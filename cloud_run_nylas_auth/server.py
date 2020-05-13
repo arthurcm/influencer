@@ -22,6 +22,7 @@ client.setup_logging()
 
 firebase_app = firebase_admin.initialize_app()
 
+LIFO_CALENDAR_EVENT_SIGNATURE = " -- Created by Lifo.ai"
 
 # Imports from third-party modules that this project depends on
 try:
@@ -97,6 +98,24 @@ SCOPE_REDIRECT_URL_MAPPING = {
 }
 
 
+@app.before_request
+def hook():
+    if not flask.session.get('uid'):
+        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+        if not id_token:
+            logging.error('Valid id_token required')
+            response = flask.jsonify('Valid id_token required')
+            response.status_code = 400
+            return response
+        uid = token_verification(id_token)
+        if not uid:
+            logging.error('id_token verification failed')
+            response = flask.jsonify('id_token verification failed')
+            response.status_code = 400
+            return response
+        flask.session['uid'] = uid
+
+
 # Define what Flask should do when someone visits the root URL of this website.
 @app.route("/")
 def index():
@@ -141,26 +160,22 @@ def token_verification(id_token):
 def authorize():
     """
     This API authenticate for a chosen scope, and saves the nylas access code to cloud sql.
+    Note: this API is the single entry point for authorization flow, and it will deactivate all previous access tokens
+    for the given Nylas id.
     :return: flask response, 200 if success, 400 if failed.
     """
     nylas_code = flask.request.args.get('code')
+    error = flask.request.args.get('error')
+
+    # this is to handle potential authorization errors including access denied by customers.
+    if error:
+        logging.error(f'Authorization failed due to error: {error}')
+        response = flask.jsonify(error)
+        response.status_code = 400
+        return response
     nylas_client = APIClient(app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
                              app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"])
     if not nylas_code:
-        # id_token = flask.request.args.get('id_token')
-        id_token = flask.request.headers.get('Authorization')
-        if not id_token:
-            logging.error('Valid id_token required')
-            response = flask.jsonify('Valid id_token required')
-            response.status_code = 400
-            return response
-        uid = token_verification(id_token)
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 400
-            return response
-        flask.session['uid'] = uid
         scope = flask.request.args.get('scope')
         if not scope:
             logging.error('Need a valid scope string, currently supporting: calendar or email.send')
@@ -173,6 +188,7 @@ def authorize():
             response.status_code = 400
             return response
         logging.info(f'receiving request for scope {scope}, and redirect to {redirect_url}')
+        flask.session['scope'] = scope
 
         # Redirect your user to the auth_url
         auth_url = nylas_client.authentication_url(
@@ -183,39 +199,203 @@ def authorize():
     else:
         # note, here we have not handled the declined auth case
         logging.info('authentication success')
-        uid = flask.session['uid']
-        logging.info(f'handling auth for uid: {uid}')
         access_token = nylas_client.token_for_code(nylas_code)
-        return sql_handler.save_nylas_token(uid, nylas_access_token=access_token)
+
+        nylas_client = APIClient(
+            app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+            app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+            access_token=access_token,
+        )
+
+        # Revoke all tokens except for the new one
+        nylas_client.revoke_all_tokens(keep_access_token=access_token)
+
+        account = nylas_client.account
+        nylas_account_id = account.id
+
+        uid = flask.session['uid']
+        scope = flask.session['scope']
+        logging.info(f'handling auth for firebase uid: {uid} for scope {scope} and nylas id {nylas_account_id}')
+
+        # Note: here we automatically handle the Nylas id changing case, as each user is recognized by their firebase
+        # uid, and any new Nylas ids will be overwritten. This does bring in limitations: a user can only authorize one
+        # Calendar account, which is not an issue for foreseeable future.
+        return sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id)
+
+
+@app.route("/revoke_auth", methods=["DELETE"])
+def revoke_auth():
+    """
+    This API essentially unauthorize and removes the customer from the Nylas authentication, along with auth for the
+    Calendar and email accounts.
+    """
+    uid = flask.session['uid']
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        logging.info(f'The account {uid} has not authorized yet')
+        response = flask.jsonify('no auth')
+        response.status_code = 200
+        return response
+    nylas_client = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token,
+    )
+    nylas_client.revoke_all_tokens()
+    response = flask.jsonify('OK')
+    response.status_code = 200
+    return response
+
+
+@app.route("/verify_auth_status", methods=["GET"])
+def verify_auth_status():
+    """
+    This is an API that verifies the authorization status. Called when user loads up the page.
+    """
+    uid = flask.session['uid']
+    logging.info(f'verifying auth sync status for uid {uid}')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        logging.info(f'The account {uid} has not authorized yet')
+        response = flask.jsonify('no auth')
+        response.status_code = 200
+        return response
+    nylas_client = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token,
+    )
+    sync_state = nylas_client.account.sync_state
+    if sync_state == 'running':
+        logging.info(f'The account {uid} is in sync')
+        response = flask.jsonify('OK')
+        response.status_code = 200
+        return response
+    else:
+        # Here we simplify the status into binary cases.
+        # for more statuses, check https://docs.nylas.com/reference#account-sync-status
+        logging.warning(f'The account {uid} need resync')
+        response = flask.jsonify('Need resync')
+        response.status_code = 200
+        return response
+
+
+def event_to_dict(event):
+    return {
+        'id': event.id,
+        'title': event.title,
+        'when': event.when,
+        'status': event.status,
+        'busy': event.busy,
+        'owner': event.owner,
+        'participants': event.participants,
+        'location': event.location,
+        'calendar_id': event.calendar_id,
+        'account_id': event.account_id
+    }
+
+
+@app.route("/get_lifo_events", methods=["GET"])
+def get_lifo_events():
+    """
+    Currently we rely on the hardcoded LIFO_CALENDAR_EVENT_SIGNATURE for events filtering.
+    In future we may want to save all the events created by our product, and then get accordingly. 
+    But this will force us to fully manage the events life cycle.
+    """
+    uid = flask.session.get('uid')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        response = flask.jsonify({})
+        response.status_code = 200
+        return response
+    nylas_client = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+    events = nylas_client.events.where(description=LIFO_CALENDAR_EVENT_SIGNATURE)
+    logging.info(f'Found events {str(events)}')
+    response = flask.jsonify([event_to_dict(event) for event in events])
+    response.status_code = 200
+    return response
+
+
+@app.route("/events/<event_id>", methods=["GET", "PUT", "DELETE"])
+def events(event_id):
+    if not event_id:
+        logging.error('Need a valid event id')
+        response = flask.jsonify('Need a valid event id')
+        response.status_code = 400
+        return response
+    uid = flask.session.get('uid')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    nylas_client = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+    try:
+        if flask.request.method == "GET":
+            event = nylas_client.events.get(event_id)
+            response = flask.jsonify(event_to_dict(event))
+            response.status_code = 200
+            return response
+        elif flask.request.method == "DELETE":
+            nylas_client.events.delete(event_id, notify_participants='true')
+            response = flask.jsonify('{Status: OK}')
+            response.status_code = 200
+            return response
+        elif flask.request.method == "PUT":
+            data = flask.request.json
+            event = nylas_client.events.where(event_id=event_id).first()
+            if not event:
+                response = flask.jsonify('unable to modify event')
+                response.status_code = 400
+                return response
+            event = update_event_from_json(event, data, event.calendar_id)
+            event.save(notify_participants='true')
+            logging.info('Calendar event updated successfully')
+            response = flask.jsonify('Calendar event updated successfully')
+            response.status_code = 200
+            return response
+    except Exception as e:
+        response = flask.jsonify(str(e))
+        response.status_code = 400
+        return response
+
+
+def update_event_from_json(event, data, calendar_id):
+    event.title = data.get('title')
+    event.location = data.get('location')
+
+    # we hardcode the description to be our signature here
+    # this is to allow easy filtering on the events.
+    event.description = LIFO_CALENDAR_EVENT_SIGNATURE
+    event.busy = True
+
+    # Provide the appropriate id for a calendar to add the event to a specific calendar
+    event.calendar_id = calendar_id
+
+    # Participants are added as a list of dictionary objects
+    # email is required, name is optional
+    event.participants = data.get('participants')
+
+    # The event date/time can be set in one of 3 ways.
+    # For details: https://docs.nylas.com/reference#event-subobjects
+    event.when = data.get('when')
+    return event
 
 
 @app.route("/create_calendar_event", methods=["POST"])
 def create_calendar_event():
-    id_token = flask.request.headers.get('Authorization')
-    session_uid = flask.session.get('uid')
+    uid = flask.session.get('uid')
     data = flask.request.json
-    logging.info(f'Receiving request {data} for session uid {session_uid} and id_token {id_token}')
-    if not id_token and not session_uid:
-        logging.error('Valid id_token required')
-        response = flask.jsonify('Valid id_token required')
-        response.status_code = 400
-        return response
-    elif not session_uid:
-        uid = token_verification(id_token)
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 400
-            return response
-    else:
-        uid = session_uid
+    logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
         response = flask.jsonify('Failed to get access token! Re-authenticate the user')
         response.status_code = 400
         return response
-    logging.info(f'Retrieved nylas access token {access_token}')
-
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
         app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
@@ -240,22 +420,7 @@ def create_calendar_event():
 
     # Create a new event
     event = nylas.events.create()
-
-    event.title = data.get('title')
-    event.location = data.get('location')
-    event.description = data.get('description')
-    event.busy = True
-
-    # Provide the appropriate id for a calendar to add the event to a specific calendar
-    event.calendar_id = calendar_id
-
-    # Participants are added as a list of dictionary objects
-    # email is required, name is optional
-    event.participants = data.get('participants')
-
-    # The event date/time can be set in one of 3 ways.
-    # For details: https://docs.nylas.com/reference#event-subobjects
-    event.when = data.get('when')
+    event = update_event_from_json(event, data, calendar_id)
 
     # .save()must be called to save the event to the third party provider
     # The event object must have values assigned to calendar_id and when before you can save it.
@@ -270,24 +435,9 @@ def create_calendar_event():
 
 @app.route("/send_email", methods=["POST"])
 def send_email():
-    id_token = flask.request.headers.get('Authorization')
-    session_uid = flask.session.get('uid')
+    uid = flask.session.get('uid')
     data = flask.request.json
-    logging.info(f'Receiving request {data} for session uid {session_uid} and id_token {id_token}')
-    if not id_token and not session_uid:
-        logging.error('Valid id_token required')
-        response = flask.jsonify('Valid id_token required')
-        response.status_code = 400
-        return response
-    elif not session_uid:
-        uid = token_verification(id_token)
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 400
-            return response
-    else:
-        uid = session_uid
+    logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
         response = flask.jsonify('Failed to get access token! Re-authenticate the user')

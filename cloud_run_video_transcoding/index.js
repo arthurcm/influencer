@@ -50,42 +50,6 @@ app.post('/transcode_gcs', (req, res, next) => {
 });
 
 
-// to be deprecated
-app.get('/get_video_meta/name/:name', (req, res, next) => {
-    const uid = res.locals.uid;
-    const video_meta = content.getVideoMeta(req.params);
-    video_meta
-        .then(doc => {
-            if (!doc.exists) {
-                console.log('No such video!');
-                return {};
-            }
-            console.log('video meta data:', doc.data());
-            res.status(200).send(doc.data());
-            return doc.data();
-        })
-        .catch(next);
-});
-
-
-// to be deprecated
-app.get('/get_image_meta/name/:name', (req, res, next) => {
-    const uid = res.locals.uid;
-    const image_meta = content.getImageMeta(req.params);
-    image_meta
-        .then(doc => {
-            if (!doc.exists) {
-                console.log('No such image!');
-                res.status(400).send({});
-                return {};
-            }
-            console.log('Image meta data:', doc.data());
-            res.status(200).send(doc.data());
-            return doc.data();
-        })
-        .catch(next);
-});
-
 app.get('/get_content_meta/name/:name', (req, res, next) => {
     const uid = res.locals.uid;
     const content_meta = content.getContentMeta(req.params);

@@ -6,6 +6,7 @@ PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CO
 
 
 To deploy nylas_auth handler with service account access to secret manager:
+gcloud builds submit --tag gcr.io/influencer-272204/nylas_auth
 gcloud run deploy nylas-auth --image gcr.io/influencer-272204/nylas_auth --service-account=65044462485-compute@developer.gserviceaccount.com --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
 gcloud run services update nylas-auth --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
 
@@ -21,4 +22,5 @@ curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms
 
 get refreshed idToken:
 curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'
+
 

@@ -34,6 +34,7 @@ class Sqlhandler:
                 'nylas_access_token', meta,
                 Column('uid', String, primary_key=True),
                 Column('nylas_access_token', String),
+                Column('nylas_account_id', String)
             )
 
         # [START cloud_sql_postgres_sqlalchemy_create]
@@ -105,10 +106,12 @@ class Sqlhandler:
             """
             CREATE TABLE IF NOT EXISTS nylas_access_token(
                 uid text PRIMARY KEY, 
-                nylas_access_token text
+                nylas_access_token text,
+                nylas_account_id text
             );
             """
             )
+
 
     def get_nylas_access_token(self, uid):
         try:
@@ -120,7 +123,7 @@ class Sqlhandler:
             logging.error(f'Error getting access code for uid {uid}, the error is' + str(e))
             return ''
 
-    def save_nylas_token(self, uid, nylas_access_token):
+    def save_nylas_token(self, uid, nylas_access_token, nylas_account_id):
 
         # Verify that the team is one of the allowed options
         if not uid and not nylas_access_token:
@@ -141,10 +144,13 @@ class Sqlhandler:
 
                 insert_stmt = insert(self.nylas_access_token).values(
                     uid=uid,
-                    nylas_access_token=nylas_access_token)
+                    nylas_access_token=nylas_access_token,
+                    nylas_account_id=nylas_account_id
+                )
                 do_update_stmt = insert_stmt.on_conflict_do_update(
                     index_elements=['uid'],
-                    set_=dict(nylas_access_token=nylas_access_token)
+                    set_=dict(nylas_access_token=nylas_access_token,
+                              nylas_account_id=nylas_account_id)
                 )
                 conn.execute(do_update_stmt)
         except Exception as e:
