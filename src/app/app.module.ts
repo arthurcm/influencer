@@ -27,6 +27,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatRadioModule } from '@angular/material/radio';
+import { MatSidenavModule } from '@angular/material/sidenav';
 
 import { NgxMatDatetimePickerModule, NgxMatTimepickerModule, NgxMatNativeDateModule } from '@angular-material-components/datetime-picker';
 import { NgxMatMomentModule } from '@angular-material-components/moment-adapter';
@@ -48,8 +49,8 @@ import { CreateCampaignComponent } from './create-campaign/create-campaign.compo
 import { MenuComponent } from './shared/menu/menu.component';
 import { ConceptFeedbackComponent } from './concept-feedback/concept-feedback.component';
 import { VideoReviewComponent } from './video-review/video-review.component';
-import { LoginComponent } from './login/login.component';
-import { HomeComponent } from './home/home.component';
+import { LoginComponent } from './auth/login/login.component';
+import { HomeComponent } from './main/home/home.component';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { UploadTaskComponent } from './upload-task/upload-task.component';
@@ -63,6 +64,9 @@ import { SendMessageDialogComponent } from './campaign/send-message-dialog/send-
 import { ImageReviewComponent } from './image-review/image-review.component';
 import { UploadContractDialogComponent } from './create-campaign/upload-contract-dialog/upload-contract-dialog.component';
 import { MediaThreadComponent } from './media-thread/media-thread.component';
+import { SignUpComponent } from './auth/sign-up/sign-up.component';
+import { MainComponent } from './main/main.component';
+import { CampaignCardComponent } from './main/campaign-card/campaign-card.component';
 @NgModule({
     declarations: [
         AppComponent,
@@ -83,6 +87,9 @@ import { MediaThreadComponent } from './media-thread/media-thread.component';
         UploadContractDialogComponent,
         ImageReviewComponent,
         MediaThreadComponent,
+        SignUpComponent,
+        MainComponent,
+        CampaignCardComponent,
     ],
     imports: [
         BrowserModule,
@@ -115,6 +122,7 @@ import { MediaThreadComponent } from './media-thread/media-thread.component';
         ReactiveFormsModule,
         MatDialogModule,
         MatRadioModule,
+        MatSidenavModule,
         VgCoreModule,
         VgControlsModule,
         VgOverlayPlayModule,

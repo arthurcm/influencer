@@ -1,0 +1,34 @@
+
+.campaign-card-container {
+    box-shadow: 1px 1px 16px rgba(13, 5, 60, 0.2);
+    border-radius: 26px;
+    height: 130px;
+    width: 100%;
+    border-left: 8px solid #207BEC;
+
+    .calendar {
+        display: inline-block;
+        padding: 30px;
+        border-right: 1px solid black;
+    }
+
+    .preview {
+        display: inline-block;
+    }
+
+    .name {
+        display: inline-block;
+    }
+
+    .brand {
+        display: inline-block;
+    }
+
+    .commission {
+        display: inline-block;
+    }
+
+    .icon {
+        display: inline-block;
+    }
+}

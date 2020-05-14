@@ -1,12 +1,12 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
-import { AngularFireFunctions } from '@angular/fire/functions';
 import { Campaign } from 'src/types/campaign';
 import * as moment from 'moment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
-import { LoadingSpinnerService } from '../services/loading-spinner.service';
+import { LoadingSpinnerService } from '../../services/loading-spinner.service';
+import { CampaignService } from 'src/app/services/campaign.service';
 
 @Component({
     selector: 'app-home',
@@ -24,17 +24,17 @@ export class HomeComponent implements OnInit {
     constructor(
         public auth: AngularFireAuth,
         public router: Router,
-        private fns: AngularFireFunctions,
         public loadingService: LoadingSpinnerService,
+        public campaignService: CampaignService,
     ) {
 
     }
 
-    ngOnInit() {
-        const callable = this.fns.httpsCallable('getCampaign');
+    async ngOnInit() {
         this.loadingService.show();
-        callable({}).subscribe(result => {
-            this.campaigns = result.campaigns.filter(campaign => {
+        const campaign = await this.campaignService.getAllCampaignForUser();
+        campaign.subscribe(result => {
+            this.campaigns = result.filter(campaign => {
                 return campaign.campaign_data;
             });
             this.campaignDataSource = new MatTableDataSource(this.campaigns);
@@ -64,24 +64,24 @@ export class HomeComponent implements OnInit {
     }
 
     deleteCampaign(campaign) {
-        this.loadingService.show();
-        const callable = this.fns.httpsCallable('deleteCampaign');
-        console.log(campaign);
-        callable({
-            campaign_id: campaign.campaign_data.campaign_id,
-        }).subscribe(result => {
-            let index = -1;
-            for (let i = 0; i < this.campaigns.length; i ++) {
-                if (campaign.campaign_data.campaign_id === this.campaigns[i].campaign_data.campaign_id) {
-                    index = i;
-                    break;
-                }
-            }
-            this.campaigns.splice(index, 1);
-            this.campaignDataSource = new MatTableDataSource(this.campaigns);
-            this.loadingService.hide();
-            console.log(this.campaigns);
-        });
+        // this.loadingService.show();
+        // const callable = this.fns.httpsCallable('deleteCampaign');
+        // console.log(campaign);
+        // callable({
+        //     campaign_id: campaign.campaign_data.campaign_id,
+        // }).subscribe(result => {
+        //     let index = -1;
+        //     for (let i = 0; i < this.campaigns.length; i ++) {
+        //         if (campaign.campaign_data.campaign_id === this.campaigns[i].campaign_data.campaign_id) {
+        //             index = i;
+        //             break;
+        //         }
+        //     }
+        //     this.campaigns.splice(index, 1);
+        //     this.campaignDataSource = new MatTableDataSource(this.campaigns);
+        //     this.loadingService.hide();
+        //     console.log(this.campaigns);
+        // });
     }
 
     sortData(sort) {

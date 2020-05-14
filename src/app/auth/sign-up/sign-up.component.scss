@@ -1,0 +1,15 @@
+@import 'common';
+
+.left {
+    vertical-align: top;
+    display: inline-block;
+    width: 35%;
+    background-color: $COLOR_BG;
+    height: 100vh;
+}
+.right {
+    vertical-align: top;
+    display: inline-block;
+    width: 65%;
+    height: 100vh;
+}

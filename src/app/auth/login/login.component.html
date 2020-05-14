@@ -1,0 +1,35 @@
+<!-- <h1 *ngIf="auth.user| async as user">Hello {{ user.displayName }}!</h1> -->
+
+<div>
+    <div class="left">
+
+    </div>
+    <div class="right">
+        <div class="login-box">
+            <div>Sign In</div>
+            <div>
+                <div>User Name</div>
+                <mat-form-field floatLabel="never" class="large-input-box">
+                    <input matInput placeholder="Email/Username">
+                </mat-form-field>
+            </div>
+            <div>
+                <div>Password</div>
+                <mat-form-field floatLabel="never" class="large-input-box">
+                    <input matInput placeholder="Enter Your Password">
+                </mat-form-field>
+            </div>
+            <div>
+                <div>Remember Me</div>
+                <div>Forget Password?</div>
+            </div>
+            <div>
+                <button mat-flat-button color="primary" class="large-round-button" (click)="login()">Sign In</button>
+                <div>Sign Up</div>
+            </div>
+            <button mat-flat-button color="primary" (click)="login()">Login with Google</button>
+        </div>
+    </div>
+</div>
+
+
