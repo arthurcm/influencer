@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpHeaders, HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { VideoMetaData } from 'src/types/campaign';
+import { VideoMetaData, Campaign } from 'src/types/campaign';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { catchError } from 'rxjs/operators';
 import { Thread } from 'src/types/thread';
@@ -10,11 +10,27 @@ import { Thread } from 'src/types/thread';
     providedIn: 'root',
 })
 export class CampaignService {
+    CAMPAIGN_SERVICE_URL = 'https://api-nodejs-4lladlc2eq-uc.a.run.app';
 
     constructor(
         private http: HttpClient,
         public auth: AngularFireAuth,
     ) {}
+
+    async getAllCampaignForUser() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/get_campaign`;
+        return this.http.get<Campaign[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
 
     shareContent(toEmail: string, fromEmail: string, url: string) {
         const request = {

@@ -1,0 +1,36 @@
+<mat-sidenav-container class="example-container">
+    <mat-sidenav #sidenav mode="side" opened class="example-sidenav"
+                 [fixedInViewport]="true" [fixedTopGap]="0"
+                 [fixedBottomGap]="0">
+        
+        <div class="logo">
+            <svg width="49" height="39" viewBox="0 0 49 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="15.9069" cy="18.0278" r="15.9069" fill="#0D053C"/>
+                <circle cx="26.5115" cy="5.30229" r="5.30229" fill="#0D053C"/>
+                <g style="mix-blend-mode:difference">
+                <circle cx="15.9069" cy="18.0278" r="15.9069" fill="#F89E2D"/>
+                </g>
+                <g style="mix-blend-mode:difference">
+                <circle cx="26.5115" cy="5.30229" r="5.30229" fill="#207BEC"/>
+                </g>
+                <circle cx="44.5392" cy="14.1394" r="3.53486" fill="#DE1FD6"/>
+                <circle cx="29.3393" cy="31.4602" r="6.71623" fill="#7B26DA"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M30.2986 24.812C28.7242 28.1461 26.0252 30.845 22.6911 32.4195C22.6463 32.1062 22.6231 31.7859 22.6231 31.4602C22.6231 27.7509 25.6301 24.744 29.3393 24.744C29.665 24.744 29.9853 24.7672 30.2986 24.812Z" fill="#84D925"/>
+            </svg>
+        </div>
+        <div class="icon">
+            <span class="material-icons"> home  </span>
+        </div>
+        <div class="icon">
+            <span class="material-icons"> calendar_today  </span>
+        </div>
+        <div class="icon">
+            <span class="material-icons"> notifications_none  </span>
+        </div>
+        
+                    
+    </mat-sidenav>
+    <mat-sidenav-content>
+        <router-outlet></router-outlet>
+    </mat-sidenav-content>    
+</mat-sidenav-container>

@@ -1,0 +1,45 @@
+@import 'common';
+
+.left {
+    vertical-align: top;
+    display: inline-block;
+    width: 35%;
+    background-color: $COLOR_BG;
+    height: 100vh;
+}
+.right {
+    vertical-align: top;
+    display: inline-block;
+    width: 65%;
+    height: 100vh;
+}
+.login-box {
+    background-color: rgba(255, 255, 255, 0.5);
+    width: 800px;
+    padding: 40px;
+    margin: 40px;
+    border-radius: 10px;
+}
+
+.large-input-box {
+    width: 300px;
+
+
+    // ::ng-deep .mat-form-field-label {
+    //     display: none;
+    // }
+}
+
+.large-round-button {
+    background: $COLOR_BG;
+    border-radius: 81px;
+    padding-left: 30px;
+    padding-right: 30px;
+    height: 44px;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 20px;
+    text-align: center;
+    text-transform: capitalize;
+}

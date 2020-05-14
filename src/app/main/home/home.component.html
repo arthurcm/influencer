@@ -14,6 +14,10 @@
         Active Campaign:
         <button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>
     </div>
+
+    <div class="campaign-item" *ngFor="let element of campaigns">
+       <app-campaign-card></app-campaign-card>
+    </div>
     <div class="active-campaign" *ngIf="campaigns">
         <table mat-table [dataSource]="campaignDataSource" matSort (matSortChange)="sortData($event)" class="mat-elevation-z8">
             <ng-container matColumnDef="type">
