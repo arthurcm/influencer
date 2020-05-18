@@ -1,22 +1,35 @@
+<div class="header-background">
+
+</div>
 <div class="container">
+
     <div class="header">
-        INFLUENCER DASHBOARD
+        LIFO DASHBOARD
     </div>
 
     <div class="welcome-message" *ngIf="auth.user | async as user;">
         <div>Hello {{ user.displayName }}!</div>
-        <!-- <button mat-stripped-button (click)="logout()">Logout</button> -->
     </div>
 
+    <div class="filter-section">
+        <div class="filter-status">
+            
+        </div>
+        <div class="filter-search">
+            <mat-form-field floatLabel="never" class="large-input-box">
+                <input matInput placeholder="Email/Username">
+            </mat-form-field>
+        </div>
+    </div>
     <mat-divider></mat-divider>
 
     <div class="home-subtitle">
         Active Campaign:
-        <button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>
+        <button class="create-button" mat-flat-button color="secondary" (click)="createCampaign()">Create Campaign</button>
     </div>
 
     <div class="campaign-item" *ngFor="let element of campaigns">
-       <app-campaign-card></app-campaign-card>
+       <app-campaign-card [campaign]="element"></app-campaign-card>
     </div>
     <div class="active-campaign" *ngIf="campaigns">
         <table mat-table [dataSource]="campaignDataSource" matSort (matSortChange)="sortData($event)" class="mat-elevation-z8">

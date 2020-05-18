@@ -11,29 +11,30 @@
     </div>
 
     <div class="name">
-        <div>Video Campaign Name</div>
-        <div>Date</div>
+        <div class="title"> {{ campaign.campaign_name }} </div>
+        <div class="content end-time">{{ displayTime(campaign.campaign_data.extra_info['post_time']) }} </div>
     </div>
 
     <div class="brand">
-        <div>Brand</div>
-        <div>Step</div>
+        <div class="title brand-name"> {{campaign.campaign_data.brand}} </div>
+        <div class="current-step content">
+            <div class="review">Concept review</div>
+            <div class="post">Post</div>
+        </div>
     </div>
 
     <div class="commission">
-        <div>Commision</div>
-        <div>$10</div>
+        <div class="title">Commision</div>
+        <div class="content commision">$ {{campaign.campaign_data.commision_dollar}} </div>
     </div>
 
     <div class="icon">
-        <span class="material-icons">
-            notifications_none
-            </span>
+        <span class="material-icons">arrow_forward</span>
     </div>
-
     <div class="icon">
-        <span class="material-icons">
-            delete
-            </span>
+        <span class="material-icons">delete</span>
+    </div>
+    <div class="icon">
+        <span class="material-icons">notifications_none</span>
     </div>
 </div>
