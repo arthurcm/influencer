@@ -1,3 +1,14 @@
+@import 'common';
+.header-background {
+    height: 260px;
+    background-color: $COLOR_BG;
+    position: absolute;
+    z-index: -1;
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 40px;
+    width: 100%;
+}
+
 .container {
     width: calc(100% - 70px);
     padding: 20px;
@@ -5,11 +16,24 @@
     .header {
         margin: 20px;
         font-size: large;
+        font-weight: 800;
+        color: white;
+        display: inline-block;
     }
 
     .welcome-message {
         font-size: medium;
         margin: 10px 20px;
+        float: right;
+        color: white;
+    }
+
+    .filter-section {
+        width: 666px;
+        height: 48px;
+
+        background: #212250;
+        border-radius: 16px;
     }
 
     .home-subtitle {
@@ -17,6 +41,8 @@
         margin: 10px 20px;
         height: 36px;
         line-height: 36px;
+        color: white;
+        margin-bottom: 15px;
 
         .create-button {
             float: right;
@@ -27,6 +53,10 @@
     .mat-divider {
         margin: 20px;
         width: calc(100% - 80px);
+    }
+
+    .campaign-item {
+        margin-bottom: 15px;
     }
 
     .active-campaign {
