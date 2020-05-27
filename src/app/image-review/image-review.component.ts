@@ -35,13 +35,13 @@ export class ImageReviewComponent implements OnInit {
         this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
     }
 
-    ngOnInit(): void {
+    async ngOnInit() {
         this.loadingService.show();
 
-        const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaign_id: this.campaignId }).subscribe(result => {
+        const campaign = await this.campaignService.getCampaignById(this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            result.campaign_historys.forEach(campaign => {
+            result.history_list.forEach(campaign => {
                 if (campaign.history_id === this.historyId) {
                     this.campaign = campaign;
                 }
@@ -59,17 +59,16 @@ export class ImageReviewComponent implements OnInit {
     }
 
 
-    provideFeedback() {
+    async provideFeedback() {
         console.log(this.campaign);
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('provideFeedback');
-        callable(
-            {
-                campaign_id: this.campaignId,
-                history_id: this.historyId,
-                feed_back: this.newFeedback,
-            }
-        ).subscribe(result => {
+        const data = {
+            campaign_id: this.campaignId,
+            history_id: this.historyId,
+            feed_back: this.newFeedback,
+        };
+        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        feedback.subscribe(result => {
             console.log(result);
             this.loadingService.hide();
             this.router.navigate([
@@ -78,16 +77,15 @@ export class ImageReviewComponent implements OnInit {
         });
     }
 
-    approveImage() {
+    async approveImage() {
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('provideFeedback');
-        callable(
-            {
-                campaign_id: this.campaignId,
-                history_id: this.historyId,
-                feed_back: this.newFeedback,
-            }
-        ).subscribe(result => {
+        const data = {
+            campaign_id: this.campaignId,
+            history_id: this.historyId,
+            feed_back: this.newFeedback,
+        };
+        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        feedback.subscribe(result => {
             console.log(result);
             const callable2 = this.fns.httpsCallable('finalizeVideoDraft');
             callable2(

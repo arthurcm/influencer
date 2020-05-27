@@ -5,6 +5,7 @@ import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireFunctions } from '@angular/fire/functions';
 import { CampaignDetail } from 'src/types/campaign';
 import { LoadingSpinnerService } from '../services/loading-spinner.service';
+import { CampaignService } from '../services/campaign.service';
 @Component({
     selector: 'app-concept-feedback',
     templateUrl: './concept-feedback.component.html',
@@ -23,17 +24,19 @@ export class ConceptFeedbackComponent implements OnInit {
         private afs: AngularFirestore,
         private activatedRoute: ActivatedRoute,
         public loadingService: LoadingSpinnerService,
+        public campaignService: CampaignService,
     ) {
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('campaignId');
         this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
     }
 
-    ngOnInit(): void {
+    async ngOnInit() {
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaign_id: this.campaignId }).subscribe(result => {
+
+        const campaign = await this.campaignService.getCampaignById(this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            result.campaign_historys.forEach(campaign => {
+            result.history_list.forEach(campaign => {
                 if (campaign.history_id === this.historyId) {
                     this.campaign = campaign;
                 }
@@ -44,7 +47,7 @@ export class ConceptFeedbackComponent implements OnInit {
         });
     }
 
-    provideFeedback() {
+    async provideFeedback() {
         const data = {
             campaign_id: this.campaignId,
             history_id: this.historyId,
@@ -52,26 +55,25 @@ export class ConceptFeedbackComponent implements OnInit {
         };
         console.log(this.campaign);
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('provideFeedback');
-        callable(data).subscribe(result => {
+        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        feedback.subscribe(result => {
             console.log(result);
             this.loadingService.hide();
             this.router.navigate([
-                `/campaign/${this.campaign.campaign_id}`,
+                `/app/campaign/${this.campaign.campaign_id}`,
             ]);
         });
     }
 
-    approveConcept() {
+    async approveConcept() {
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('provideFeedback');
-        callable(
-            {
-                campaign_id: this.campaignId,
-                history_id: this.historyId,
-                feed_back: this.newFeedback,
-            }
-        ).subscribe(result => {
+        const data = {
+            campaign_id: this.campaignId,
+            history_id: this.historyId,
+            feed_back: this.newFeedback,
+        };
+        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        feedback.subscribe(result => {
             console.log(result);
             const callable2 = this.fns.httpsCallable('finalizeCampaign');
             callable2(
@@ -83,7 +85,7 @@ export class ConceptFeedbackComponent implements OnInit {
                 console.log(result2);
                 this.loadingService.hide();
                 this.router.navigate([
-                    `/campaign/${this.campaign.campaign_id}`,
+                    `/app/campaign/${this.campaign.campaign_id}`,
                 ]);
             });
         });

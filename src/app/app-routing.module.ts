@@ -5,8 +5,8 @@ import { LoginComponent } from './auth/login/login.component';
 
 import { AngularFireAuthGuard, redirectUnauthorizedTo } from '@angular/fire/auth-guard';
 import { AppComponent } from './app.component';
-import { CreateCampaignComponent } from './create-campaign/create-campaign.component';
-import { CampaignComponent } from './campaign/campaign.component';
+import { CreateCampaignComponent } from './main/create-campaign/create-campaign.component';
+import { CampaignComponent } from './main/campaign/campaign.component';
 import { ConceptFeedbackComponent } from './concept-feedback/concept-feedback.component';
 import { VideoReviewComponent } from './video-review/video-review.component';
 import { VideoPlayerComponent } from './shared/video-player/video-player.component';
@@ -67,7 +67,8 @@ const routes: Routes = [
         ],
     },
     { path: '',
-        component: MainComponent,
+        pathMatch: 'full',
+        redirectTo: 'app',
     },
     { path: '**', component: MainComponent },
 ];

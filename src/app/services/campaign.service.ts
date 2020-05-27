@@ -32,6 +32,66 @@ export class CampaignService {
         );
     }
 
+    async getCampaignById(campaignId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/get_campaign/campaign_id/${campaignId}`;
+        return this.http.get<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async createCamapaign(campaign) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/create_campaign`;
+        return this.http.post<any>(reqeustUrl, campaign, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async updateCampaignById(campaign, campaignId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/update_campaign/campaign_id/${campaignId}`;
+        return this.http.put<any>(reqeustUrl, campaign, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async provideFeedback(content, campaignId, historyId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/feedback/campaign_id/${campaignId}/history_id/${historyId}`;
+        return this.http.put<any>(reqeustUrl, content, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     shareContent(toEmail: string, fromEmail: string, url: string) {
         const request = {
             to_email: toEmail,

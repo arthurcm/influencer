@@ -7,8 +7,8 @@ import { CampaignDetail } from 'src/types/campaign';
 import { Route } from '@angular/compiler/src/core';
 import { AngularFireStorage } from '@angular/fire/storage';
 import * as moment from 'moment';
-import { LoadingSpinnerService } from '../services/loading-spinner.service';
-import { CampaignService } from '../services/campaign.service';
+import { LoadingSpinnerService } from '../../services/loading-spinner.service';
+import { CampaignService } from '../../services/campaign.service';
 import { MatDialog } from '@angular/material/dialog';
 import { UploadVideoDialogComponent } from './upload-video-dialog/upload-video-dialog.component';
 import { UploadImageDialogComponent } from './upload-image-dialog/upload-image-dialog.component';
@@ -55,24 +55,25 @@ export class CampaignComponent implements OnInit {
         // this.transcodeVideo('video/HK0fpmQI7WOGUDwdmVpPffis7hY2/dK5e3YW4qfTQgBfUOkqX/1586836863114');
     }
 
-    ngOnInit() {
+    async ngOnInit() {
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaign_id: this.campaignId }).subscribe(result => {
+
+        const campaign = await this.campaignService.getCampaignById(this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            this.campaignHistory = result.campaign_historys;
+            this.campaignHistory = result.history_list;
             this.campaign = this.campaignHistory[0];
             // with concept
             const conceptCampaignList = [];
             const videoCampaignList = [];
             this.campaignHistory.forEach(campaign => {
                 if (campaign.content_concept) {
-                    if (result.final_history_id === campaign.history_id) {
+                    if (result.finalized_campaign_data.final_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
                     conceptCampaignList.push(campaign);
                 } else if (campaign.video) {
-                    if (result.final_video_draft_history_id === campaign.history_id) {
+                    if (result.finalized_campaign_data.final_video_draft_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
                     if (this.campaign.extra_info['type'] === 'image') {
@@ -97,10 +98,12 @@ export class CampaignComponent implements OnInit {
                 }
 
             });
+            this.loadingService.hide();
         });
+
     }
 
-    AddNewConcept() {
+    async AddNewConcept() {
         const newCampaign = JSON.parse(JSON.stringify(this.campaign));
         newCampaign.content_concept = this.newContentConcept;
         newCampaign.feed_back = '';
@@ -108,29 +111,29 @@ export class CampaignComponent implements OnInit {
         // this.campaign.campaignId = this.campaign.campaign_id;
         this.loadingService.show();
         console.log(newCampaign);
-        const callable = this.fns.httpsCallable('updateCampaign');
-        callable(newCampaign).subscribe(result => {
+        const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            this.conceptCampaignList.splice(0, 0, result.updated_campaign_data);
+            this.conceptCampaignList.splice(0, 0, newCampaign);
             this.loadingService.hide();
         });
     }
 
     leaveFeedback(campaign) {
         this.router.navigate([
-            `/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`,
+            `/app/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`,
         ]);
     }
 
     reviewVideo(campaign) {
         this.router.navigate([
-            `/video-review/${campaign.campaign_id}/${campaign.history_id}`,
+            `/app/video-review/${campaign.campaign_id}/${campaign.history_id}`,
         ]);
     }
 
     reviewImages(campaign) {
         this.router.navigate([
-            `/image-review/${campaign.campaign_id}/${campaign.history_id}`,
+            `/app/image-review/${campaign.campaign_id}/${campaign.history_id}`,
         ]);
     }
 
@@ -144,7 +147,7 @@ export class CampaignComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(message => {
             if (message) {
-                const url = `/image-review/${campaign.campaign_id}/${campaign.history_id}`;
+                const url = `/app/image-review/${campaign.campaign_id}/${campaign.history_id}`;
                 this.campaignService.shareContent(message.receiver, 'shanshuo0918@gmail.com', url).subscribe(result => {
                     console.log(result);
                 });
@@ -163,7 +166,7 @@ export class CampaignComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(message => {
             if (message) {
-                const url = `/video-review/${campaign.campaign_id}/${campaign.history_id}`;
+                const url = `/app/video-review/${campaign.campaign_id}/${campaign.history_id}`;
                 this.campaignService.shareContent(message.receiver, 'shanshuo0918@gmail.com', url).subscribe(result => {
                     console.log(result);
                 });
@@ -182,7 +185,7 @@ export class CampaignComponent implements OnInit {
 
         dialogRef.afterClosed().subscribe(message => {
             if (message) {
-                const url = `/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`;
+                const url = `/app/concept-feedback/${campaign.campaign_id}/${campaign.history_id}`;
                 this.campaignService.shareContent(message.receiver, 'shanshuo0918@gmail.com', url).subscribe(result => {
                     console.log(result);
                 });
@@ -191,7 +194,7 @@ export class CampaignComponent implements OnInit {
 
     }
 
-    uploadYoutubeSuccess(youtubeLink) {
+    async uploadYoutubeSuccess(youtubeLink) {
         const newCampaign = JSON.parse(JSON.stringify(this.campaign));
         newCampaign.content_concept = '';
         newCampaign.feed_back = '';
@@ -200,15 +203,15 @@ export class CampaignComponent implements OnInit {
         this.loadingService.show();
 
         console.log(newCampaign);
-        const callable = this.fns.httpsCallable('updateCampaign');
-        callable(newCampaign).subscribe(result => {
+        const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
+            this.videoCampaignList.splice(0, 0, newCampaign);
             this.loadingService.hide();
         });
     }
 
-    uploadSuccess(video) {
+    async uploadSuccess(video) {
         const newCampaign = JSON.parse(JSON.stringify(this.campaign));
         newCampaign.content_concept = '';
         newCampaign.feed_back = '';
@@ -217,10 +220,10 @@ export class CampaignComponent implements OnInit {
         this.loadingService.show();
         // this.campaign.campaignId = this.campaign.campaign_id;
         console.log(newCampaign);
-        const callable = this.fns.httpsCallable('updateCampaign');
-        callable(newCampaign).subscribe(result => {
+        const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
+            this.videoCampaignList.splice(0, 0, newCampaign);
             this.campaignService.transcodeVideo(video['path']).subscribe(reuslt => {
                 console.log(result);
             });
@@ -228,7 +231,7 @@ export class CampaignComponent implements OnInit {
         });
     }
 
-    uploadImageSuccess(images) {
+    async uploadImageSuccess(images) {
         const newCampaign = JSON.parse(JSON.stringify(this.campaign));
         newCampaign.content_concept = '';
         newCampaign.feed_back = '';
@@ -237,11 +240,10 @@ export class CampaignComponent implements OnInit {
         this.loadingService.show();
         // this.campaign.campaignId = this.campaign.campaign_id;
         console.log(newCampaign);
-        const callable = this.fns.httpsCallable('updateCampaign');
-        callable(newCampaign).subscribe(result => {
+        const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
+        campaign.subscribe(result => {
             console.log(result);
-            result.updated_campaign_data.images = JSON.parse(result.updated_campaign_data.video);
-            this.videoCampaignList.splice(0, 0, result.updated_campaign_data);
+            this.videoCampaignList.splice(0, 0, newCampaign);
             this.loadingService.hide();
         });
     }

@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { auth } from 'firebase/app';
+import { auth } from 'firebase';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 
@@ -21,7 +21,7 @@ export class LoginComponent implements OnInit {
     login() {
         this.auth.signInWithPopup(new auth.GoogleAuthProvider()).then(result => {
             console.log(result);
-            this.router.navigate(['/home']);
+            this.router.navigate(['/app/home']);
         });
     }
 
