@@ -5,9 +5,10 @@ import { AngularFireFunctions } from '@angular/fire/functions';
 import { CampaignDetail, CampaignExtraInfo } from 'src/types/campaign';
 import { FormControl } from '@angular/forms';
 import * as moment from 'moment';
-import { LoadingSpinnerService } from '../services/loading-spinner.service';
+import { LoadingSpinnerService } from '../../services/loading-spinner.service';
 import { UploadContractDialogComponent } from './upload-contract-dialog/upload-contract-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { CampaignService } from 'src/app/services/campaign.service';
 // import { default as _rollupMoment, Moment, MomentFormatSpecification, MomentInput } from 'moment';
 // const moment = _rollupMoment || _moment;
 
@@ -65,6 +66,7 @@ export class CreateCampaignComponent implements OnInit {
         private fns: AngularFireFunctions,
         public loadingService: LoadingSpinnerService,
         public dialog: MatDialog,
+        public campaignService: CampaignService,
     ) {
         // this.createCampaign();
     }
@@ -113,7 +115,7 @@ export class CreateCampaignComponent implements OnInit {
         this.newRequirement = value;
     }
 
-    createCampaign() {
+    async createCampaign() {
         console.log(this.campaignData);
         this.extraInfo.contracts = this.uploadedContract;
         this.extraInfo.type = this.campaignType;
@@ -126,11 +128,12 @@ export class CreateCampaignComponent implements OnInit {
 
         this.loadingService.show();
         console.log(this.campaignData);
-        const callable = this.fns.httpsCallable('createCampaign');
-        callable(this.campaignData).subscribe(result => {
+        const campaign = await this.campaignService.createCamapaign(this.campaignData);
+        campaign.subscribe(result => {
+            console.log(result);
             this.loadingService.hide();
             this.router.navigate(['/home']);
-            console.log(result);
+
         });
     }
 

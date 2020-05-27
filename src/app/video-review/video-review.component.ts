@@ -42,10 +42,10 @@ export class VideoReviewComponent implements OnInit {
     async ngOnInit() {
         this.loadingService.show();
 
-
-        const callable = this.fns.httpsCallable('getCampaign');
-        callable({ campaign_id: this.campaignId }).subscribe(async result => {
-            result.campaign_historys.forEach(campaign => {
+        const campaign = await this.campaignService.getCampaignById(this.campaignId);
+        campaign.subscribe(result => {
+            console.log(result);
+            result.history_list.forEach(campaign => {
                 if (campaign.history_id === this.historyId) {
                     this.campaign = campaign;
                 }
@@ -73,35 +73,33 @@ export class VideoReviewComponent implements OnInit {
         });
     }
 
-    provideFeedback() {
+    async provideFeedback() {
         console.log(this.campaign);
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('provideFeedback');
-        callable(
-            {
-                campaign_id: this.campaignId,
-                history_id: this.historyId,
-                feed_back: this.newFeedback,
-            }
-        ).subscribe(result => {
+        const data = {
+            campaign_id: this.campaignId,
+            history_id: this.historyId,
+            feed_back: this.newFeedback,
+        };
+        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        feedback.subscribe(result => {
             console.log(result);
             this.loadingService.hide();
             this.router.navigate([
-                `/campaign/${this.campaign.campaign_id}`,
+                `/app/campaign/${this.campaign.campaign_id}`,
             ]);
         });
     }
 
-    approveVideo() {
+    async approveVideo() {
         this.loadingService.show();
-        const callable = this.fns.httpsCallable('provideFeedback');
-        callable(
-            {
-                campaign_id: this.campaignId,
-                history_id: this.historyId,
-                feed_back: this.newFeedback,
-            }
-        ).subscribe(result => {
+        const data = {
+            campaign_id: this.campaignId,
+            history_id: this.historyId,
+            feed_back: this.newFeedback,
+        };
+        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        feedback.subscribe(result => {
             console.log(result);
             const callable2 = this.fns.httpsCallable('finalizeVideoDraft');
             callable2(
@@ -113,7 +111,7 @@ export class VideoReviewComponent implements OnInit {
                 console.log(result2);
                 this.loadingService.hide();
                 this.router.navigate([
-                    `/campaign/${this.campaign.campaign_id}`,
+                    `/app/campaign/${this.campaign.campaign_id}`,
                 ]);
             });
         });

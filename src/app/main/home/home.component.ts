@@ -56,11 +56,11 @@ export class HomeComponent implements OnInit {
     }
 
     createCampaign() {
-        this.router.navigate(['/create-campaign']);
+        this.router.navigate(['/app/create-campaign']);
     }
 
     viewCampaign(campaign) {
-        this.router.navigate([`/campaign/${campaign.campaign_data.campaign_id}`]);
+        this.router.navigate([`/app/campaign/${campaign.campaign_data.campaign_id}`]);
     }
 
     deleteCampaign(campaign) {

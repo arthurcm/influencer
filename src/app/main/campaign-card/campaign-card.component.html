@@ -1,7 +1,7 @@
 <div class="campaign-card-container">
     <div class="calendar">
         <div class="number-days">
-            30
+            {{ daysLeft(campaign.campaign_data.extra_info ? campaign.campaign_data.extra_info['post_time'] : null) }}
         </div>
         <div></div>
         Days Left
@@ -12,7 +12,7 @@
 
     <div class="name">
         <div class="title"> {{ campaign.campaign_name }} </div>
-        <div class="content end-time">{{ displayTime(campaign.campaign_data.extra_info['post_time']) }} </div>
+        <div class="content end-time">{{ displayTime(campaign.campaign_data.extra_info ? campaign.campaign_data.extra_info['post_time'] : null) }} </div>
     </div>
 
     <div class="brand">
@@ -28,10 +28,10 @@
         <div class="content commision">$ {{campaign.campaign_data.commision_dollar}} </div>
     </div>
 
-    <div class="icon">
+    <div class="icon" (click)="viewCampaign()">
         <span class="material-icons">arrow_forward</span>
     </div>
-    <div class="icon">
+    <div class="icon" (click)="deleteCampaign()">
         <span class="material-icons">delete</span>
     </div>
     <div class="icon">
