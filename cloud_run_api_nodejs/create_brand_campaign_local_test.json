@@ -1,0 +1,12 @@
+{
+  "brand": "Sweat n Beauty",
+  "campaign_name": "Promote S&B",
+  "campaign_type": "commission_per_sales_campaign",
+  "commission_percentage": 0,
+  "requirements": [],
+  "milestones": ["1. do this", "2. do that"],
+  "extra_info": {},
+  "ended": false,
+  "deleted": false,
+  "collaborating_influencers": []
+}

@@ -3,6 +3,37 @@ const admin = require('firebase-admin');
 const db = admin.firestore();
 
 
+const PERCENTAGE_RATE = 'commission_per_sales_campaign';
+const FIXED_RATE = 'one_time_commission_campaign';
+const GENERIC_INF_CREATED_CAMPAIGN = 'generic_campaign';
+
+let BRAND_CAMPAIGN_TYPES = new Map();
+BRAND_CAMPAIGN_TYPES[PERCENTAGE_RATE] = {
+    brand: String(),
+    campaign_name: String(),
+    campaign_type: PERCENTAGE_RATE,
+    commission_percentage: Number(),
+    requirements: [],
+    milestones: [],
+    extra_info: {},
+    ended: false,
+    deleted: false,
+    collaborating_influencers: [],
+};
+BRAND_CAMPAIGN_TYPES[FIXED_RATE] = {
+    brand: String(),
+    campaign_name: String(),
+    campaign_type: FIXED_RATE,
+    commission: Number(),
+    total_budget: Number(),
+    requirements: [],
+    milestones: [],
+    extra_info: {},
+    ended: false,
+    deleted: false,
+    collaborating_influencers: [],
+};
+
 function uriParse(video_name){
     const tokens = video_name.split('/');
     return {
@@ -186,16 +217,28 @@ function createCampaignData(campaign_id, data, uid, history_id){
 }
 
 // called when influencers decide to create a new campaign with related information. u
-function createCampaign(data, uid){
-    const campaignRef = db.collection('campaigns').doc();
-    const campaign_id = campaignRef.id;
-    console.log('Creating a new campaign with id', campaign_id);
-
+function createCampaign(data, uid, campaign_type){
+    let campaign_id = null;
+    if (campaign_type === GENERIC_INF_CREATED_CAMPAIGN) {
+        const campaignRef = db.collection('campaigns').doc();
+        campaign_id = campaignRef.id;
+        console.log('Creating a new campaign with id', campaign_id);
+    }else{
+        campaign_id = data.brand_campaign_id;
+        console.log('Signing up to a new brand campaign with id', campaign_id);
+    }
     const batch = db.batch();
-
+    let campaignData;
     const historyRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = historyRef.id;
-    const campaignData  = createCampaignData(campaign_id, data, uid, history_id);
+
+    if (campaign_type === GENERIC_INF_CREATED_CAMPAIGN){
+        console.log('creating an inf campaign');
+        campaignData = createCampaignData(campaign_id, data, uid, history_id);
+    }else{
+        console.log('Signing up to a brand initiated campaign');
+        campaignData = createBrandCampaignData(campaign_id, uid, data);
+    }
     const campaignDocRef = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').doc(history_id);
     batch.set(campaignDocRef, campaignData);
@@ -204,7 +247,7 @@ function createCampaign(data, uid){
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     batch.set(infCampaignRef, {
-        camapign_ref: docref.path,
+        campaign_ref: docref.path,
         campaign_id,
         campaign_name: String(data.campaign_name),
         campaign_data: campaignData,
@@ -499,6 +542,144 @@ function finalizeVideoDraft(uid, campaign_id, history_id){
     return finalizeAndWriteCampaignData(campaign_id, history_id, writeFinalVideoDrfat_callback, uid);
 }
 
+
+// List all available brand initiated campaigns for current influencer, currently there's no filtering
+// of eligibility yet.
+function listBrandCampaignsInf(uid){
+    return db.collection('brand_campaigns').get()
+        .then(querySnapshot => {
+            const brand_campaigns = [];
+            querySnapshot.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                brand_campaigns.push(doc_snap);
+            });
+            console.log('Found', brand_campaigns.length, 'results');
+            return brand_campaigns;
+        });
+}
+
+
+
+// this is gonna allow influencer to sign up for brand's campaign, and add campaign data into
+// influencer profile, and update the promotional campaign with affiliate information.
+function signupToBrandCampaign(brand_campaign_id, uid) {
+    if (!brand_campaign_id) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific campaign_id.');
+    }
+    const promotion_campaigns_ref = db.collection('brand_campaigns').doc(brand_campaign_id);
+    let brand_campaign_data = null;
+    return promotion_campaigns_ref.get()
+        .then((snapshot) => {
+            brand_campaign_data = snapshot.data();
+            console.log('Found brand campaign data', brand_campaign_data);
+            return createCampaign(brand_campaign_data, uid, brand_campaign_data.campaign_type);
+        });
+}
+
+
+function getBrandCampaignTypes(){
+    return BRAND_CAMPAIGN_TYPES;
+}
+
+
+function createBrandCampaignData(brand_campaign_id, uid, data){
+    if(!brand_campaign_id){
+        throw new functions.https.HttpsError('campaign_id must not be empty!');
+    }
+    if(!uid) {
+        throw new functions.https.HttpsError('New campaign must have a valid uid!');
+    }
+    const FieldValue = admin.firestore.FieldValue;
+    data.brand_campaign_id = brand_campaign_id;
+    data.brand_id = uid;
+    data.timestamp = FieldValue.serverTimestamp();
+    return data;
+}
+
+
+function createBrandCampaign(data, uid){
+    const batch = db.batch();
+
+    const brandCampaignRef = db.collection('brands')
+        .doc(uid).collection('brand_campaigns')
+        .doc();
+    const brand_campaign_data = createBrandCampaignData(brandCampaignRef.id, uid, data);
+    batch.set(brandCampaignRef, brand_campaign_data);
+    const allBrandCampaignRef = db.collection('brand_campaigns').doc(brandCampaignRef.id);
+    batch.set(allBrandCampaignRef, brand_campaign_data);
+    return {
+        campaign_id: brandCampaignRef.id,
+        batch_promise: batch
+    };
+}
+
+
+// this is for brand to see their promotions
+function listBrandCampaignForBrand(uid){
+    console.log('Get all brand campaign meta data that belong to current brand.');
+    return db.collection('brands').doc(uid).collection('brand_campaigns').get()
+        .then(querySnapshot => {
+            const brand_campaigns = [];
+            querySnapshot.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                brand_campaigns.push(doc_snap);
+            });
+            console.log('Found', brand_campaigns.length, 'results');
+            return brand_campaigns;
+        });
+}
+
+
+function updateBrandCampaign(data, uid, brand_campaign_id){
+    if(!brand_campaign_id){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific campaign_id.');
+    }
+
+    return db.collection('brands')
+        .doc(uid).collection('brand_campaigns')
+        .doc(brand_campaign_id)
+        .update(data);
+}
+
+
+function deleteBrandCampaign(data, uid){
+    if(!data.brand_campaign_id){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific campaign_id.');
+    }
+    let batch = db.batch();
+
+    const brand_campaign_ref = db.collection('brands')
+        .doc(uid).collection('brand_campaigns')
+        .doc(data.brand_campaign_id);
+    batch.update(brand_campaign_ref, {deleted: true});
+    const camapign_ref = db.collection('brand_campaigns')
+        .doc(data.brand_campaign_id);
+    batch.update(camapign_ref, {deleted: true});
+    return batch.commit();
+}
+
+function endBrandCampaign(data, uid){
+    if(!data.brand_campaign_id){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific campaign_id.');
+    }
+    let batch = db.batch();
+
+    const brand_campaign_ref = db.collection('brands')
+        .doc(uid).collection('brand_campaigns')
+        .doc(data.brand_campaign_id);
+    batch.update(brand_campaign_ref, {ended: true});
+    const camapign_ref = db.collection('brand_campaigns')
+        .doc(data.brand_campaign_id);
+    batch.update(camapign_ref, {ended: true});
+    return batch.commit();
+
+}
+
+
 module.exports = {
     getCampaign,
     getAllCampaign,
@@ -513,4 +694,15 @@ module.exports = {
     resolveThread,
     deleteThread,
     getAllThreads,
+    listBrandCampaignsInf,
+    signupToBrandCampaign,
+    getBrandCampaignTypes,
+    createBrandCampaign,
+    listBrandCampaignForBrand,
+    updateBrandCampaign,
+    deleteBrandCampaign,
+    endBrandCampaign,
+    GENERIC_INF_CREATED_CAMPAIGN,
+    FIXED_RATE,
+    PERCENTAGE_RATE,
 };

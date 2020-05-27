@@ -40,7 +40,7 @@ app.post('/create_campaign', (req, res, next) => {
     const data = req.body;
     const uid = res.locals.uid;
     console.log('incoming uid is ', res.locals.uid);
-    let results = campaign.createCampaign(data, uid);
+    let results = campaign.createCampaign(data, uid, campaign.GENERIC_INF_CREATED_CAMPAIGN);
     const campaign_id = results.campaign_id;
     const history_id = results.history_id;
     let batch = results.batch_promise;
@@ -373,6 +373,118 @@ app.put('/share/resolve_thread/media_object_path/:media_object_path/thread_id/:t
         res.status(400).send('Require a valid media_object_path');
     }
     return campaign.resolveThread(media_object_path, thread_id)
+        .then(result => {
+            console.log('Transaction completed.');
+            res.status(200).send('{"status" : "OK"}');
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.get('/list_brand_campaigns_inf', (req, res, next) => {
+    const uid = res.locals.uid;
+    return campaign.listBrandCampaignsInf(uid)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.put('/sign_up_to_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const uid = res.locals.uid;
+    console.log('Receiving brand_campaign_id', brand_campaign_id, 'and uid', uid);
+    if(!brand_campaign_id){
+        res.status(400).send('Require a valid brand_campaign_id');
+    }
+    // let results =  campaign.signupToBrandCampaign(brand_campaign_id, uid)
+    return campaign.signupToBrandCampaign(brand_campaign_id, uid)
+    // const campaign_id = results.campaign_id;
+    // const history_id = results.history_id;
+    // let batch = results.batch_promise;
+        .then(result => {
+            const campaign_id = result.campaign_id;
+            const history_id = result.history_id;
+            let batch = result.batch_promise;
+            console.log('sign up results', result);
+            batch.commit();
+            res.status(200).send({campaign_id, history_id});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.get('/get_brand_campaign_types', (req, res, next)=>{
+    let results = campaign.getBrandCampaignTypes();
+    console.log('Available campaign types are ', results);
+    res.status(200).send(results);
+    return results;
+});
+
+
+app.post('/create_brand_campaign', (req, res, next) => {
+    console.log('/create_brand_campaign received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    console.log('incoming uid is ', res.locals.uid);
+    let results = campaign.createBrandCampaign(data, uid);
+    const campaign_id = results.campaign_id;
+    let batch = results.batch_promise;
+    return batch.commit()
+        .then(result => {
+            res.status(200).send({campaign_id});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.get('/list_brand_campaigns_brand', (req, res, next) => {
+    const uid = res.locals.uid;
+    return campaign.listBrandCampaignForBrand(uid)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+//
+// app.put('/update_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+//     const brand_campaign_id = req.params.brand_campaign_id;
+//     const uid = res.locals.uid;
+//     const data = req.body;
+//     console.log('Receiving brand_campaign_id', brand_campaign_id, 'and uid', uid);
+//     return campaign.updateBrandCampaign(data, uid, brand_campaign_id)
+//         .then(result => {
+//             res.status(200).send('{Status: OK}');
+//             return result;
+//         })
+//         .catch(next);
+// });
+
+
+app.delete('/delete_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const uid = res.locals.uid;
+    console.log('Receiving campaign id', req.params.brand_campaign_id);
+    return campaign.deleteBrandCampaign(req.params, uid)
+        .then(result => {
+            console.log('Transaction completed.');
+            res.status(200).send('{"status" : "OK"}');
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.put('/end_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const uid = res.locals.uid;
+    console.log('Receiving campaign id', req.params.brand_campaign_id);
+    return campaign.endBrandCampaign(req.params, uid)
         .then(result => {
             console.log('Transaction completed.');
             res.status(200).send('{"status" : "OK"}');
