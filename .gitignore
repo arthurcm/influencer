@@ -1,4 +1,4 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
+# SeeOA http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
 /dist
@@ -111,4 +111,8 @@ node_modules/
 # dotenv environment variables file
 .env
 sendgrid.env
-sendgrid.env
+
+node_modules
+.next
+npm-debug.log
+.prettierrc
