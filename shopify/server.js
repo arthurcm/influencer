@@ -9,7 +9,7 @@ const session = require('koa-session');
 dotenv.config();
 const { default: graphQLProxy } = require('@shopify/koa-shopify-graphql-proxy');
 const Router = require('koa-router');
-const {receiveWebhook, registerWebhook} = require('@shopify/koa-shopify-webhooks');
+const {receiveWebhook, registerWebhook, orderWebhook} = require('@shopify/koa-shopify-webhooks');
 
 const { ApiVersion } = require('@shopify/koa-shopify-graphql-proxy');
 const getSubscriptionUrl = require('./server/getSubscriptionUrl');
@@ -37,7 +37,7 @@ app.prepare().then(() => {
                 ctx.cookies.set('shopOrigin', shop, {
                     httpOnly: false,
                     secure: true,
-                    sameSite: 'none'
+                    sameSite: 'none',
                 });
                 await getSubscriptionUrl(ctx, accessToken, shop);
                 const registration = await registerWebhook({
@@ -61,6 +61,7 @@ app.prepare().then(() => {
 
     router.post('/webhooks/products/create', webhook, (ctx) => {
         console.log('received webhook: ', ctx.state.webhook);
+        
     });
 
     server.use(graphQLProxy({version: ApiVersion.October19}))

@@ -1,0 +1,10 @@
+build container:
+gcloud builds submit --tag gcr.io/influencer-272204/shopify_app
+
+
+Local testing container:
+PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/shopify_app
+
+
+To deploy shopify_app with service account access to secret manager:
+gcloud run deploy shopify-app --image gcr.io/influencer-272204/shopify_app --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com

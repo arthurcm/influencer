@@ -101,4 +101,4 @@ class ResourceListWithProducts extends React.Component {
   }
 }
 
- export default ResourceListWithProducts;
+export default ResourceListWithProducts;
