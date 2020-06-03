@@ -1,4 +1,4 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { Campaign } from 'src/types/campaign';
 
 import * as moment from 'moment';
@@ -12,6 +12,7 @@ import { Router } from '@angular/router';
 export class CampaignCardComponent implements OnInit {
 
     @Input() campaign: Campaign;
+    @Output() onDeleteCampaign = new EventEmitter<Campaign>();
 
     constructor(
         public router: Router,
@@ -35,6 +36,7 @@ export class CampaignCardComponent implements OnInit {
     }
 
     deleteCampaign() {
+        this.onDeleteCampaign.emit(this.campaign);
     }
 
 }

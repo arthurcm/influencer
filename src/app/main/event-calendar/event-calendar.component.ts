@@ -1,8 +1,7 @@
-import { Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import {
   CalendarEvent,
   CalendarMonthViewDay,
-  CalendarEventTimesChangedEvent,
   CalendarEventAction
 } from 'angular-calendar';
 import { Subject } from 'rxjs';
@@ -57,26 +56,26 @@ export class EventCalendarComponent implements OnInit {
     this.activeDayIsOpen = true;
     this.selectedDay = { date: startOfDay(new Date()) };
 
-    /**
-         * Watch re-render-refresh for updating db
-         */
-    this.refresh.subscribe((updateDB) => {
-      if (updateDB) {
-      }
-    });
-
     this.calendarService.getEvents().subscribe((r: CalendarEvent[]) => {
 
       this.events = this.getCopiedEvents(r);
     });
   }
 
+  /**
+   * This will trigger when you click on a day
+   * on the fullcalendar
+   * @param day calendar day
+   */
   public dayClicked(day: CalendarMonthViewDay): void {
-    const date: Date = day.date;
-    const events: CalendarEvent[] = day.events;
-
+    this.viewDate = day.date;
   }
 
+  /**
+   * This will filter out the events based on the
+   * currently active event types
+   * @param type type of the event
+   */
   public filterEvents(type) {
 
     this.eventStatus[type] = !this.eventStatus[type];
@@ -93,62 +92,20 @@ export class EventCalendarComponent implements OnInit {
     });
   }
 
+  /**
+   * This will change the viewdate when the date is changed from the
+   * right side calendar
+   * @param ev date
+   */
   public changeSelectedDate(ev: any) {
 
     this.viewDate = ev;
   }
 
   /**
-     * Edit Event
-     *
-     * @param {string} action
-     * @param {CalendarEvent} event
-     */
-  public editEvent(action: string, event: CalendarEvent): void {
-    const eventIndex = this.events.indexOf(event);
-
-
-  }
-
-  /**
-     * Event times changed
-     * Event dropped or resized
-     *
-     * @param {CalendarEvent} event
-     * @param {Date} newStart
-     * @param {Date} newEnd
-     */
-  public eventTimesChanged({ event, newStart, newEnd }: CalendarEventTimesChangedEvent): void {
-    event.start = newStart;
-    event.end = newEnd;
-    // console.warn('Dropped or resized', event);
-    this.refresh.next(true);
-  }
-
-  /**
-     * Before View Renderer
-     *
-     * @param {any} header
-     * @param {any} body
-     */
-  public beforeMonthViewRender({ header, body }): void {
-    /**
-     * Get the selected day
-     */
-    const _selectedDay = body.find((_day) => {
-      return _day.date.getTime() === this.selectedDay.date.getTime();
-    });
-
-    if (_selectedDay) {
-      /**
-       * Set selected day style
-       * @type {string}
-       */
-      _selectedDay.cssClass = 'cal-selected';
-    }
-
-  }
-
+   * This will return a copy of the events array and parse the dates
+   * @param events original event objects
+   */
   private getCopiedEvents(events: CalendarEvent[]) {
 
     let originalEvents = JSON.parse(JSON.stringify(events));

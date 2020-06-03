@@ -19,19 +19,15 @@
         <perfect-scrollbar>
             <div class="content__fullCalendar--calendar" [ngSwitch]="view">
                 <mwl-calendar-month-view *ngSwitchCase="'month'" [viewDate]="viewDate" [events]="events"
-                    [refresh]="refresh" [activeDayIsOpen]="activeDayIsOpen" (dayClicked)="dayClicked($event.day)"
-                    (eventClicked)="editEvent('edit', $event.event)" (eventTimesChanged)="eventTimesChanged($event)"
-                    (beforeViewRender)="beforeMonthViewRender($event)">
+                    [refresh]="refresh" [activeDayIsOpen]="activeDayIsOpen" (dayClicked)="dayClicked($event.day)">
                 </mwl-calendar-month-view>
                 <mwl-calendar-week-view *ngSwitchCase="'week'" [viewDate]="viewDate"
                     (viewDateChange)="selectedDay = {date:$event}" [events]="events" [refresh]="refresh"
-                    (dayClicked)="dayClicked($event.day)" (eventClicked)="editEvent('edit', $event.event)"
-                    (eventTimesChanged)="eventTimesChanged($event)">
+                    (dayClicked)="dayClicked($event.day)">
                 </mwl-calendar-week-view>
                 <mwl-calendar-day-view *ngSwitchCase="'day'" [viewDate]="viewDate"
                     (viewDateChange)="selectedDay = {date:$event}" [events]="events" [refresh]="refresh"
-                    (dayClicked)="dayClicked($event.day)" (eventClicked)="editEvent('edit', $event.event)"
-                    (eventTimesChanged)="eventTimesChanged($event)">
+                    (dayClicked)="dayClicked($event.day)">
                 </mwl-calendar-day-view>
             </div>
         </perfect-scrollbar>
