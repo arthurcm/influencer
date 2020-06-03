@@ -132,8 +132,7 @@ export class CreateCampaignComponent implements OnInit {
         campaign.subscribe(result => {
             console.log(result);
             this.loadingService.hide();
-            this.router.navigate(['/home']);
-
+            this.router.navigate(['/app/home']);
         });
     }
 
@@ -158,5 +157,9 @@ export class CreateCampaignComponent implements OnInit {
                 }
             });
         });
+    }
+
+    removeContract(index) {
+        this.uploadedContract.splice(index, 1);
     }
 }
