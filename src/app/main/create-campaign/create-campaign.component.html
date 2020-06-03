@@ -1,132 +1,163 @@
-<div class="page-tile">
-    Add New Camapign
-</div>
-<mat-card class="input-card">
-    <mat-card-header>
-        Basic Info
-    </mat-card-header>
-    <mat-card-content>
-        <div class="input-form">
-            <div>
-                <div class="item-title">Campaign Name:</div>
-                <mat-form-field class="example-full-width">
-                    <input matInput placeholder="" [(ngModel)]="campaignName" (ngModelChange)="campaignNameChange($event)">
-                </mat-form-field>
-            </div>
 
-            <div>
-                <div class="item-title">Campaign Type:</div>
-                <mat-radio-group [(ngModel)]="campaignType" aria-label="Select an option">
-                    <mat-radio-button value="video">Video</mat-radio-button>
-                    <mat-radio-button value="image">Image</mat-radio-button>
-                </mat-radio-group>
-            </div>
+<div class="input-form">
+    <div>
+        <div class="item-title">Campaign Name:</div>
+        <mat-form-field class="example-full-width">
+            <input 
+                matInput placeholder="" 
+                [(ngModel)]="campaignName" 
+                (ngModelChange)="campaignNameChange($event)"
+                autocomplete="false"
+            >
+        </mat-form-field>
+        <span class="material-icons" (click)="campaignType='video'"> videocam  </span>
+        <span class="material-icons" (click)="campaignType='image'"> image  </span>
+    </div>
 
-            <div>
-                <div class="item-title">Brand:</div>
-                <mat-form-field class="example-full-width">
-                    <input matInput placeholder="" [(ngModel)]="brand" (ngModelChange)="brandChange($event)">
-                </mat-form-field>
-            </div>
+    <div class="half">
+        <div class="item-title">Brand:</div>
+        <mat-form-field class="example-half-width">
+            <input 
+                matInput 
+                placeholder="" 
+                [(ngModel)]="brand" 
+                (ngModelChange)="brandChange($event)"
+                autocomplete="off"
+            >
+        </mat-form-field>
+    </div>
 
-            <div>
-                <div class="item-title">Platform:</div>
-                <mat-form-field class="example-full-width">
-                    <mat-select [formControl]="platform" multiple>
-                        <mat-option *ngFor="let p of platformList" [value]="p">{{p}}</mat-option>
-                    </mat-select>
-                </mat-form-field>
-            </div>
-            
-            <div>
-                <div class="item-title">Commision:</div>
-                <mat-form-field class="example-full-width">
-                    <input matInput type="number" placeholder="" [(ngModel)]="commision" (ngModelChange)="commisionChange($event)">
-                </mat-form-field>
-            </div>
-            
-            <div>
-                <div class="item-title">Contact Name:</div>
-                <mat-form-field class="example-full-width">
-                    <input matInput placeholder="" [(ngModel)]="contactName" (ngModelChange)="contactNameChange($event)">
-                </mat-form-field>
-            </div>
+    <div class="half">
+        <div class="item-title">Platform:</div>
+        <mat-form-field class="example-half-width">
+            <mat-select [formControl]="platform" multiple>
+                <mat-option *ngFor="let p of platformList" [value]="p">{{p}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+    
+    <div>
+        <div class="item-title">Commision:</div>
+        <mat-form-field class="example-full-width">
+            <input 
+                matInput 
+                type="number" 
+                placeholder="" 
+                [(ngModel)]="commision" 
+                (ngModelChange)="commisionChange($event)"
+                autocomplete="off"
+            >
+        </mat-form-field>
+    </div>
 
-            <div>
-                <div class="item-title">Contact Email:</div>
-                <mat-form-field class="example-full-width">
-                    <input matInput placeholder="" [(ngModel)]="contactEmail" (ngModelChange)="contactEmailChange($event)">
-                </mat-form-field>
-            </div>
-        
-            <div>
-                <div class="item-title">Review Deadline: </div>
-                <mat-form-field class="date-input">
-                    <input matInput [matDatepicker]="endTimePicker" [(ngModel)]="endDate" (ngModelChange)="endTimeChange($event)">
-                    <mat-datepicker-toggle matSuffix [for]="endTimePicker"></mat-datepicker-toggle>
-                    <mat-datepicker #endTimePicker></mat-datepicker>
-                </mat-form-field>
-                <ngx-mat-timepicker class="time-input" [(ngModel)]="endTime" [showSpinners]="false" [enableMeridian]="false"></ngx-mat-timepicker>
-            </div>
+    <div class="half">
+        <div class="item-title">Contact Name:</div>
+        <mat-form-field class="example-half-width">
+            <input 
+                matInput 
+                placeholder="" 
+                [(ngModel)]="contactName" 
+                (ngModelChange)="contactNameChange($event)"
+                autocomplete="false"
+            >
+        </mat-form-field>
+    </div>
 
-            <div>
-                <div class="item-title">Post Date:</div>
-                <mat-form-field>
-                    <input matInput [matDatepicker]="postTimePicker" [(ngModel)]="postDate" (ngModelChange)="endTimeChange($event)">
-                    <mat-datepicker-toggle matSuffix [for]="postTimePicker"></mat-datepicker-toggle>
-                    <mat-datepicker #postTimePicker></mat-datepicker>
-                </mat-form-field>
-                <ngx-mat-timepicker class="time-input" [(ngModel)]="postTime" [showSpinners]="false" [enableMeridian]="false"></ngx-mat-timepicker>
-           
-            </div>
-        </div>
-    </mat-card-content>
-</mat-card>
+    <div class="half">
+        <div class="item-title">Contact Email:</div>
+        <mat-form-field class="example-half-width">
+            <input 
+                matInput 
+                placeholder="" 
+                [(ngModel)]="contactEmail" 
+                (ngModelChange)="contactEmailChange($event)"
+                autocomplete="false"
+            >
+        </mat-form-field>
+    </div>
 
-<mat-card class="input-card">
-    <mat-card-header>
-        Requirements
-    </mat-card-header>
-    <mat-card-content>
+    <div>
+        <div class="item-title">Review Deadline: </div>
+        <mat-form-field class="date-input">
+            <input 
+                matInput 
+                [matDatepicker]="endTimePicker" 
+                [(ngModel)]="endDate" 
+                (ngModelChange)="endTimeChange($event)"
+                autocomplete="off"
+            >
+            <mat-datepicker-toggle matSuffix [for]="endTimePicker"></mat-datepicker-toggle>
+            <mat-datepicker #endTimePicker></mat-datepicker>
+        </mat-form-field>
+        <ngx-mat-timepicker class="time-input" [(ngModel)]="endTime" [showSpinners]="false" [enableMeridian]="false"></ngx-mat-timepicker>
+    </div>
+
+    <div>
+        <div class="item-title">Post Date:</div>
+        <mat-form-field>
+            <input 
+                matInput 
+                [matDatepicker]="postTimePicker" 
+                [(ngModel)]="postDate" 
+                (ngModelChange)="endTimeChange($event)"
+                autocomplete="off"
+            >
+            <mat-datepicker-toggle matSuffix [for]="postTimePicker"></mat-datepicker-toggle>
+            <mat-datepicker #postTimePicker></mat-datepicker>
+        </mat-form-field>
+        <ngx-mat-timepicker class="time-input" [(ngModel)]="postTime" [showSpinners]="false" [enableMeridian]="false"></ngx-mat-timepicker>
+    </div>
+
+    <div class="list-input">
+        <div class="item-title">Requirements</div>
         <div *ngFor="let requirement of campaignData.requirements; index as i">
             <mat-checkbox> {{ requirement }}</mat-checkbox> 
             <span class="material-icons remove-icon" (click)="removeFromList(campaignData.requirements, i)"> close </span>
         </div>
         <mat-form-field class="example-full-width">
-            <input matInput placeholder="" [(ngModel)]="newRequirement" (ngModelChange)="requirementChange($event)">
+            <input 
+                matInput 
+                placeholder="" 
+                [(ngModel)]="newRequirement" 
+                (ngModelChange)="requirementChange($event)"
+                autocomplete="off"
+            >
         </mat-form-field>
-        <span class="material-icons" (click)="addRequirement()">
+        <span class="material-icons add-icon" (click)="addRequirement()">
             playlist_add
         </span>
-    </mat-card-content>
-</mat-card>
+    </div>
 
-<mat-card class="input-card">
-    <mat-card-header>
-        Millstones
-    </mat-card-header>
-    <mat-card-content>
+    <div class="list-input">
+        <div class="item-title">Milestones</div>
         <div *ngFor="let milestone of campaignData.milestones; index as i">
             <mat-checkbox> {{ milestone }}</mat-checkbox>
             <span class="material-icons remove-icon" (click)="removeFromList(campaignData.milestones, i)"> close </span>
         </div>
         <mat-form-field class="example-full-width">
-            <input matInput placeholder="" [(ngModel)]="newMilestone" (ngModelChange)="milestoneChange($event)">
+            <input 
+                matInput 
+                placeholder="" 
+                [(ngModel)]="newMilestone" 
+                (ngModelChange)="milestoneChange($event)"
+                autocomplete="off"
+            >
         </mat-form-field>
-        <span class="material-icons" (click)="addMilestone()">
+        <span class="material-icons add-icon" (click)="addMilestone()">
             playlist_add
         </span>
-    </mat-card-content>
-</mat-card>
+    </div>
 
-<mat-card class="input-card">
-    <mat-card-header>
-        Contract
-    </mat-card-header>
-    <mat-card-content>
-        <div *ngFor="let contract of uploadedContract"> Contract </div>
-        <button mat-flat-button color="primary" (click)="uploadContract()"> Upload Contract </button>
-    </mat-card-content>
-</mat-card>
+    <div>
+        <div class="item-title">Contract</div>
+        <div>
+            <div class="contract-list-item" *ngFor="let contract of uploadedContract; index as i"> 
+                {{ contract }} 
+                <span class="material-icons add-icon" (click)="removeContract(i)">remove</span>
+            </div>
+            <button mat-flat-button color="primary" (click)="uploadContract()"> Upload Contract </button>
+        </div>
+    </div>
+</div>
 
 <button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>

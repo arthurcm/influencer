@@ -5,26 +5,36 @@
 }
 
 .input-form {
+    margin-left: 100px;
+    margin-top: 40px;
     .item-title {
-        width: 150px;
-        text-align: right;
+        font-weight: 600;
+        font-size: 18px;
+        line-height: 22px;
+    }
+
+    .example-full-width {
+        width: 420px;
+    }
+
+    .example-half-width {
+        width: 200px;
+    }
+
+    textarea {
+        resize: none;
+        height: 100px;
+        width: 420px;
+    }
+
+    .half {
+        width: 200px;
         display: inline-block;
         margin-right: 20px;
     }
 
     .mat-radio-button {
         margin-right: 20px;
-    }
-
-    // .example-full-width {
-    //     width: 400px;
-    //     display: inline-block;
-    // }
-
-    textarea {
-        resize: none;
-        height: 100px;
-        width: 400px;
     }
 
     .date-input {
@@ -35,30 +45,36 @@
         vertical-align: top;
         display: inline-block;
         margin-left: 20px;
-    }
-}
-
-.input-card {
-    margin: 20px 50px;
-    padding: 0px;
-
-    .mat-card-header {
-        padding: 15px;
-        background-color: lightgrey;
-    }
-    .remove-icon {
-        vertical-align: top;
-        margin-left: 15px;
-        cursor: pointer;
-    }
-
-    .mat-card-content {
-        padding: 15px 30px;
-        .example-full-width {
-            width: 500px;
+        
+        ::ng-deep input {
+            font-size: 16px;
+            padding-bottom: 4px;
         }
     }
+
+    .list-input {
+        .add-icon {
+            cursor: pointer;        
+        }
+
+        .remove-icon {
+            vertical-align: top;
+            margin-left: 15px;
+            cursor: pointer;
+        }
+    }
+
+    .contract-list-item {
+        border-radius: 6px;
+        border: 1px solid lightgrey;
+        padding: 6px 12px;
+        display: inline-block;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        margin-top: 10px;
+    }
 }
+
 
 .create-button {
     float: right;
