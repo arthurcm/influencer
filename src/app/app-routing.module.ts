@@ -13,6 +13,7 @@ import { VideoPlayerComponent } from './shared/video-player/video-player.compone
 import { ImageReviewComponent } from './image-review/image-review.component';
 import { SignUpComponent } from './auth/sign-up/sign-up.component';
 import { MainComponent } from './main/main.component';
+import { EventCalendarComponent } from './main/event-calendar/event-calendar.component';
 
 const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['login']);
 
@@ -43,6 +44,10 @@ const routes: Routes = [
             {
                 path: 'create-campaign',
                 component: CreateCampaignComponent,
+            },
+            {
+                path: 'calendar',
+                component: EventCalendarComponent,
             },
             {
                 path: 'campaign/:id',

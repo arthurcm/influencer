@@ -16,7 +16,7 @@ export class MainComponent implements OnInit {
     }
 
     navigate(page) {
-        this.router.navigate(['/app/home']);
+        this.router.navigate([`/app/${page}`]);
     }
 
 }
