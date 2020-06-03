@@ -77,6 +77,21 @@ export class CampaignService {
         );
     }
 
+    async deleteCampaignById(campaignId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/delete_campaign/campaign_id/${campaignId}`;
+        return this.http.delete<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     async provideFeedback(content, campaignId, historyId) {
         const token = await (await this.auth.currentUser).getIdToken();
 

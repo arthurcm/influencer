@@ -28,6 +28,10 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSidenavModule } from '@angular/material/sidenav';
+import { PerfectScrollbarModule } from 'ngx-perfect-scrollbar';
+import { PERFECT_SCROLLBAR_CONFIG } from 'ngx-perfect-scrollbar';
+import { PerfectScrollbarConfigInterface } from 'ngx-perfect-scrollbar';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 import { NgxMatDatetimePickerModule, NgxMatTimepickerModule, NgxMatNativeDateModule } from '@angular-material-components/datetime-picker';
 import { NgxMatMomentModule } from '@angular-material-components/moment-adapter';
@@ -67,6 +71,19 @@ import { MediaThreadComponent } from './media-thread/media-thread.component';
 import { SignUpComponent } from './auth/sign-up/sign-up.component';
 import { MainComponent } from './main/main.component';
 import { CampaignCardComponent } from './main/campaign-card/campaign-card.component';
+import { EventCalendarComponent } from './main/event-calendar/event-calendar.component';
+import { CalendarModule, DateAdapter } from 'angular-calendar';
+import { adapterFactory } from 'angular-calendar/date-adapters/moment';
+import * as moment from 'moment';
+
+export function momentAdapterFactory() {
+    return adapterFactory(moment);
+}
+
+const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
+    suppressScrollX: true
+};
+
 @NgModule({
     declarations: [
         AppComponent,
@@ -90,6 +107,7 @@ import { CampaignCardComponent } from './main/campaign-card/campaign-card.compon
         SignUpComponent,
         MainComponent,
         CampaignCardComponent,
+        EventCalendarComponent,
     ],
     imports: [
         BrowserModule,
@@ -133,7 +151,9 @@ import { CampaignCardComponent } from './main/campaign-card/campaign-card.compon
         NgxMatTimepickerModule,
         NgxMatNativeDateModule,
         NgxMatMomentModule,
-
+        CalendarModule.forRoot({ provide: DateAdapter, useFactory: momentAdapterFactory }),
+        PerfectScrollbarModule,
+        NgSelectModule
     ],
     exports: [
         UploaderComponent,
@@ -149,6 +169,10 @@ import { CampaignCardComponent } from './main/campaign-card/campaign-card.compon
     providers: [
         MatDatepickerModule,
         { provide: BUCKET, useValue: 'influencer-272204.appspot.com' },
+        {
+            provide: PERFECT_SCROLLBAR_CONFIG,
+            useValue: DEFAULT_PERFECT_SCROLLBAR_CONFIG
+        }
     ],
     bootstrap: [AppComponent],
 })

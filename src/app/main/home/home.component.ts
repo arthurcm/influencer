@@ -63,8 +63,23 @@ export class HomeComponent implements OnInit {
         this.router.navigate([`/app/campaign/${campaign.campaign_data.campaign_id}`]);
     }
 
-    deleteCampaign(campaign) {
-        // this.loadingService.show();
+    async deleteCampaign(campaign) {
+        this.loadingService.show();
+        const deleteCampaign = await this.campaignService.deleteCampaignById(campaign.campaign_data.campaign_id);
+
+        deleteCampaign.subscribe(result => {
+            let index = -1;
+            for (let i = 0; i < this.campaigns.length; i ++) {
+                if (campaign.campaign_data.campaign_id === this.campaigns[i].campaign_data.campaign_id) {
+                    index = i;
+                    break;
+                }
+            }
+            this.campaigns.splice(index, 1);
+            this.campaignDataSource = new MatTableDataSource(this.campaigns);
+            this.loadingService.hide();
+            console.log(this.campaigns);
+        });
         // const callable = this.fns.httpsCallable('deleteCampaign');
         // console.log(campaign);
         // callable({

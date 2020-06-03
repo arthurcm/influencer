@@ -1,0 +1,67 @@
+<div class="content">
+    <div class="content__fullCalendar">
+        <div class="content__fullCalendar--header">
+            <div class="title">
+                <h1>{{ viewDate | calendarDate:(view + 'ViewTitle'):'en' }}</h1>
+            </div>
+            <div class="filter">
+                <div>
+                    <ng-select class="influencer-ng-select" [clearable]="false" name="action" [items]="views"
+                        [(ngModel)]="view">
+                        <ng-template ng-option-tmp ng-label-tmp let-item="item">
+                            {{  item | titlecase }}
+                        </ng-template>
+                    </ng-select>
+                </div>
+
+            </div>
+        </div>
+        <perfect-scrollbar>
+            <div class="content__fullCalendar--calendar" [ngSwitch]="view">
+                <mwl-calendar-month-view *ngSwitchCase="'month'" [viewDate]="viewDate" [events]="events"
+                    [refresh]="refresh" [activeDayIsOpen]="activeDayIsOpen" (dayClicked)="dayClicked($event.day)">
+                </mwl-calendar-month-view>
+                <mwl-calendar-week-view *ngSwitchCase="'week'" [viewDate]="viewDate"
+                    (viewDateChange)="selectedDay = {date:$event}" [events]="events" [refresh]="refresh"
+                    (dayClicked)="dayClicked($event.day)">
+                </mwl-calendar-week-view>
+                <mwl-calendar-day-view *ngSwitchCase="'day'" [viewDate]="viewDate"
+                    (viewDateChange)="selectedDay = {date:$event}" [events]="events" [refresh]="refresh"
+                    (dayClicked)="dayClicked($event.day)">
+                </mwl-calendar-day-view>
+            </div>
+        </perfect-scrollbar>
+    </div>
+    <div class="content__filters">
+        <div class="content__filters--calendar">
+            <mat-calendar #calendar [selected]="viewDate" (selectedChange)="changeSelectedDate($event)">
+            </mat-calendar>
+        </div>
+        <div class="content__filters--types">
+            <h4>Show only</h4>
+            <mat-grid-list cols="2" rowHeight="3:1">
+                <mat-grid-tile>
+                    <div class="type-btn"
+                        [ngClass]="eventStatus.conceptReview ? 'concept-review-active' : 'concept-review-deactive'"
+                        (click)="filterEvents(eventTypes.conceptReview)">
+                        Concept Review
+                    </div>
+                </mat-grid-tile>
+                <mat-grid-tile>
+                    <div class="type-btn"
+                        [ngClass]="eventStatus.contentReview ? 'content-review-active' : 'content-review-deactive'"
+                        (click)="filterEvents(eventTypes.contentReview)">
+                        Content Review
+                    </div>
+                </mat-grid-tile>
+                <mat-grid-tile>
+                    <div class="type-btn" [ngClass]="eventStatus.post ? 'post-active' : 'post-deactive'"
+                        (click)="filterEvents(eventTypes.post)">
+                        Post
+                    </div>
+                </mat-grid-tile>
+            </mat-grid-list>
+        </div>
+
+    </div>
+</div>
