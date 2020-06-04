@@ -1,5 +1,5 @@
 
-    const getSubscriptionUrl = async (ctx, accessToken, shop) => {
+const getSubscriptionUrl = async (ctx, accessToken, shop) => {
     const query = JSON.stringify({
         query: `mutation {
       appSubscriptionCreate(

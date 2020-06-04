@@ -1,0 +1,6 @@
+{
+  "script_tag": {
+    "event": "onload",
+    "src": "https://script.lifo.ai/tagscript.js"
+  }
+}

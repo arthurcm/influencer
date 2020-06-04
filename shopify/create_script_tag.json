@@ -1,0 +1,9 @@
+{
+  "query": "mutation scriptTagCreate($input: ScriptTagInput!) {scriptTagCreate(input: $input) {scriptTag {id} userErrors { fieldmessage}}}",
+  "variables": {
+    "input":
+    {
+      "displayScope": "ALL", "src": "https://script.lifo.ai/tagscript.js"
+    }
+  }
+}

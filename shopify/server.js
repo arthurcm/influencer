@@ -6,6 +6,8 @@ const dotenv = require('dotenv');
 const { verifyRequest } = require('@shopify/koa-shopify-auth');
 const session = require('koa-session');
 
+const koaRequest = require('koa-http-request');
+
 dotenv.config();
 const { default: graphQLProxy } = require('@shopify/koa-shopify-graphql-proxy');
 const Router = require('koa-router');
@@ -31,7 +33,7 @@ app.prepare().then(() => {
         createShopifyAuth({
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
-            scopes: ['read_orders', 'write_orders'],
+            scopes: ['read_orders', 'write_orders', 'write_script_tags', 'read_script_tags'],
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
                 ctx.cookies.set('shopOrigin', shop, {
@@ -48,13 +50,60 @@ app.prepare().then(() => {
                     apiVersion: ApiVersion.October19,
                 });
 
+
                 if (order.success) {
                     console.log('Successfully registered webhook!');
                 } else {
                     console.log('Failed to register webhook', order.result);
                 }
-            },
-        }),
+
+                // const res = fetch(`https://${shop}/admin/api/2020-04/graphql.json`, {
+                //     method: "POST",
+                //     headers: {
+                //         "Content-Type": "application/json",
+                //         "X-Shopify-Access-Token": accessToken,
+                //     },
+                //     body: JSON.stringify({
+                //         query: `mutation scriptTagCreate($input: ScriptTagInput!) {
+                //                   scriptTagCreate(input: $input) {
+                //                     scriptTag {
+                //                       id
+                //                     }
+                //                     userErrors {
+                //                       field
+                //                       message
+                //                     }
+                //                   }
+                //                 }`,
+                //             variables: {
+                //             "input": {
+                //                 "displayScope": "ALL",
+                //                 "src": "https://script.lifo.ai/tagscript.js"
+                //             }
+                //         },
+                //     }
+                //     ),
+                // })
+                //     .then(response => response.json())
+                //     .then(data => console.log(data));
+                const res = fetch(`https://${shop}/admin/api/2020-04/script_tags.json`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Shopify-Access-Token": accessToken,
+                    },
+                    body: JSON.stringify(
+                        {
+                            script_tag: {
+                                event: "onload",
+                                src: "https://script.lifo.ai/tagscript.js",
+                            },
+                        }
+                    ),
+                })
+                    .then(response => response.json())
+                    .then(data => console.log(data));
+            }}),
     );
 
     const webhook = receiveWebhook({secret: SHOPIFY_API_SECRET_KEY});
@@ -62,6 +111,7 @@ app.prepare().then(() => {
     router.post('/webhooks/orders/paid', webhook, (ctx) => {
         console.log('received webhook: ', ctx.state.webhook);
     });
+
 
     server.use(graphQLProxy({version: ApiVersion.October19}));
     router.get('*', verifyRequest(), async (ctx) => {
@@ -76,3 +126,5 @@ app.prepare().then(() => {
         console.log(`> Ready on http://localhost:${port}`);
     });
 });
+
+

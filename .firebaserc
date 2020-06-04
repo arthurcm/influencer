@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "influencer-272204"
+  },
+  "targets": {
+    "influencer-272204": {
+      "hosting": {
+        "shopify": [
+          "shopify-lifo"
+        ],
+        "lifo": [
+          "influencer-272204"
+        ]
+      }
+    }
   }
 }
