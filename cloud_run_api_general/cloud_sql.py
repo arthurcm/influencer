@@ -102,6 +102,14 @@ class Sqlhandler:
                 Column('order_data', JSON),
             )
 
+        self.orders_paid = Table(
+                'orders_paid', MetaData(),
+                Column('shop', String, primary_key=True),
+                Column('order_id', String, primary_key=True),
+                Column('customer_id', String, primary_key=True),
+                Column('order_data', JSON),
+            )
+
         # Create tables (if they don't already exist)
         with self.db.connect() as conn:
             conn.execute(
@@ -128,6 +136,17 @@ class Sqlhandler:
                     location json, 
                     user_agent text,
                     referrer text, 
+                    order_data json,
+                    PRIMARY KEY (shop, order_id, customer_id)
+                );
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS orders_paid(
+                    shop text, 
+                    order_id text,
+                    customer_id text,
                     order_data json,
                     PRIMARY KEY (shop, order_id, customer_id)
                 );
@@ -209,11 +228,44 @@ class Sqlhandler:
             self.logger.exception(e)
             return Response(
                 status=500,
-                response=f"Unable to update track_visit: {e}"
+                response=f"Unable to update order_complete: {e}"
             )
         return Response(
             status=200,
-            response="Successfully updated track_visit table"
+            response="Successfully updated order_complete table"
+        )
+
+    def save_orders_paid(self, shop, order_id, customer_id, payload):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.orders_paid).values(
+                    shop=shop,
+                    customer_id=str(customer_id),
+                    order_id=str(order_id),
+                    order_data=payload
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['shop', 'customer_id', 'order_id'],
+                    set_=dict(
+                        order_data=payload
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return Response(
+                status=500,
+                response=f"Unable to update orders_paid: {e}"
+            )
+        return Response(
+            status=200,
+            response="Successfully updated orders_paid table"
         )
 
 sql_handler = Sqlhandler()

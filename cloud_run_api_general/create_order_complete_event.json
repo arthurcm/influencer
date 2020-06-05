@@ -2,7 +2,7 @@
   "lifo_tracker_id": "arthur_meng",
   "customer_id" : "arthur123",
   "shop": "Lifo shop",
-  "order_id": 2504373076134,
+  "order_id": 2504373076135,
   "location": {
     "origin":  "https://lifo-dev.myshopify.com",
     "host": "lifo-dev.myshopify.com"

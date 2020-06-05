@@ -87,20 +87,20 @@ app.prepare().then(() => {
                 //     .then(response => response.json())
                 //     .then(data => console.log(data));
                 const res = fetch(`https://${shop}/admin/api/2020-04/script_tags.json`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Shopify-Access-Token": accessToken,
-                    },
-                    body: JSON.stringify(
-                        {
-                            script_tag: {
-                                event: "onload",
-                                src: "https://script.lifo.ai/tagscript.js",
-                            },
-                        }
-                    ),
-                })
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Shopify-Access-Token": accessToken,
+                        },
+                        body: JSON.stringify(
+                            {
+                                script_tag: {
+                                    event: "onload",
+                                    src: "https://script.lifo.ai/tagscript.js",
+                                },
+                            }
+                        ),
+                    })
                     .then(response => response.json())
                     .then(data => console.log(data));
             }}),
@@ -110,6 +110,15 @@ app.prepare().then(() => {
 
     router.post('/webhooks/orders/paid', webhook, (ctx) => {
         console.log('received webhook: ', ctx.state.webhook);
+        fetch(`https://api.lifo.ai/orders_paid`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(ctx.state.webhook),
+        })
+        .then(response => response.json())
+        .then(data => console.log(data));
     });
 
 

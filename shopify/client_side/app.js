@@ -105,7 +105,7 @@ function doCheckoutCallback(order_id, data){
 }
 
 function remove_cookies(){
-    deleteCookie("ref"),
+    deleteCookie("lftracker"),
     deleteCookie("discount_code");
 }
 

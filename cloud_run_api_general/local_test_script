@@ -39,3 +39,6 @@ curl -X POST https://api.lifo.ai/track -d @create_new_track_event.json --header 
 
 Test /order_complete on remote service:
 curl -X POST https://api.lifo.ai/order_complete -d @create_order_complete_event.json --header "Content-Type: application/json"
+
+Test /orders_paid on remote service:
+ curl -X POST https://api.lifo.ai/orders_paid -d @new_orders_paid_webhook.json --header "Content-Type: application/json"

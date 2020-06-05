@@ -1,0 +1,11 @@
+{
+  "topic": "ORDERS_PAID",
+  "domain": "lifo-dev.myshopify.com",
+  "payload": {
+    "id": 2506755276966,
+    "discount_codes": [],
+    "customer": {
+      "id": 3652281172134
+    }
+  }
+}

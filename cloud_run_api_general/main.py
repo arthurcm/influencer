@@ -112,6 +112,34 @@ def order_complete():
     return response
 
 
+@app.route("/orders_paid", methods=["POST"])
+def orders_paid():
+    """
+    This is the endpoint for shopify orders_paid webhook.
+
+    """
+    data = flask.request.json
+    logging.info(f'Receiving request {data}')
+    if data.get('topic') != 'ORDERS_PAID':
+        logging.warning(f'Invalid not ORDERS_PAID data received {data}')
+    elif not data.get('domain') or not data.get('payload'):
+        logging.warning(f'Invalid shop/customer data received {data}')
+    else:
+        try:
+            shop = data.get('domain')
+            order_id = data.get('payload').get('id')
+            customer_id = data.get('payload').get('customer').get('id')
+            payload = data.get('payload')
+            res = sql_handler.save_orders_paid(shop, order_id, customer_id, payload)
+            if res.status_code == 200:
+                logging.info('Data saved to cloud SQL')
+        except Exception as e:
+            logging.error(f'Saving events error: {e}')
+    response = flask.jsonify('Event received')
+    response.status_code = 200
+    return response
+
+
 def get_client_secret():
     """
     To enable iam role access (for service accounts) to the secret, run the following:

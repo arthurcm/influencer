@@ -3,7 +3,7 @@ window.__lifo = {
 };
 (function () {
     function asyncLoad() {
-        const urls = ["https:\/\/script.lifo.ai\/app.js"]; // ["https:\/\/shopify-lifo.web.app\/app.js"]; //
+        const urls = ["https:\/\/script.lifo.ai\/app.js"];
         for (let i = 0; i < urls.length; i++) {
             const s = document.createElement('script');
             s.type = 'text/javascript';
