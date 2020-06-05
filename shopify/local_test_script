@@ -38,3 +38,9 @@ PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CO
 After the above container is running, go to Shopify partners website, in the lifo app page,
 "Test your app" tab, click "select store", and install to test store. 
 
+
+To update and deploy the client side app.js and tagscript.js, both of them are hosted remotely under script.lifo.ai,
+The difference being, tagscript.js is installed to stores at install time, and app.js is called at runtime.
+run the following anywhere in the repo:
+firebase deploy --only hosting:shopify
+

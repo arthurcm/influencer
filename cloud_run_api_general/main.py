@@ -9,8 +9,10 @@ from flask_cors import CORS
 
 # Imports the Google Cloud client library
 import google.cloud.logging
+import logging
 
 from email_util import share_draft_email
+from cloud_sql import sql_handler
 
 # Instantiates a client
 client = google.cloud.logging.Client()
@@ -42,6 +44,72 @@ def share():
     else:
         res = flask.make_response("email sent successfully!")
     return res
+
+
+@app.route("/track", methods=["POST"])
+def track():
+    """
+    Note: Shopify client side is using the following code snippet to send tracking events:
+    # req.send(JSON.stringify({
+    #     lifo_tracker_id: lifo_tracker_id,
+    #     shop: getShop(),
+    #     location: document.location,
+    #     navigator: navigator.userAgent,
+    #     referrer: document.referrer,
+    #     discount_code,
+    # })),
+    """
+    data = flask.request.json
+    logging.info(f'Receiving request {data}')
+    if not data.get('shop'):
+        logging.warning(f'Invalid shop data received {data}')
+    elif not data.get('lifo_tracker_id'):
+        logging.debug(f'Skip none lifo event {data}')
+    else:
+        try:
+            res = sql_handler.save_track_visit(data)
+            if res.status_code == 200:
+                logging.info('Data saved to cloud SQL')
+        except Exception as e:
+            logging.error(f'Saving events error: {e}')
+    response = flask.jsonify('Event received')
+    response.status_code = 200
+    return response
+
+
+@app.route("/order_complete", methods=["POST"])
+def order_complete():
+    """
+    Don't confuse this one with shopify webhook.
+    Note: Shopify client side is using the following code snippet to send order_complete events:
+    # n.send(JSON.stringify({
+    #     lifo_tracker_id: lifo_tracker_id,
+    #     shop: getShop(),
+    #     location: document.location,
+    #     navigator: navigator.userAgent,
+    #     referrer: document.referrer,
+    #     discount_code,
+    #     order_id,
+    #     customer_id: data.customer_id,
+    #     order_data,
+    # }));
+    """
+    data = flask.request.json
+    logging.info(f'Receiving request {data}')
+    if not data.get('shop') or not data.get('order_id') or not data.get('customer_id'):
+        logging.warning(f'Invalid shop/customer data received {data}')
+    elif not data.get('lifo_tracker_id'):
+        logging.debug(f'Skip none lifo event {data}')
+    else:
+        try:
+            res = sql_handler.save_order_complete(data)
+            if res.status_code == 200:
+                logging.info('Data saved to cloud SQL')
+        except Exception as e:
+            logging.error(f'Saving events error: {e}')
+    response = flask.jsonify('Event received')
+    response.status_code = 200
+    return response
 
 
 def get_client_secret():

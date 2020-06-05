@@ -7,7 +7,7 @@ from flask import Flask
 app = Flask(__name__)
 app.secret_key = "super secret key"
 
-from cloud_run_api_general.gcp_utils import get_secret
+from gcp_utils import get_secret
 
 # Imports the Google Cloud client library
 import google.cloud.logging

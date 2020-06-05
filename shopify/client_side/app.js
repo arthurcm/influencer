@@ -31,18 +31,18 @@ function getShop(){
 }
 
 function trackVisit(){
-    const lifo_trakcer_id=getCookie("lftracker");
+    const lifo_tracker_id=getCookie("lftracker");
     const discount_code=getCookie("discount_code");
     try {
-        if (lifo_trakcer_id || discount_code) {
+        if (lifo_tracker_id || discount_code) {
             const req = new XMLHttpRequest;
             req.open("POST", "https://api.lifo.ai/track"),
             req.setRequestHeader("Content-Type", "application/json;charset=UTF-8"),
             req.send(JSON.stringify({
-                lifo_tracker_id: lifo_trakcer_id,
+                lifo_tracker_id: lifo_tracker_id,
                 shop: getShop(),
                 location: document.location,
-                navigator: navigator.userAgent,
+                user_agent: navigator.userAgent,
                 referrer: document.referrer,
                 discount_code,
             })),
@@ -73,29 +73,32 @@ function deleteCookie(name){
 }
 
 function checkoutPageCallback(){
-    if(window.__lifo) {
-        if("undefined"!=typeof Shopify&&(Shopify.checkout||Shopify.Checkout)) {
-            doCheckoutCallback(Shopify.checkout.order_id||Shopify.checkout.id, Shopify.checkout);
-        }
+    if(Shopify.checkout||Shopify.Checkout) {
+        doCheckoutCallback(Shopify.checkout.order_id||Shopify.checkout.id, Shopify.checkout);
     }
 }
 function doCheckoutCallback(order_id, data){
-    const lifo_trakcer_id=getCookie("lftracker");
-    const discount_code=getCookie("discount_code")||data.discount.code;
-    if(lifo_trakcer_id||discount_code){
+    const lifo_tracker_id=getCookie("lftracker");
+    let discount_code;
+    if (data.discount){
+        discount_code = data.discount.code;
+    }
+    discount_code=getCookie("discount_code")||discount_code;
+    if(lifo_tracker_id||discount_code){
         try {
             const n = new XMLHttpRequest;
             n.open("POST", "https://api.lifo.ai/order_complete"),
             n.setRequestHeader("Content-Type", "application/json;charset=UTF-8"),
             n.send(JSON.stringify({
-                lifo_tracker_id: lifo_trakcer_id,
+                lifo_tracker_id: lifo_tracker_id,
                 shop: getShop(),
                 location: document.location,
-                navigator: navigator.userAgent,
+                user_agent: navigator.userAgent,
                 referrer: document.referrer,
                 discount_code,
                 order_id,
-                data,
+                customer_id: data.customer_id,
+                order_data: data,
             }));
         }catch (e) {}
     }
