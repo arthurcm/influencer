@@ -72,7 +72,7 @@ def track():
                 logging.info('Data saved to cloud SQL')
         except Exception as e:
             logging.error(f'Saving events error: {e}')
-    response = flask.jsonify('Event received')
+    response = flask.jsonify({'status': 'OK'})
     response.status_code = 200
     return response
 
@@ -107,7 +107,7 @@ def order_complete():
                 logging.info('Data saved to cloud SQL')
         except Exception as e:
             logging.error(f'Saving events error: {e}')
-    response = flask.jsonify('Event received')
+    response = flask.jsonify({'status': 'OK'})
     response.status_code = 200
     return response
 
@@ -135,7 +135,7 @@ def orders_paid():
                 logging.info('Data saved to cloud SQL')
         except Exception as e:
             logging.error(f'Saving events error: {e}')
-    response = flask.jsonify('Event received')
+    response = flask.jsonify('OK')
     response.status_code = 200
     return response
 
