@@ -32,6 +32,8 @@ export class HomeComponent implements OnInit {
 
     async ngOnInit() {
         this.loadingService.show();
+        const user =  await this.auth.currentUser;
+        console.log(user);
         const campaign = await this.campaignService.getAllCampaignForUser();
         campaign.subscribe(result => {
             this.campaigns = result.filter(campaign => {

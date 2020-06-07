@@ -5,6 +5,28 @@
     font-size: 18px;
 }
 
+.overview-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 40px;
+    td {
+        border: 1px solid #DFE0EB;
+        padding: 15px 30px;
+    }
+    .overview-title {
+        font-size: 16px;
+        line-height: 22px;
+        color: #9FA2B4;
+    }
+    .overview-content {
+        font-size: 18px;
+        line-height: 22px;
+        color: #252733;
+    }
+    .space {
+        height: 10px;
+    }
+}
 
 .basic-card {
     margin: 20px;

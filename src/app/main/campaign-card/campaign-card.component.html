@@ -6,8 +6,11 @@
         <div></div>
         Days Left
     </div>
-    <div class="preview">
+    <div class="preview" *ngIf="campaign.campaign_data.extra_info['type'] === 'video'">
         Video
+    </div>
+    <div class="preview" *ngIf="campaign.campaign_data.extra_info['type'] === 'image'">
+        Image
     </div>
 
     <div class="name">

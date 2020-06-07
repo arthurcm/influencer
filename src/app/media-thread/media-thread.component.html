@@ -1,4 +1,11 @@
-<button mat-flat-button (click)="showAddNewThread()">Comment</button>
+<div class="title"> Comment </div>
+<div class="button-row">
+    <button mat-button class="add-comment-button" (click)="showAddNewThread()">
+        <span class="material-icons"> add </span>
+        Add Comment
+    </button>
+</div>
+
 <div *ngIf="shouldShowAddNewThread">
     <mat-form-field class="full-text-area">
         <textarea #feedbackTextArea matInput [(ngModel)]="newComment" placeholder=""></textarea>
