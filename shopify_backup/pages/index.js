@@ -24,14 +24,14 @@ class Index extends React.Component {
                 />
                 <Layout>
                     <EmptyState
-                        heading="Select products to start"
+                        heading="Launch an influencer marketing campaign"
                         action={{
-                            content: 'Select products',
+                            content: 'Launch campaign',
                             onAction: () => this.setState({ open: true }),
                         }}
                         image={img}
                     >
-                        <p>Select products and change their price temporarily</p>
+                        <p>Use Lifo to launch and manage your influencer marketing campaign</p>
                     </EmptyState>
                 </Layout>
             </Page >

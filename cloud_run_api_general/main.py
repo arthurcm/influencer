@@ -3,6 +3,7 @@
 import os
 import flask
 import json
+import datetime
 
 from flask import request
 from flask_cors import CORS
@@ -26,6 +27,13 @@ client.setup_logging()
 CLIENT_SECRETS_FILE = "/tmp/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
+
+import firebase_admin
+from firebase_admin import auth
+from firebase_admin import exceptions
+
+
+firebase_app = firebase_admin.initialize_app()
 
 app = flask.Flask(__name__)
 CORS(app)
@@ -182,6 +190,27 @@ def create_lifo_tracker_id():
     response = flask.jsonify(lifo_tracker_id=res.response)
     response.status_code = 200
     return response
+
+
+@app.route('/sessionLogin', methods=['POST'])
+def session_login():
+    # Get the ID token sent by the client
+    id_token = flask.request.json['idToken']
+    # Set session expiration to 5 days.
+    expires_in = datetime.timedelta(days=14)
+    try:
+        # Create the session cookie. This will also verify the ID token in the process.
+        # The session cookie will have the same claims as the ID token.
+        session_cookie = auth.create_session_cookie(id_token, expires_in=expires_in)
+        response = flask.jsonify({'status': 'success'})
+        # Set cookie policy for session cookie.
+        expires = datetime.datetime.now() + expires_in
+        response.set_cookie(
+            'session', session_cookie, expires=expires, httponly=True, secure=True)
+        return response
+    except exceptions.FirebaseError as e:
+        logging.error(e)
+        return flask.abort(401, 'Failed to create a session cookie')
 
 
 def get_client_secret():
