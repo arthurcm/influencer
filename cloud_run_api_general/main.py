@@ -140,6 +140,50 @@ def orders_paid():
     return response
 
 
+@app.route("/orders_lifo", methods=["GET"])
+def orders_lifo():
+    """
+    This is the endpoint for filtering lifo orders
+    TODO: need to verify the customer auth
+    """
+    customer_id = flask.request.args.get('customer_id')
+    if customer_id == None or '' == customer_id:
+        response = flask.jsonify([])
+        response.status_code = 403
+        return response
+    try:
+        res = sql_handler.get_lifo_orders(customer_id)
+        if res.status_code == 200:
+            logging.info('Data saved to cloud SQL')
+    except Exception as e:
+        logging.error(f'Saving events error: {e}')
+    response = flask.jsonify(res.response)
+    response.status_code = 200
+    return response
+
+
+@app.route("/lifo_tracker_id", methods=["POST"])
+def create_lifo_tracker_id():
+    """
+    This is the endpoint for creating lifo tracker id
+    TODO: need to verify the customer auth
+    """
+    customer_id = flask.request.args.get('customer_id')
+    if customer_id == None or '' == customer_id:
+        response = flask.jsonify([])
+        response.status_code = 403
+        return response
+    try:
+        res = sql_handler.create_lifo_tracker_id(customer_id)
+        if res.status_code == 200:
+            logging.info('Data saved to cloud SQL')
+    except Exception as e:
+        logging.error(f'Saving events error: {e}')
+    response = flask.jsonify(lifo_tracker_id=res.response)
+    response.status_code = 200
+    return response
+
+
 def get_client_secret():
     """
     To enable iam role access (for service accounts) to the secret, run the following:

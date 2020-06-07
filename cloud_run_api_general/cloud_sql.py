@@ -1,4 +1,6 @@
 import logging
+import hashlib
+import time
 
 from flask import Response
 import sqlalchemy
@@ -110,6 +112,12 @@ class Sqlhandler:
                 Column('order_data', JSON),
             )
 
+        self.lifo_tracker_id = Table(
+                'lifo_tracker_id', MetaData(),
+                Column('lifo_tracker_id', String, primary_key=True),
+                Column('customer_id', String),
+            )
+
         # Create tables (if they don't already exist)
         with self.db.connect() as conn:
             conn.execute(
@@ -149,6 +157,15 @@ class Sqlhandler:
                     customer_id text,
                     order_data json,
                     PRIMARY KEY (shop, order_id, customer_id)
+                );
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS lifo_tracker_id(
+                    lifo_tracker_id text,
+                    customer_id text,
+                    PRIMARY KEY (lifo_tracker_id)
                 );
                 """
             )
@@ -266,6 +283,62 @@ class Sqlhandler:
         return Response(
             status=200,
             response="Successfully updated orders_paid table"
+        )
+
+    def get_lifo_orders(self, customer_id):
+        ret = None
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                select_stmt = select().where(self.lifo_tracker_id.c.customer_id == customer_id)
+                result = conn.execute(select_stmt)
+                cursor = result.context.cursor
+                # cursor.fetchall()
+                # print(result.context.cursor)
+                # for row in result:
+                    # print("lifo_tracker_id: %s, customer_id: %s", row['lifo_tracker_id'], row['customer_id'])
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return Response(
+                status=500,
+                response="{}"
+            )
+        return Response(
+            status=200,
+            response=ret
+        )
+
+    def create_lifo_tracker_id(self, customer_id):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                m = hashlib.sha256()
+                m.update(str(customer_id).encode('utf-8'))
+                m.update(str(time.time()).encode('utf-8'))
+                lifo_tracker_id = m.hexdigest()
+                insert_stmt = insert(self.lifo_tracker_id).values(
+                    lifo_tracker_id=str(lifo_tracker_id),
+                    customer_id=str(customer_id),
+                )
+                conn.execute(insert_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return Response(
+                status=500,
+                response="Creating Lifo tracker id is failed"
+            )
+        return Response(
+            status=200,
+            response=lifo_tracker_id
         )
 
 sql_handler = Sqlhandler()
