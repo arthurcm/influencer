@@ -90,7 +90,7 @@ function doCheckoutCallback(order_id, data){
             n.open("POST", "https://api.lifo.ai/order_complete"),
             n.setRequestHeader("Content-Type", "application/json;charset=UTF-8"),
             n.send(JSON.stringify({
-                lifo_tracker_id: lifo_tracker_id,
+                lifo_tracker_id,
                 shop: getShop(),
                 location: document.location,
                 user_agent: navigator.userAgent,

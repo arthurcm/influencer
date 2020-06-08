@@ -13,6 +13,7 @@ BRAND_CAMPAIGN_TYPES[PERCENTAGE_RATE] = {
     campaign_name: String(),
     campaign_type: PERCENTAGE_RATE,
     commission_percentage: Number(),
+    commission: Number(),
     requirements: [],
     milestones: [],
     extra_info: {},
@@ -24,6 +25,7 @@ BRAND_CAMPAIGN_TYPES[FIXED_RATE] = {
     brand: String(),
     campaign_name: String(),
     campaign_type: FIXED_RATE,
+    commission_percentage: Number(),
     commission: Number(),
     total_budget: Number(),
     requirements: [],
@@ -256,6 +258,7 @@ function createCampaign(data, uid, campaign_type){
     return {
         campaign_id,
         history_id,
+        campaign_data: campaignData,
         batch_promise: batch
     };
 }

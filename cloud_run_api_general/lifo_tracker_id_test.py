@@ -7,7 +7,7 @@ class TestLifoTrackerId(unittest.TestCase):
         result = sql_handler.get_lifo_orders('3652281172134')
 
     def test_create_lifo_tracker_id(self):
-        result = sql_handler.create_lifo_tracker_id('1234567')
+        result = sql_handler.save_lifo_tracker_id('1234567')
         self.assertEqual('200 OK', result.status)
         self.assertIsNotNone(result.response)
 

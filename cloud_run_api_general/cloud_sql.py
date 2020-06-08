@@ -1,10 +1,9 @@
 import logging
-import hashlib
-import time
+import datetime
 
 from flask import Response
 import sqlalchemy
-from sqlalchemy import MetaData, Table, Column, String, select, JSON
+from sqlalchemy import MetaData, Table, Column, String, select, JSON, Numeric, Date, text, DateTime
 
 
 # // Depending on which database you are using, you'll set some variables differently.
@@ -91,7 +90,7 @@ class Sqlhandler:
                 Column('referrer', String),
             )
 
-        self.order_complete = Table(
+        self.ORDER_COMPLETE = Table(
                 'order_complete', MetaData(),
                 Column('shop', String, primary_key=True),
                 Column('order_id', String, primary_key=True),
@@ -102,6 +101,8 @@ class Sqlhandler:
                 Column('user_agent', String),
                 Column('referrer', String),
                 Column('order_data', JSON),
+                Column('subtotal_price', Numeric),
+                Column('order_date', Date),
             )
 
         self.orders_paid = Table(
@@ -112,10 +113,17 @@ class Sqlhandler:
                 Column('order_data', JSON),
             )
 
-        self.lifo_tracker_id = Table(
-                'lifo_tracker_id', MetaData(),
+        self.tracker_id = Table(
+                'tracker_id', MetaData(),
                 Column('lifo_tracker_id', String, primary_key=True),
-                Column('customer_id', String),
+                Column('uid', String, primary_key=True),
+                Column('shop', String, primary_key=True),
+                Column('campaign_id', String, primary_key=True),
+                Column('commission', String),
+                Column('commission_type', String),
+                Column('commission_percentage', String),
+                Column('tracking_url', String),
+                Column('timestamp', DateTime)
             )
 
         # Create tables (if they don't already exist)
@@ -145,6 +153,8 @@ class Sqlhandler:
                     user_agent text,
                     referrer text, 
                     order_data json,
+                    subtotal_price numeric,
+                    order_date date,
                     PRIMARY KEY (shop, order_id, customer_id)
                 );
                 """
@@ -162,10 +172,17 @@ class Sqlhandler:
             )
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS lifo_tracker_id(
+                CREATE TABLE IF NOT EXISTS tracker_id(
                     lifo_tracker_id text,
-                    customer_id text,
-                    PRIMARY KEY (lifo_tracker_id)
+                    uid text,
+                    shop text,
+                    campaign_id text,
+                    commission numeric,
+                    commission_percentage numeric,
+                    commission_type text,
+                    tracking_url text,
+                    timestamp timestamp,
+                    PRIMARY KEY (lifo_tracker_id, uid, shop, campaign_id)
                 );
                 """
             )
@@ -209,13 +226,13 @@ class Sqlhandler:
             response="Successfully updated track_visit table"
         )
 
-    def save_order_complete(self, data):
+    def save_order_complete(self, data, subtotal_price):
         try:
             # # Using a with statement ensures that the connection is always released
             # # back into the pool at the end of statement (even if an error occurs)
             with self.db.connect() as conn:
                 from sqlalchemy.dialects.postgresql import insert
-                insert_stmt = insert(self.order_complete).values(
+                insert_stmt = insert(self.ORDER_COMPLETE).values(
                     shop=data.get('shop'),
                     customer_id=str(data.get('customer_id')),
                     order_id=str(data.get('order_id')),
@@ -224,7 +241,9 @@ class Sqlhandler:
                     location=data.get('location'),
                     user_agent=data.get('user_agent'),
                     referrer=data.get('referrer'),
-                    order_data=data.get('order_data')
+                    order_data=data.get('order_data'),
+                    subtotal_price=subtotal_price,
+                    order_date=datetime.datetime.now().date()
                 )
                 do_update_stmt = insert_stmt.on_conflict_do_update(
                     index_elements=['shop', 'customer_id', 'order_id'],
@@ -234,7 +253,9 @@ class Sqlhandler:
                         location=data.get('location'),
                         user_agent=data.get('user_agent'),
                         referrer=data.get('referrer'),
-                        order_data=data.get('order_data')
+                        order_data=data.get('order_data'),
+                        subtotal_price=subtotal_price,
+                        order_date=datetime.datetime.now().date()
                     )
                 )
                 conn.execute(do_update_stmt)
@@ -290,8 +311,9 @@ class Sqlhandler:
         try:
             # # Using a with statement ensures that the connection is always released
             # # back into the pool at the end of statement (even if an error occurs)
+
             with self.db.connect() as conn:
-                select_stmt = select().where(self.lifo_tracker_id.c.customer_id == customer_id)
+                select_stmt = select().where(self.tracker_id.c.customer_id == customer_id)
                 result = conn.execute(select_stmt)
                 cursor = result.context.cursor
                 # cursor.fetchall()
@@ -312,33 +334,72 @@ class Sqlhandler:
             response=ret
         )
 
-    def create_lifo_tracker_id(self, customer_id):
+    def save_lifo_tracker_id(self, uid, lifo_tracker_id, shop, commission, commission_type,
+                             commission_percentage, campaign_id, tracking_url):
         try:
             # # Using a with statement ensures that the connection is always released
             # # back into the pool at the end of statement (even if an error occurs)
             with self.db.connect() as conn:
                 from sqlalchemy.dialects.postgresql import insert
-                m = hashlib.sha256()
-                m.update(str(customer_id).encode('utf-8'))
-                m.update(str(time.time()).encode('utf-8'))
-                lifo_tracker_id = m.hexdigest()
-                insert_stmt = insert(self.lifo_tracker_id).values(
+                insert_stmt = insert(self.tracker_id).values(
                     lifo_tracker_id=str(lifo_tracker_id),
-                    customer_id=str(customer_id),
+                    uid=str(uid),
+                    shop=shop,
+                    campaign_id=campaign_id,
+                    commission=commission,
+                    commission_percentage=commission_percentage,
+                    commission_type=commission_type,
+                    tracking_url=tracking_url,
+                    timestamp=datetime.datetime.now(),
                 )
-                conn.execute(insert_stmt)
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['lifo_tracker_id', 'uid', 'shop', 'campaign_id'],
+                    set_=dict(
+                        commission=commission,
+                        commission_percentage=commission_percentage,
+                        commission_type=commission_type,
+                        tracking_url=tracking_url,
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
         except Exception as e:
             # If something goes wrong, handle the error in this section. This might
             # involve retrying or adjusting parameters depending on the situation.
             # [START_EXCLUDE]
             self.logger.exception(e)
-            return Response(
-                status=500,
-                response="Creating Lifo tracker id is failed"
-            )
-        return Response(
-            status=200,
-            response=lifo_tracker_id
-        )
+            return {}
+        return {
+            'lifo_tracker_id': lifo_tracker_id,
+            'tracking_url': tracking_url
+        }
+
+    def get_total_revenue_per_shop(self, shop):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                stmt = text("SELECT SUM(subtotal_price) AS revenue, shop FROM order_complete WHERE shop = :shop Group By shop")
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
+    def get_revenue_ts_per_shop(self, shop):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                stmt = text("SELECT SUM(subtotal_price) AS revenue, shop, order_date FROM order_complete WHERE shop = :shop Group By shop, order_date")
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
 
 sql_handler = Sqlhandler()

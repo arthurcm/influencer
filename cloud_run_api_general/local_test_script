@@ -26,14 +26,6 @@ Manage/update client_secret in secret manager:
 gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
 
 
-local test :
-curl -vX POST https://api-general-4lladlc2eq-uc.a.run.app/share -d @local_test.json --header "Content-Type: application/json"
-
-
-local test :
-curl -vX POST http://localhost:9090/share -d @local_test.json --header "Content-Type: application/json"
-
-
 Test /track on remote service:
 curl -X POST https://api.lifo.ai/track -d @create_new_track_event.json --header "Content-Type: application/json"
 
@@ -42,3 +34,12 @@ curl -X POST https://api.lifo.ai/order_complete -d @create_order_complete_event.
 
 Test /orders_paid on remote service:
  curl -X POST https://api.lifo.ai/orders_paid -d @new_orders_paid_webhook.json --header "Content-Type: application/json"
+
+
+To obtain a testing idToken for local curl testing to by pass authentication requirements, run the following
+and copy the "idToken" from the returned results json:
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'
+
+
+Test /campaign/lifo_tracker_id locally, replace the <idToken> with the one you get above:
+curl  -H "Content-Type: application/json" -H "Authorization: <idToken>" -X POST https://api.lifo.ai/campaign/lifo_tracker_id -d @create_brand_campaign_local_test.json

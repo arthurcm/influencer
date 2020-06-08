@@ -4,6 +4,7 @@ import os
 import flask
 import json
 import datetime
+import hashlib
 
 from flask import request
 from flask_cors import CORS
@@ -68,7 +69,7 @@ def track():
     # })),
     """
     data = flask.request.json
-    logging.info(f'Receiving request {data}')
+    logging.info(f'Receiving /track request {data}')
     if not data.get('shop'):
         logging.warning(f'Invalid shop data received {data}')
     elif not data.get('lifo_tracker_id'):
@@ -88,7 +89,7 @@ def track():
 @app.route("/order_complete", methods=["POST"])
 def order_complete():
     """
-    Don't confuse this one with shopify webhook.
+    Don't confuse this one with Shopify webhook.
     Note: Shopify client side is using the following code snippet to send order_complete events:
     # n.send(JSON.stringify({
     #     lifo_tracker_id: lifo_tracker_id,
@@ -103,14 +104,18 @@ def order_complete():
     # }));
     """
     data = flask.request.json
-    logging.info(f'Receiving request {data}')
+    logging.info(f'Receiving order_complete request {data}')
     if not data.get('shop') or not data.get('order_id') or not data.get('customer_id'):
         logging.warning(f'Invalid shop/customer data received {data}')
     elif not data.get('lifo_tracker_id'):
         logging.debug(f'Skip none lifo event {data}')
     else:
         try:
-            res = sql_handler.save_order_complete(data)
+            order_data = data.get('order_data')
+            # we use subtotal_price for calculation, before tax and shipping
+            subtotal_price = float(order_data.get('subtotal_price'))
+            logging.debug(f'Received order with revenue of {subtotal_price}')
+            res = sql_handler.save_order_complete(data, subtotal_price)
             if res.status_code == 200:
                 logging.info('Data saved to cloud SQL')
         except Exception as e:
@@ -124,10 +129,9 @@ def order_complete():
 def orders_paid():
     """
     This is the endpoint for shopify orders_paid webhook.
-
     """
     data = flask.request.json
-    logging.info(f'Receiving request {data}')
+    logging.info(f'Receiving orders_paid request {data}')
     if data.get('topic') != 'ORDERS_PAID':
         logging.warning(f'Invalid not ORDERS_PAID data received {data}')
     elif not data.get('domain') or not data.get('payload'):
@@ -148,19 +152,88 @@ def orders_paid():
     return response
 
 
+def token_verification(id_token):
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        uid = decoded_token['uid']
+    except ValueError or exceptions.InvalidArgumentError:
+        logging.error('id_token not string or empty or invalid')
+        return ''
+    except auth.RevokedIdTokenError:
+        logging.error('id_token has been revoked')
+        return ''
+    return uid
+
+
+@app.before_request
+def hook():
+    logging.info(f'request url is: {request.url}')
+    if '/campaign' in request.url and not flask.session.get('uid'):
+        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+        if not id_token:
+            logging.error('Valid id_token required')
+            response = flask.jsonify('Valid id_token required')
+            response.status_code = 400
+            return response
+        uid = token_verification(id_token)
+        if not uid:
+            logging.error('id_token verification failed')
+            response = flask.jsonify('id_token verification failed')
+            response.status_code = 400
+            return response
+        flask.session['uid'] = uid
+
+
+def create_tracker_id(uid):
+    m = hashlib.sha256()
+    m.update(str(uid).encode('utf-8'))
+    lifo_tracker_id = m.hexdigest()
+    return lifo_tracker_id
+
+
+@app.route("/campaign/lifo_tracker_id", methods=["POST"])
+def create_lifo_tracker_id():
+    """
+    This is the endpoint for creating lifo tracker id, and requires auth from Influencers.
+    The caller is currently from campaign side, where queries are sent from api_nodejs during influencer
+    signing up for brand initiated campaigns.
+    The request payload will include campaign_data as defined in campaign.js under api_nodejs.
+    """
+
+    # influencer uid, NOT shop
+    uid = flask.session['uid']
+    lifo_tracker_id = create_tracker_id(uid)
+    campaign_data = flask.request.json
+    try:
+        shop = campaign_data.get('brand')
+        tracking_url = f'https://{shop}/?lftracker={lifo_tracker_id}'
+        commission = campaign_data.get('commission')
+        commission_type = campaign_data.get('commission_type')
+        commission_percentage = campaign_data.get('commission_percentage')
+        campaign_id = campaign_data.get('campaign_id')
+        res = sql_handler.save_lifo_tracker_id(uid, lifo_tracker_id, shop, commission, commission_type,
+                                               commission_percentage, campaign_id, tracking_url)
+        if len(res) > 0:
+            logging.info(f'Data saved to cloud SQL: {tracking_url}')
+    except Exception as e:
+        logging.error(f'Saving events error: {e}')
+        response = flask.jsonify({'Status': 'Failed'})
+        response.status_code = 400
+        return response
+    response = flask.jsonify(lifo_tracker_id=res)
+    response.status_code = 200
+    return response
+
+
 @app.route("/orders_lifo", methods=["GET"])
 def orders_lifo():
     """
     This is the endpoint for filtering lifo orders
     TODO: need to verify the customer auth
     """
-    customer_id = flask.request.args.get('customer_id')
-    if customer_id == None or '' == customer_id:
-        response = flask.jsonify([])
-        response.status_code = 403
-        return response
+    uid = flask.request.args.get('uid')
     try:
-        res = sql_handler.get_lifo_orders(customer_id)
+        res = sql_handler.get_lifo_orders(uid)
         if res.status_code == 200:
             logging.info('Data saved to cloud SQL')
     except Exception as e:
@@ -170,33 +243,11 @@ def orders_lifo():
     return response
 
 
-@app.route("/lifo_tracker_id", methods=["POST"])
-def create_lifo_tracker_id():
-    """
-    This is the endpoint for creating lifo tracker id
-    TODO: need to verify the customer auth
-    """
-    customer_id = flask.request.args.get('customer_id')
-    if customer_id == None or '' == customer_id:
-        response = flask.jsonify([])
-        response.status_code = 403
-        return response
-    try:
-        res = sql_handler.create_lifo_tracker_id(customer_id)
-        if res.status_code == 200:
-            logging.info('Data saved to cloud SQL')
-    except Exception as e:
-        logging.error(f'Saving events error: {e}')
-    response = flask.jsonify(lifo_tracker_id=res.response)
-    response.status_code = 200
-    return response
-
-
 @app.route('/sessionLogin', methods=['POST'])
 def session_login():
     # Get the ID token sent by the client
     id_token = flask.request.json['idToken']
-    # Set session expiration to 5 days.
+    # Set session expiration to 14 days.
     expires_in = datetime.timedelta(days=14)
     try:
         # Create the session cookie. This will also verify the ID token in the process.
@@ -211,6 +262,38 @@ def session_login():
     except exceptions.FirebaseError as e:
         logging.error(e)
         return flask.abort(401, 'Failed to create a session cookie')
+
+
+@app.route('/revenue', methods=['GET'])
+def revenue():
+    shop = flask.request.args.get('shop')
+    revenue_results = {'shop': shop}
+    try:
+        results = sql_handler.get_total_revenue_per_shop(shop)
+        if not results:
+            revenue_results['shop_revenue'] = 0
+        else:
+            revenue_results['shop_revenue'] = float(results[0][0])
+            try:
+                ts_results = sql_handler.get_revenue_ts_per_shop(shop)
+                if not ts_results:
+                    revenue_results['revenue_ts'] = []
+                else:
+                    revenue_ts = []
+                    for row in ts_results:
+                        cur_ts = {
+                            'daily_revenue': float(row[0]),
+                            'order_date': row[2]
+                        }
+                        revenue_ts.append(cur_ts)
+                    revenue_results['revenue_ts'] = revenue_ts
+            except Exception as e:
+                logging.error(f'Getting revenue ts error: {e}')
+    except Exception as e:
+        logging.error(f'Getting revenue error: {e}')
+    response = flask.jsonify(revenue_results)
+    response.status_code = 200
+    return response
 
 
 def get_client_secret():

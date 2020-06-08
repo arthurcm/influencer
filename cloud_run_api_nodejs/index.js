@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express();
 app.use(express.json());
 app.use(cors());
+require('isomorphic-fetch');
 
 const admin = require('firebase-admin');
 admin.initializeApp({
@@ -392,26 +393,49 @@ app.get('/list_brand_campaigns_inf', (req, res, next) => {
         .catch(next);
 });
 
+async function get_referral_url(idToken, campaign_data, next){
+    let response_data;
+    await fetch('https://api.lifo.ai/campaign/lifo_tracker_id', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': idToken
+        },
+        body: JSON.stringify(campaign_data),
+    })
+        .then(response => {
+            response_data = response.json();
+            return response_data;
+        })
+        .catch(next);
+    return response_data;
+}
 
+
+// Main entry point for influencers to get
 app.put('/sign_up_to_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const uid = res.locals.uid;
+    const idToken = req.headers.authorization;
     console.log('Receiving brand_campaign_id', brand_campaign_id, 'and uid', uid);
     if(!brand_campaign_id){
         res.status(400).send('Require a valid brand_campaign_id');
     }
     // let results =  campaign.signupToBrandCampaign(brand_campaign_id, uid)
     return campaign.signupToBrandCampaign(brand_campaign_id, uid)
-    // const campaign_id = results.campaign_id;
-    // const history_id = results.history_id;
-    // let batch = results.batch_promise;
-        .then(result => {
+        .then(async (result) => {
             const campaign_id = result.campaign_id;
             const history_id = result.history_id;
             let batch = result.batch_promise;
-            console.log('sign up results', result);
+            let campaign_data = result.campaign_data;
+            campaign_data.campaign_id = campaign_id;
+            const tracking_data = await get_referral_url(idToken, campaign_data);
+            console.log('Got tracking data', tracking_data);
             batch.commit();
-            res.status(200).send({campaign_id, history_id});
+            return {campaign_id, history_id, tracking_data};
+        })
+        .then(result=>{
+            res.status(200).send(result);
             return result;
         })
         .catch(next);

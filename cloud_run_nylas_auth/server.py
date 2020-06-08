@@ -3,7 +3,6 @@ from __future__ import print_function
 import os
 import sys
 import textwrap
-import datetime
 
 from cloud_sql import sql_handler
 import firebase_admin
