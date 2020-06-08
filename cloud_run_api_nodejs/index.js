@@ -22,12 +22,22 @@ app.use((req, res, next) => {
         return res.status(403).json({ error: 'No credentials sent!' });
     }
     const idToken = req.headers.authorization;
-    console.log('got id token', idToken);
     admin.auth().verifyIdToken(idToken)
         .then((decodedToken) => {
             const uid = decodedToken.uid;
+            console.log('received decoded token', decodedToken);
+
+            // the following "additional claim" field "store_account" is set in shopify/sever.js to
+            // sign up store accounts
+            // /brand/* end points can only be accessed by store accounts
+            if (req.path.startWith('/brand') && !decodedToken.store_account){
+                return res.status(403).json({ error: 'Not authorized to brand portal'});
+
+                //other campaign related end points (except for /share) are not accessible to store accounts.
+            }else if (!req.path.startWith('/brand') && decodedToken.store_account){
+                return res.status(403).json({ error: 'Not authorized to user portal'});
+            }
             res.locals.uid = uid;
-            console.log('received uid', uid);
             next();
             return decodedToken;
         })
@@ -413,7 +423,7 @@ async function get_referral_url(idToken, campaign_data, next){
 
 
 // Main entry point for influencers to get
-app.put('/sign_up_to_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const uid = res.locals.uid;
     const idToken = req.headers.authorization;
@@ -442,7 +452,7 @@ app.put('/sign_up_to_brand_campaign/brand_campaign_id/:brand_campaign_id', (req,
 });
 
 
-app.get('/get_brand_campaign_types', (req, res, next)=>{
+app.get('/brand/get_brand_campaign_types', (req, res, next)=>{
     let results = campaign.getBrandCampaignTypes();
     console.log('Available campaign types are ', results);
     res.status(200).send(results);
@@ -450,7 +460,7 @@ app.get('/get_brand_campaign_types', (req, res, next)=>{
 });
 
 
-app.post('/create_brand_campaign', (req, res, next) => {
+app.post('/brand/campaign', (req, res, next) => {
     console.log('/create_brand_campaign received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
@@ -467,7 +477,7 @@ app.post('/create_brand_campaign', (req, res, next) => {
 });
 
 
-app.get('/list_brand_campaigns_brand', (req, res, next) => {
+app.get('/brand/campaign', (req, res, next) => {
     const uid = res.locals.uid;
     return campaign.listBrandCampaignForBrand(uid)
         .then(result => {
@@ -475,6 +485,11 @@ app.get('/list_brand_campaigns_brand', (req, res, next) => {
             return result;
         })
         .catch(next);
+});
+
+//TODO: Implement the following API
+app.get('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    return res.status(200).send({'status': 'OK'});
 });
 
 //
@@ -492,7 +507,7 @@ app.get('/list_brand_campaigns_brand', (req, res, next) => {
 // });
 
 
-app.delete('/delete_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     console.log('Receiving campaign id', req.params.brand_campaign_id);
     return campaign.deleteBrandCampaign(req.params, uid)
@@ -505,7 +520,7 @@ app.delete('/delete_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, 
 });
 
 
-app.put('/end_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+app.put('/brand/end_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     console.log('Receiving campaign id', req.params.brand_campaign_id);
     return campaign.endBrandCampaign(req.params, uid)
