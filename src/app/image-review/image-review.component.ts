@@ -21,6 +21,7 @@ export class ImageReviewComponent implements OnInit {
     newFeedback = '';
 
     images: ImageContent;
+    mediaPath = '';
 
     constructor(
         public auth: AngularFireAuth,
@@ -48,10 +49,13 @@ export class ImageReviewComponent implements OnInit {
             });
             this.images = JSON.parse(this.campaign.video);
             this.images.images.forEach(image => {
-                this.campaignService.getImageMetaData(image['page']).subscribe(detection => {
+                this.campaignService.getImageMetaData(image.path).subscribe(detection => {
                     console.log(detection);
                 });
             });
+            if (this.images.images.length > 0) {
+                this.mediaPath = this.images.images[0].path;
+            }
             this.newFeedback = this.campaign.feed_back;
             console.log(this.campaign);
             this.loadingService.hide();

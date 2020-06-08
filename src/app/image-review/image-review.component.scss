@@ -1,5 +1,17 @@
 @import 'common';
 
+.left {
+    display: inline-block;
+    width: calc(100% - 400px);
+    vertical-align: top;
+}
+
+.right {
+    display: inline-block;
+    width: 400px;
+    vertical-align: top;
+}
+
 .input-card {
     margin: 20px;
     padding: 0px;

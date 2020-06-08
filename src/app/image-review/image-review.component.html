@@ -1,35 +1,44 @@
 <div class="concept-content">
-    <div class="image-title">Uploaded Images</div>
-    <mat-card class="input-card" *ngIf="images">
-        <mat-card-header>
-            Caption
-        </mat-card-header>
-        <mat-card-content>
-            {{images.caption}}
-        </mat-card-content>
-    </mat-card>
-
-    <div class="image-content" *ngIf="images">
-        <mat-card class="image-card" *ngFor="let image of images.images">
-            <img mat-card-image src="{{image.url}}">
-            <mat-card-content>
-              Some detections
-            </mat-card-content>
-        </mat-card>
-    </div>
-
-    <div>
-        <mat-card class="input-card">
+    <div class="left">
+        <div class="image-title">Uploaded Images</div>
+        <mat-card class="input-card" *ngIf="images">
             <mat-card-header>
-                Feedback
+                Caption
             </mat-card-header>
             <mat-card-content>
-                <mat-form-field class="full-text-area">
-                    <textarea #feedbackTextArea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
-                </mat-form-field>
-                <button mat-button (click)="provideFeedback()">Leave Feedback</button>
-                <button mat-button (click)="approveImage()">Approve Concept</button>
+                {{images.caption}}
             </mat-card-content>
         </mat-card>
+    
+        <div class="image-content" *ngIf="images">
+            <mat-card class="image-card" *ngFor="let image of images.images">
+                <img mat-card-image src="{{image.url}}">
+                <mat-card-content>
+                  Some detections
+                </mat-card-content>
+            </mat-card>
+        </div>
+    
+        <div>
+            <mat-card class="input-card">
+                <mat-card-header>
+                    Feedback
+                </mat-card-header>
+                <mat-card-content>
+                    <mat-form-field class="full-text-area">
+                        <textarea #feedbackTextArea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
+                    </mat-form-field>
+                    <button mat-button (click)="provideFeedback()">Leave Feedback</button>
+                    <button mat-button (click)="approveImage()">Approve Concept</button>
+                </mat-card-content>
+            </mat-card>
+        </div>
     </div>
+
+
+    <div class="right" *ngIf="mediaPath">
+        <app-media-thread [mediaPath]="mediaPath"></app-media-thread>
+    </div>
+
+    
 </div>
