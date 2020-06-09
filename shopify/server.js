@@ -80,37 +80,6 @@ server
                 } else {
                     console.log('Failed to register webhook', order.result);
                 }
-                let shopinfo;
-                await fetch(`https://${shop}/admin/api/2020-04/shop.json`, {
-                        method: "GET",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Shopify-Access-Token": accessToken,
-                        },
-                    })
-                    .then(response => shopinfo = response.json());
-                console.log('Obtained shop information', shopinfo);
-
-                let custom_token;
-                let additionalClaims = {
-                    store_account: true,
-                    email: shopinfo.email,
-                    name: shopinfo.name,
-                    // address1: shopinfo.address1,
-                    // address2: shopinfo.address2,
-                    // city: shopinfo.city,
-                    // country_code: shopinfo.country_code,
-                    // country_name: shopinfo.country_name,
-                    // shopinfo: shopinfo,
-                };
-                await admin.auth().createCustomToken(shop, additionalClaims)
-                    .then(function (customToken) {
-                        // Send token back to client
-                        custom_token = customToken;
-                    })
-                    .catch(function (error) {
-                        console.log('Error creating custom token:', error);
-                    });
             }}),
         );
 
@@ -132,8 +101,8 @@ router.post('/webhooks/orders/paid', webhook, (ctx) => {
 
 server.use(graphQLProxy({version: ApiVersion.April20}));
 router.get('*', verifyRequest(), async (ctx, next) => {
-    const { shop } = ctx.session;
-    return getFirebaseAuth(ctx, shop, next);
+    const { shop, accessToken} = ctx.session;
+    return getFirebaseAuth(ctx, shop, next, accessToken);
 });
 server.use(router.allowedMethods());
 server.use(router.routes());

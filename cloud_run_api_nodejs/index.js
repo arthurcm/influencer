@@ -23,18 +23,18 @@ app.use((req, res, next) => {
     }
     const idToken = req.headers.authorization;
     admin.auth().verifyIdToken(idToken)
-        .then((decodedToken) => {
+        .then(async (decodedToken) => {
             const uid = decodedToken.uid;
+            console.log('received idToken', idToken);
             console.log('received decoded token', decodedToken);
-
             // the following "additional claim" field "store_account" is set in shopify/sever.js to
             // sign up store accounts
             // /brand/* end points can only be accessed by store accounts
-            if (req.path.startWith('/brand') && !decodedToken.store_account){
+            if (req.path.startsWith('/brand') && !decodedToken.store_account){
                 return res.status(403).json({ error: 'Not authorized to brand portal'});
 
                 //other campaign related end points (except for /share) are not accessible to store accounts.
-            }else if (!req.path.startWith('/brand') && decodedToken.store_account){
+            }else if (!req.path.startsWith('/brand') && decodedToken.store_account){
                 return res.status(403).json({ error: 'Not authorized to user portal'});
             }
             res.locals.uid = uid;
