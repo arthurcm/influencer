@@ -15,6 +15,7 @@ import logging
 
 from email_util import share_draft_email
 from cloud_sql import sql_handler
+from campaign_perf_utils import fixed_commission_per_shop, percentage_commission_per_shop, combine_final_commissions
 
 # Instantiates a client
 client = google.cloud.logging.Client()
@@ -58,6 +59,7 @@ def share():
 @app.route("/track", methods=["POST"])
 def track():
     """
+    public endpoint (no auth)
     Note: Shopify client side is using the following code snippet to send tracking events:
     # req.send(JSON.stringify({
     #     lifo_tracker_id: lifo_tracker_id,
@@ -89,6 +91,7 @@ def track():
 @app.route("/order_complete", methods=["POST"])
 def order_complete():
     """
+    public endpoint (no auth)
     Don't confuse this one with Shopify webhook.
     Note: Shopify client side is using the following code snippet to send order_complete events:
     # n.send(JSON.stringify({
@@ -128,7 +131,7 @@ def order_complete():
 @app.route("/orders_paid", methods=["POST"])
 def orders_paid():
     """
-    This is the endpoint for shopify orders_paid webhook.
+    This is the public endpoint (no auth) for shopify orders_paid webhook.
     """
     data = flask.request.json
     logging.info(f'Receiving orders_paid request {data}')
@@ -165,8 +168,10 @@ def token_verification(id_token):
     return uid
 
 
+
 @app.before_request
 def hook():
+    # TODO: Add brand influencer access control
     logging.info(f'request url is: {request.url}')
     if '/campaign' in request.url and not flask.session.get('uid'):
         id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
@@ -194,7 +199,7 @@ def create_tracker_id(uid):
 @app.route("/campaign/lifo_tracker_id", methods=["POST"])
 def create_lifo_tracker_id():
     """
-    This is the endpoint for creating lifo tracker id, and requires auth from Influencers.
+    This is the internal endpoint for creating lifo tracker id, and requires auth from Influencers.
     The caller is currently from campaign side, where queries are sent from api_nodejs during influencer
     signing up for brand initiated campaigns.
     The request payload will include campaign_data as defined in campaign.js under api_nodejs.
@@ -243,30 +248,7 @@ def orders_lifo():
     return response
 
 
-@app.route('/sessionLogin', methods=['POST'])
-def session_login():
-    # Get the ID token sent by the client
-    id_token = flask.request.json['idToken']
-    # Set session expiration to 14 days.
-    expires_in = datetime.timedelta(days=14)
-    try:
-        # Create the session cookie. This will also verify the ID token in the process.
-        # The session cookie will have the same claims as the ID token.
-        session_cookie = auth.create_session_cookie(id_token, expires_in=expires_in)
-        response = flask.jsonify({'status': 'success'})
-        # Set cookie policy for session cookie.
-        expires = datetime.datetime.now() + expires_in
-        response.set_cookie(
-            'session', session_cookie, expires=expires, httponly=True, secure=True)
-        return response
-    except exceptions.FirebaseError as e:
-        logging.error(e)
-        return flask.abort(401, 'Failed to create a session cookie')
-
-
-@app.route('/revenue', methods=['GET'])
-def revenue():
-    shop = flask.request.args.get('shop')
+def get_revenue_per_shop(shop):
     revenue_results = {'shop': shop}
     try:
         results = sql_handler.get_total_revenue_per_shop(shop)
@@ -289,9 +271,88 @@ def revenue():
                     revenue_results['revenue_ts'] = revenue_ts
             except Exception as e:
                 logging.error(f'Getting revenue ts error: {e}')
+                revenue_results['shop_revenue'] = 0
+                revenue_results['revenue_ts'] = {}
     except Exception as e:
         logging.error(f'Getting revenue error: {e}')
+        revenue_results['shop_revenue'] = 0
+        revenue_results['revenue_ts'] = {}
+    return revenue_results
+
+
+@app.route('/brand/revenue', methods=['GET'])
+def revenue():
+    shop = flask.request.args.get('shop')
+    revenue_results = get_revenue_per_shop(shop)
     response = flask.jsonify(revenue_results)
+    response.status_code = 200
+    return response
+
+
+@app.route('/brand/track', methods=['GET'])
+def track_visits():
+    shop = flask.request.args.get('shop')
+    if not shop:
+        response = flask.jsonify({'Status': 'Failed'})
+        response.status_code = 422
+        return response
+    visits = {}
+    try:
+        # schema: COUNT(*) as visits, shop
+        sql_results = sql_handler.counts_visits_per_shop(shop)
+        if not sql_results:
+            visits['visit_counts'] = 0
+        else:
+            visits['visit_counts'] = int(sql_results[0][0])
+    except Exception as e:
+        logging.error(f'Getting track_visit error: {e}')
+        visits['visit_counts'] = 0
+    response = flask.jsonify(visits)
+    response.status_code = 200
+    return response
+
+
+@app.route('/brand/roi', methods=['GET'])
+def roi():
+    shop = flask.request.args.get('shop')
+    revenue_results = get_revenue_per_shop(shop)
+    shop_revenue = revenue_results.get('shop_revenue')
+    try:
+        sqldata_fixed = sql_handler.get_fixed_commission_per_shop_per_campaign(shop)
+        fixed_commission = fixed_commission_per_shop(sqldata_fixed)
+    except Exception as e:
+        logging.error(f'Getting fixed_commission error: {e}')
+        fixed_commission = {
+            'total_fixed_commission': 0,
+            'per_campaign_fixed_commission': {}
+        }
+    try:
+        sqldata_per = sql_handler.get_all_data_per_shop_per_campaign(shop)
+        percentage_commission = percentage_commission_per_shop(sqldata_per)
+    except Exception as e:
+        logging.error(f'Getting percentage_commission error: {e}')
+        percentage_commission = {
+            'total_percentage_commission': 0,
+            'per_campaign_percentage_commission': {}
+        }
+    try:
+        final_results = combine_final_commissions(fixed_commission, percentage_commission)
+        total_commission = final_results.get('total_commission')
+        ROI = (shop_revenue - total_commission) / total_commission
+        final_results['ROI'] = ROI
+    except Exception as e:
+        logging.error(f'Getting percentage_commission error: {e}')
+        final_results = {
+            'ROI': 0,
+            'total_commission': 0,
+            'per_campaign_total': {},
+            'per_campaign_fixed': fixed_commission,
+            'per_campaign_percentage': percentage_commission,
+            'revenue': revenue_results
+        }
+    final_results['shop'] = shop
+    logging.info(f'For shop: {shop}, getting total campaign report of {final_results}')
+    response = flask.jsonify(final_results)
     response.status_code = 200
     return response
 

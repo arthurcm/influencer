@@ -83,11 +83,12 @@ class Sqlhandler:
         self.track_visit = Table(
                 'track_visit', MetaData(),
                 Column('shop', String, primary_key=True),
-                Column('lifo_tracker_id', String),
+                Column('lifo_tracker_id', String, primary_key=True),
                 Column('discount_code', String),
                 Column('location', JSON),
                 Column('user_agent', String),
                 Column('referrer', String),
+                Column('timestamp', DateTime, primary_key=True)
             )
 
         self.ORDER_COMPLETE = Table(
@@ -137,7 +138,8 @@ class Sqlhandler:
                 location json, 
                 user_agent text,
                 referrer text, 
-                PRIMARY KEY (shop, lifo_tracker_id)
+                timestamp timestamp,
+                PRIMARY KEY (shop, lifo_tracker_id, timestamp)
             );
             """
             )
@@ -199,10 +201,11 @@ class Sqlhandler:
                     discount_code=data.get('discount_code'),
                     location=data.get('location'),
                     user_agent=data.get('user_agent'),
-                    referrer=data.get('referrer')
+                    referrer=data.get('referrer'),
+                    timestamp=datetime.datetime.now()
                 )
                 do_update_stmt = insert_stmt.on_conflict_do_update(
-                    index_elements=['shop', 'lifo_tracker_id'],
+                    index_elements=['shop', 'lifo_tracker_id', 'timestamp'],
                     set_=dict(
                         lifo_tracker_id=data.get('lifo_tracker_id'),
                         discount_code=data.get('discount_code'),
@@ -396,6 +399,93 @@ class Sqlhandler:
                 stmt = text("SELECT SUM(subtotal_price) AS revenue, shop, order_date FROM order_complete WHERE shop = :shop Group By shop, order_date")
                 stmt = stmt.bindparams(shop=shop)
                 result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
+    def get_all_data_per_shop_per_campaign(self, shop):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select subtotal_price, uid, campaign_id, commission, commission_type, 
+                        commission_percentage, order_complete.shop
+                    from order_complete join tracker_id
+                    on order_complete.lifo_tracker_id = tracker_id.lifo_tracker_id  
+                        and order_complete.shop = tracker_id.shop
+                    where order_complete.shop = :shop
+                    """)
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
+    def get_fixed_commission_per_shop_per_campaign(self, shop):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                stmt = text(
+                """
+                    SELECT SUM(commission) AS fixed_commission, shop , campaign_id
+                    FROM tracker_id 
+                    WHERE shop = :shop 
+                    Group By shop, campaign_id
+                """)
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
+    def counts_visits_per_shop(self, shop):
+        """
+        :param uid: uid of influencer who is currently logged in.
+        """
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select COUNT(*) as visits, track_visit.shop
+                    from track_visit join tracker_id
+                    on track_visit.lifo_tracker_id = tracker_id.lifo_tracker_id 
+                        and track_visit.shop = tracker_id.shop
+                    WHERE track_visit.shop = :shop 
+                    group by track_visit.shop
+                    """)
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
+    def get_all_data_per_inf_per_campaign(self, uid):
+        """
+        :param uid: uid of influencer who is currently logged in.
+        """
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select SUM(subtotal_price) as campaign_revenue, COUNT(uid) as inf_count, campaign_id, 
+                           commission, commission_type, commission_percentage, order_complete.shop
+                    from order_complete join tracker_id
+                    on order_complete.lifo_tracker_id = tracker_id.lifo_tracker_id 
+                        and order_complete.shop = tracker_id.shop
+                    where tracker_id.uid = :uid
+                    group by campaign_id, commission, commission_type, commission_percentage, order_complete.shop
+                    """)
+                stmt = stmt.bindparams(uid=uid)
+                result = conn.execute(stmt, {"uid": uid}).fetchall()
                 logging.info(f'the result is {result}')
                 return result
         except Exception as e:

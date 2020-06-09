@@ -33,7 +33,7 @@ Test /order_complete on remote service:
 curl -X POST https://api.lifo.ai/order_complete -d @create_order_complete_event.json --header "Content-Type: application/json"
 
 Test /orders_paid on remote service:
- curl -X POST https://api.lifo.ai/orders_paid -d @new_orders_paid_webhook.json --header "Content-Type: application/json"
+curl -X POST https://api.lifo.ai/orders_paid -d @new_orders_paid_webhook.json --header "Content-Type: application/json"
 
 
 To obtain a testing idToken for local curl testing to by pass authentication requirements, run the following
