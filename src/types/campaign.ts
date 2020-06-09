@@ -39,6 +39,7 @@ export interface CampaignExtraInfo {
     platform?: string;
     post_time?: number;
     contracts: UploadFile[];
+    commissionType: CommissionType;
 }
 
 
@@ -58,4 +59,10 @@ export interface UploadFile {
 export interface ImageContent {
     images: UploadFile[];
     caption: string;
+}
+
+export enum CommissionType {
+    PER_SALES = 'Per Sales Commission',
+    ONE_TIME_PAY = 'One Time Payment',
+    FIX_PAY_PLUS_PER_SALES = 'Fixed Pay + Per Sales Commision',
 }

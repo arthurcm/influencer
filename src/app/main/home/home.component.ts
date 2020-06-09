@@ -43,6 +43,16 @@ export class HomeComponent implements OnInit {
             console.log(result);
             this.loadingService.hide();
         });
+
+        const brand_campaign_inf = await this.campaignService.getAllBrandCamapignInf();
+        brand_campaign_inf.subscribe(result => {
+            console.log(result);
+        });
+
+        const brand_campaign = await this.campaignService.getBrandCampaign();
+        brand_campaign.subscribe(result => {
+            console.log(result);
+        });
     }
 
     logout() {

@@ -107,6 +107,66 @@ export class CampaignService {
         );
     }
 
+    async getAllBrandCamapignInf() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/list_brand_campaigns_inf`;
+        return this.http.get<Campaign[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async createBrandCampaign(campaign) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/campaign`;
+        return this.http.post<any>(reqeustUrl, campaign, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async getBrandCampaign() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/campaign`;
+        return this.http.get<Campaign[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async getCommissionType() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/get_brand_campaign_types`;
+        return this.http.get<Campaign[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     shareContent(toEmail: string, fromEmail: string, url: string) {
         const request = {
             to_email: toEmail,

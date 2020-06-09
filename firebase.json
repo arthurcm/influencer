@@ -1,11 +1,17 @@
 {
   "hosting": [{
       "target": "lifo",
-      "public": "public",
+      "public": "dist/influencer",
       "ignore": [
         "firebase.json",
         "**/.*",
         "**/node_modules/**"
+      ],
+      "rewrites": [ 
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
       ]
     },
     {
