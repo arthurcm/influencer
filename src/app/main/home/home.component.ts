@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
-import { Campaign } from 'src/types/campaign';
+import { Campaign, CampaignDetail } from 'src/types/campaign';
 import * as moment from 'moment';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
@@ -15,6 +15,8 @@ import { CampaignService } from 'src/app/services/campaign.service';
 })
 export class HomeComponent implements OnInit {
     campaigns: Campaign[];
+    brandCampaigns: CampaignDetail[];
+    promotionCampaigns: CampaignDetail[];
     campaignDataSource: MatTableDataSource<Campaign>;
 
     @ViewChild(MatSort, {static: true}) sort: MatSort;
@@ -39,7 +41,7 @@ export class HomeComponent implements OnInit {
             this.campaigns = result.filter(campaign => {
                 return campaign.campaign_data;
             });
-            this.campaignDataSource = new MatTableDataSource(this.campaigns);
+
             console.log(result);
             this.loadingService.hide();
         });
@@ -47,11 +49,29 @@ export class HomeComponent implements OnInit {
         const brand_campaign_inf = await this.campaignService.getAllBrandCamapignInf();
         brand_campaign_inf.subscribe(result => {
             console.log(result);
+            result.forEach(campaign => {
+                const extraInfo = campaign['extra_info'];
+                if ( typeof extraInfo === 'string') {
+                    campaign.extra_info  = JSON.parse(extraInfo);
+                }
+            });
+            this.promotionCampaigns = result;
+
+            this.loadingService.hide();
         });
 
         const brand_campaign = await this.campaignService.getBrandCampaign();
         brand_campaign.subscribe(result => {
             console.log(result);
+            result.forEach(campaign => {
+                const extraInfo = campaign['extra_info'];
+                if ( typeof extraInfo === 'string') {
+                    campaign.extra_info  = JSON.parse(extraInfo);
+                }
+            });
+            this.brandCampaigns = result;
+
+            this.loadingService.hide();
         });
     }
 
@@ -75,14 +95,25 @@ export class HomeComponent implements OnInit {
         this.router.navigate([`/app/campaign/${campaign.campaign_data.campaign_id}`]);
     }
 
-    async deleteCampaign(campaign) {
+    async signupCampaign(campaign: CampaignDetail) {
         this.loadingService.show();
-        const deleteCampaign = await this.campaignService.deleteCampaignById(campaign.campaign_data.campaign_id);
+        console.log(campaign);
+        const signupCampaign = await this.campaignService.signupCampaign(campaign);
+        signupCampaign.subscribe(result => {
+            console.log(result);
+            this.loadingService.hide();
+        });
+    }
+
+    async deleteCampaign(campaign: CampaignDetail) {
+        this.loadingService.show();
+        console.log(campaign);
+        const deleteCampaign = await this.campaignService.deleteCampaignById(campaign.campaign_id);
 
         deleteCampaign.subscribe(result => {
             let index = -1;
             for (let i = 0; i < this.campaigns.length; i ++) {
-                if (campaign.campaign_data.campaign_id === this.campaigns[i].campaign_data.campaign_id) {
+                if (campaign.campaign_id === this.campaigns[i].campaign_data.campaign_id) {
                     index = i;
                     break;
                 }

@@ -19,6 +19,7 @@ export interface CampaignDetail {
     feed_back?: string;
     end_time: number;
     campaign_id?: string;
+    brand_campaign_id?: string;
     time_stamp?: number;
     video?: string;
     brand: string;
