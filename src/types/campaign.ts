@@ -19,6 +19,7 @@ export interface CampaignDetail {
     feed_back?: string;
     end_time: number;
     campaign_id?: string;
+    brand_campaign_id?: string;
     time_stamp?: number;
     video?: string;
     brand: string;
@@ -39,6 +40,7 @@ export interface CampaignExtraInfo {
     platform?: string;
     post_time?: number;
     contracts: UploadFile[];
+    commissionType: CommissionType;
 }
 
 
@@ -58,4 +60,10 @@ export interface UploadFile {
 export interface ImageContent {
     images: UploadFile[];
     caption: string;
+}
+
+export enum CommissionType {
+    PER_SALES = 'Per Sales Commission',
+    ONE_TIME_PAY = 'One Time Payment',
+    FIX_PAY_PLUS_PER_SALES = 'Fixed Pay + Per Sales Commision',
 }

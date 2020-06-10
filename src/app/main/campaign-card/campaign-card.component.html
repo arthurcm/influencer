@@ -1,25 +1,25 @@
 <div class="campaign-card-container">
     <div class="calendar">
         <div class="number-days">
-            {{ daysLeft(campaign.campaign_data.extra_info ? campaign.campaign_data.extra_info['post_time'] : null) }}
+            {{ daysLeft(campaign.extra_info ? campaign.extra_info['post_time'] : null) }}
         </div>
         <div></div>
         Days Left
     </div>
-    <div class="preview" *ngIf="campaign.campaign_data.extra_info['type'] === 'video'">
+    <div class="preview" *ngIf="campaign.extra_info['type'] === 'video'">
         Video
     </div>
-    <div class="preview" *ngIf="campaign.campaign_data.extra_info['type'] === 'image'">
+    <div class="preview" *ngIf="campaign.extra_info['type'] === 'image'">
         Image
     </div>
 
     <div class="name">
         <div class="title"> {{ campaign.campaign_name }} </div>
-        <div class="content end-time">{{ displayTime(campaign.campaign_data.extra_info ? campaign.campaign_data.extra_info['post_time'] : null) }} </div>
+        <div class="content end-time">{{ displayTime(campaign.extra_info ? campaign.extra_info['post_time'] : null) }} </div>
     </div>
 
     <div class="brand">
-        <div class="title brand-name"> {{campaign.campaign_data.brand}} </div>
+        <div class="title brand-name"> {{campaign.brand}} </div>
         <div class="current-step content">
             <div class="review">Concept review</div>
             <div class="post">Post</div>
@@ -28,16 +28,19 @@
 
     <div class="commission">
         <div class="title">Commision</div>
-        <div class="content commision">$ {{campaign.campaign_data.commision_dollar}} </div>
+        <div class="content commision">$ {{campaign.commision_dollar}} </div>
     </div>
 
     <div class="icon" (click)="viewCampaign()">
         <span class="material-icons">arrow_forward</span>
     </div>
-    <div class="icon" (click)="deleteCampaign()">
+    <div class="icon" (click)="signupCampaign()" *ngIf="promotionCampaign">
+        <span class="material-icons">check_circle_outline</span>
+    </div>
+    <div class="icon" (click)="deleteCampaign()" *ngIf="!promotionCampaign">
         <span class="material-icons">delete</span>
     </div>
-    <div class="icon">
+    <!-- <div class="icon">
         <span class="material-icons">notifications_none</span>
-    </div>
+    </div> -->
 </div>

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
-import { CampaignDetail, CampaignExtraInfo } from 'src/types/campaign';
+import { CampaignDetail, CampaignExtraInfo, CommissionType } from 'src/types/campaign';
 import { FormControl } from '@angular/forms';
 import * as moment from 'moment';
 import { LoadingSpinnerService } from '../../services/loading-spinner.service';
@@ -39,6 +39,7 @@ export class CreateCampaignComponent implements OnInit {
     extraInfo: CampaignExtraInfo = {
         platform: '',
         contracts: [],
+        commissionType: CommissionType.ONE_TIME_PAY,
     };
 
     campaignName = '';
@@ -59,6 +60,14 @@ export class CreateCampaignComponent implements OnInit {
 
     platform = new FormControl([]);
     platformList: string[] = ['Youtube', 'Instagram', 'Weibo', 'Tiktok'];
+    commissionType = new FormControl(CommissionType.ONE_TIME_PAY);
+
+    commissionTypeList = Object.keys(CommissionType).map(key => CommissionType[key]);
+    brandInfo = {
+
+    };
+
+    isBrandView = false;
 
     constructor(
         public auth: AngularFireAuth,
@@ -71,7 +80,28 @@ export class CreateCampaignComponent implements OnInit {
         // this.createCampaign();
     }
 
-    ngOnInit() {
+    async ngOnInit() {
+
+        this.auth.idTokenResult.subscribe(user => {
+            console.log(user.claims);
+            if (user.claims && user.claims.store_account === true) {
+                this.isBrandView = true;
+                this.brand = user.claims.store_name;
+                this.campaignData.brand = user.claims.store_name;
+                this.contactName = user.claims.store_name;
+                this.contactEmail = user.claims.store_email;
+                this.campaignData.contacts = `${this.contactName} <${this.contactEmail}>`;
+            }
+            // this.brandInfo = {
+            //     brand: user.uid,
+            //     contactName: user.uid,
+            //     contactEmail: user.email,
+            // };
+        });
+        const commission_type = await this.campaignService.getCommissionType();
+        commission_type.subscribe(types => {
+            console.log(types);
+        });
     }
 
     campaignNameChange(value) {
@@ -129,6 +159,30 @@ export class CreateCampaignComponent implements OnInit {
         this.loadingService.show();
         console.log(this.campaignData);
         const campaign = await this.campaignService.createCamapaign(this.campaignData);
+        campaign.subscribe(result => {
+            console.log(result);
+            this.loadingService.hide();
+            this.router.navigate(['/app/home']);
+        });
+    }
+
+    async createBrandCampaign() {
+        console.log(this.campaignData);
+
+        this.extraInfo.commissionType = this.commissionType.value;
+        this.extraInfo.contracts = this.uploadedContract;
+        this.extraInfo.type = this.campaignType;
+        this.extraInfo.platform = this.platform.value;
+        this.extraInfo.post_time = Math.round(this.postDate.getTime() / 86400000) * 86400000 +
+            this.postTime.valueOf() % 86400000;
+        this.campaignData.end_time = Math.round(this.endDate.getTime() / 86400000) * 86400000 +
+        this.endTime.valueOf() % 86400000;
+        this.campaignData.extra_info = JSON.stringify(this.extraInfo);
+
+        this.loadingService.show();
+        console.log(this.campaignData);
+
+        const campaign = await this.campaignService.createBrandCampaign(this.campaignData);
         campaign.subscribe(result => {
             console.log(result);
             this.loadingService.hide();

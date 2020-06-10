@@ -10,72 +10,95 @@
                 autocomplete="false"
             >
         </mat-form-field>
-        <span class="material-icons" (click)="campaignType='video'"> videocam  </span>
-        <span class="material-icons" (click)="campaignType='image'"> image  </span>
+        <span 
+            [ngClass]="{'disable-type': campaignType==='image'}"
+            class="material-icons" 
+            (click)="campaignType='video'"
+        > videocam  </span>
+        <span 
+            [ngClass]="{'disable-type': campaignType==='video'}"
+            class="material-icons" 
+            (click)="campaignType='image'"
+        > image  </span>
     </div>
 
-    <div class="half">
-        <div class="item-title">Brand:</div>
-        <mat-form-field class="example-half-width">
-            <input 
-                matInput 
-                placeholder="" 
-                [(ngModel)]="brand" 
-                (ngModelChange)="brandChange($event)"
-                autocomplete="off"
-            >
-        </mat-form-field>
+    <div>
+        <div class="half">
+            <div class="item-title">Brand:</div>
+            <mat-form-field class="example-half-width">
+                <input 
+                    matInput 
+                    placeholder="" 
+                    [(ngModel)]="brand" 
+                    (ngModelChange)="brandChange($event)"
+                    autocomplete="off"
+                >
+            </mat-form-field>
+        </div>
+    
+        <div class="half">
+            <div class="item-title">Platform:</div>
+            <mat-form-field class="example-half-width">
+                <mat-select [formControl]="platform" multiple>
+                    <mat-option *ngFor="let p of platformList" [value]="p">{{p}}</mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+    </div>
+ 
+    <div>
+        <div class="half">
+            <div class="item-title">Commission Type:</div>
+            <mat-form-field class="example-half-width">
+                <mat-select [formControl]="commissionType">
+                    <mat-option *ngFor="let p of commissionTypeList" [value]="p">{{p}}</mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+        
+        <div class="half">
+            <div class="item-title">Commission:</div>
+            <mat-form-field class="example-half-width">
+                <input 
+                    matInput 
+                    type="number" 
+                    placeholder="" 
+                    [(ngModel)]="commision" 
+                    (ngModelChange)="commisionChange($event)"
+                    autocomplete="off"
+                >
+            </mat-form-field>
+        </div>
     </div>
 
-    <div class="half">
-        <div class="item-title">Platform:</div>
-        <mat-form-field class="example-half-width">
-            <mat-select [formControl]="platform" multiple>
-                <mat-option *ngFor="let p of platformList" [value]="p">{{p}}</mat-option>
-            </mat-select>
-        </mat-form-field>
+    <div>
+        <div class="half">
+            <div class="item-title">Contact Name:</div>
+            <mat-form-field class="example-half-width">
+                <input 
+                    matInput 
+                    placeholder="" 
+                    [(ngModel)]="contactName" 
+                    (ngModelChange)="contactNameChange($event)"
+                    autocomplete="false"
+                >
+            </mat-form-field>
+        </div>
+    
+        <div class="half">
+            <div class="item-title">Contact Email:</div>
+            <mat-form-field class="example-half-width">
+                <input 
+                    matInput 
+                    placeholder="" 
+                    [(ngModel)]="contactEmail" 
+                    (ngModelChange)="contactEmailChange($event)"
+                    autocomplete="false"
+                >
+            </mat-form-field>
+        </div>
     </div>
     
-    <div>
-        <div class="item-title">Commision:</div>
-        <mat-form-field class="example-full-width">
-            <input 
-                matInput 
-                type="number" 
-                placeholder="" 
-                [(ngModel)]="commision" 
-                (ngModelChange)="commisionChange($event)"
-                autocomplete="off"
-            >
-        </mat-form-field>
-    </div>
-
-    <div class="half">
-        <div class="item-title">Contact Name:</div>
-        <mat-form-field class="example-half-width">
-            <input 
-                matInput 
-                placeholder="" 
-                [(ngModel)]="contactName" 
-                (ngModelChange)="contactNameChange($event)"
-                autocomplete="false"
-            >
-        </mat-form-field>
-    </div>
-
-    <div class="half">
-        <div class="item-title">Contact Email:</div>
-        <mat-form-field class="example-half-width">
-            <input 
-                matInput 
-                placeholder="" 
-                [(ngModel)]="contactEmail" 
-                (ngModelChange)="contactEmailChange($event)"
-                autocomplete="false"
-            >
-        </mat-form-field>
-    </div>
-
     <div>
         <div class="item-title">Review Deadline: </div>
         <mat-form-field class="date-input">
@@ -160,4 +183,6 @@
     </div>
 </div>
 
-<button class="create-button" mat-raised-button color="primary" (click)="createCampaign()">Create Campaign</button>
+
+<button class="create-button" mat-raised-button *ngIf="!isBrandView" color="primary" (click)="createCampaign()">Create Campaign</button>
+<button class="create-button" mat-raised-button *ngIf="isBrandView" color="primary" (click)="createBrandCampaign()">Create Brand Campaign</button>

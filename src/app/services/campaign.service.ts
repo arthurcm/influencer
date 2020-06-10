@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpHeaders, HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { VideoMetaData, Campaign } from 'src/types/campaign';
+import { VideoMetaData, Campaign, CampaignDetail } from 'src/types/campaign';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { catchError } from 'rxjs/operators';
 import { Thread } from 'src/types/thread';
@@ -92,6 +92,21 @@ export class CampaignService {
         );
     }
 
+    async signupCampaign(campaign: CampaignDetail) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/sign_up_to_campaign/brand_campaign_id/${campaign.brand_campaign_id}`;
+        return this.http.put<any>(reqeustUrl, campaign, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     async provideFeedback(content, campaignId, historyId) {
         const token = await (await this.auth.currentUser).getIdToken();
 
@@ -103,6 +118,66 @@ export class CampaignService {
         };
         const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/feedback/campaign_id/${campaignId}/history_id/${historyId}`;
         return this.http.put<any>(reqeustUrl, content, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async getAllBrandCamapignInf() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/list_brand_campaigns_inf`;
+        return this.http.get<CampaignDetail[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async createBrandCampaign(campaign) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/campaign`;
+        return this.http.post<any>(reqeustUrl, campaign, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async getBrandCampaign() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/campaign`;
+        return this.http.get<CampaignDetail[]>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async getCommissionType() {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/get_brand_campaign_types`;
+        return this.http.get<Campaign[]>(reqeustUrl, httpOptions).pipe(
             catchError(this.handleError)
         );
     }

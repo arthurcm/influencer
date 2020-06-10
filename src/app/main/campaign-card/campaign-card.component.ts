@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { Campaign } from 'src/types/campaign';
+import { Campaign, CampaignDetail } from 'src/types/campaign';
 
 import * as moment from 'moment';
 import { Router } from '@angular/router';
@@ -11,8 +11,10 @@ import { Router } from '@angular/router';
 })
 export class CampaignCardComponent implements OnInit {
 
-    @Input() campaign: Campaign;
-    @Output() onDeleteCampaign = new EventEmitter<Campaign>();
+    @Input() campaign: CampaignDetail;
+    @Input() promotionCampaign: boolean;
+    @Output() onDeleteCampaign = new EventEmitter<CampaignDetail>();
+    @Output() onSignupCampaign = new EventEmitter<CampaignDetail>();
 
     constructor(
         public router: Router,
@@ -32,11 +34,15 @@ export class CampaignCardComponent implements OnInit {
     }
 
     viewCampaign() {
-        this.router.navigate([`/app/campaign/${this.campaign.campaign_data.campaign_id}`]);
+        this.router.navigate([`/app/campaign/${this.campaign.campaign_id}`]);
     }
 
     deleteCampaign() {
         this.onDeleteCampaign.emit(this.campaign);
+    }
+
+    signupCampaign() {
+        this.onSignupCampaign.emit(this.campaign);
     }
 
 }
