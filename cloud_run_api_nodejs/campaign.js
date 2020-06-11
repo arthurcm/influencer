@@ -699,8 +699,7 @@ function listBrandCampaignForBrand(uid){
 
 // this is for brand to see their promotions
 function getBrandCampaignForBrand(uid, campaign_id){
-    console.log('Get all brand campaign meta data that belong to current brand.');
-    return db.collection('brands').doc(uid).collection('brand_campaigns').doc(campaign_id).get()
+    return db.collection('brand_campaigns').doc(campaign_id).get()
         .then(querySnapshot => {
             const brand_campaign = querySnapshot.data()
             console.log('Found', brand_campaign);
