@@ -117,7 +117,6 @@ class Sqlhandler:
         self.tracker_id = Table(
                 'tracker_id', MetaData(),
                 Column('lifo_tracker_id', String, primary_key=True),
-                Column('uid', String, primary_key=True),
                 Column('shop', String, primary_key=True),
                 Column('campaign_id', String, primary_key=True),
                 Column('commission', String),
@@ -126,6 +125,17 @@ class Sqlhandler:
                 Column('tracking_url', String),
                 Column('timestamp', DateTime)
             )
+
+        self.campaign_entitlement = Table(
+            'campaign_entitlement', MetaData(),
+            Column('shop', String, primary_key=True),
+            Column('influencer_email', String, primary_key=True),
+            Column('lifo_tracker_id', String),
+            Column('commission', Numeric),
+            Column('commission_type', String),
+            Column('commission_percentage', Numeric),
+            Column('timestamp', DateTime)
+        )
 
         # Create tables (if they don't already exist)
         with self.db.connect() as conn:
@@ -185,6 +195,23 @@ class Sqlhandler:
                     tracking_url text,
                     timestamp timestamp,
                     PRIMARY KEY (lifo_tracker_id, uid, shop, campaign_id)
+                );
+                """
+            )
+
+            # (ACM 2020.6.10): for MVP, we only have shop -- influencer matching, so not campaign -- influencer
+            # matching yet. Later stage before GA, we should have campaign level matching.
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS campaign_entitlement(
+                    shop text,
+                    influencer_email text,
+                    lifo_tracker_id text,
+                    commission numeric,
+                    commission_percentage numeric,
+                    commission_type text,
+                    timestamp timestamp,
+                    PRIMARY KEY (influencer_email, shop)
                 );
                 """
             )
@@ -336,6 +363,66 @@ class Sqlhandler:
             status=200,
             response=ret
         )
+
+    def save_campaign_entitlement(self, influencer_email, shop, commission, commission_percentage=0,
+                                  lifo_tracker_id='', commission_type='one_time_commission_campaign'):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.campaign_entitlement).values(
+                    influencer_email=str(influencer_email),
+                    shop=shop,
+                    lifo_tracker_id=str(lifo_tracker_id),
+                    commission=commission,
+                    commission_percentage=commission_percentage,
+                    commission_type=commission_type,
+                    timestamp=datetime.datetime.now(),
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['influencer_email', 'shop'],
+                    set_=dict(
+                        commission=commission,
+                        commission_percentage=commission_percentage,
+                        commission_type=commission_type,
+                        lifo_tracker_id=str(lifo_tracker_id),
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {'status': 'Failed'}
+        return {'status': 'OK'}
+
+    def get_campaign_entitlement(self, influencer_email):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                stmt = text(
+                    """SELECT shop, commission, commission_percentage, lifo_tracker_id 
+                    FROM campaign_entitlement 
+                    WHERE influencer_email = :influencer_email""")
+                stmt = stmt.bindparams(influencer_email=influencer_email)
+                results = conn.execute(stmt, {"influencer_email": influencer_email}).fetchall()
+                shops = [{
+                    "shop": row[0],
+                    "commission": row[1],
+                    "commission_percentage": row[2],
+                    "lifo_tracker_id": row[3]
+                } for row in results]
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {}
+        return shops
 
     def save_lifo_tracker_id(self, uid, lifo_tracker_id, shop, commission, commission_type,
                              commission_percentage, campaign_id, tracking_url):

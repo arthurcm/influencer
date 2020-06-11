@@ -259,6 +259,58 @@ def create_lifo_tracker_id():
     return response
 
 
+@app.route("/tam/entitlement", methods=["POST"])
+def create_entitlement():
+    """
+    TODO: create internal TAM type accounts as internal tool to create entitlements,
+    so that business team can help operate POC.
+    This is an internal API for TAM to create entitlement records.
+    This should be replaced with matching algorithm with human supervision in near future
+    before GA. Currently this assumes manual input of entitlement data (from BD and sales team)
+    before each POC.
+    :return: list of matched "shop" along with potential commission information (to be consumed)
+    """
+    uid = flask.session['uid']
+    user = auth.get_user(uid)
+    data = flask.request.json
+    logging.info(f'Receiving request from {user} with data {data}')
+    influencer_email = data.get('influencer_email')
+    shop = data.get('shop')
+    if not influencer_email or not checkers.is_email(influencer_email)\
+            or not shop:
+        logging.error(f'Invalid email or shop')
+        response = flask.jsonify({'Status': 'Need valid email and shop'})
+        response.status_code = 422
+        return response
+    res = sql_handler.save_campaign_entitlement(influencer_email, shop, data.get('commission'))
+    response = flask.jsonify(res)
+    response.status_code = 200
+    return response
+
+
+@app.route("/influencer/entitlement", methods=["GET"])
+def entitlement():
+    """
+    This should be replaced with matching algorithm with human supervision in near future
+    before GA. Currently this assumes manual input of entitlement data (from BD and sales team)
+    before each POC.
+    :return: list of matched "shop" along with potential commission information (to be consumed)
+    """
+    uid = flask.session['uid']
+    user = auth.get_user(uid)
+    influencer_email = user.email
+    if not influencer_email or not checkers.is_email(influencer_email):
+        logging.warning(f'Influencer {user} does not have valid email')
+        response = flask.jsonify({'Status': 'Need valid email'})
+        response.status_code = 422
+        return response
+    shops = sql_handler.get_campaign_entitlement(influencer_email)
+    res = {"shops": [individual_shop['shop'] for individual_shop in shops]}
+    response = flask.jsonify(json.dumps(res))
+    response.status_code = 200
+    return response
+
+
 @app.route("/orders_lifo", methods=["GET"])
 def orders_lifo():
     """

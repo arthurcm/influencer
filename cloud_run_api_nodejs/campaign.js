@@ -565,10 +565,31 @@ function finalizeVideoDraft(uid, campaign_id, history_id){
 }
 
 
+async function get_entitled_shops(idToken, next){
+    let response_data;
+    await fetch('https://api.lifo.ai/influencer/entitlement', {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': idToken
+        },
+    })
+        .then(response => {
+            response_data = response.json();
+            return response_data;
+        })
+        .catch(next);
+    return response_data;
+}
+
 // List all available brand initiated campaigns for current influencer, currently there's no filtering
 // of eligibility yet.
-function listBrandCampaignsInf(uid){
-    return db.collection('brand_campaigns').get()
+async function listBrandCampaignsInf(uid, idToken){
+    const entitled_shops = await get_entitled_shops(idToken)
+    console.log('Obtained entitled shops', entitled_shops, JSON.parse(entitled_shops));
+    let shops = JSON.parse(entitled_shops).shops;
+    console.log('Obtained entitled shops', shops);
+    return db.collection('brand_campaigns').where('brand', 'in', shops).get()
         .then(querySnapshot => {
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {

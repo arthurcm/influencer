@@ -444,7 +444,8 @@ app.put('/share/resolve_thread/media_object_path/:media_object_path/thread_id/:t
 
 app.get('/list_brand_campaigns_inf', (req, res, next) => {
     const uid = res.locals.uid;
-    return campaign.listBrandCampaignsInf(uid)
+    const idToken = req.headers.authorization;
+    return campaign.listBrandCampaignsInf(uid, idToken)
         .then(result => {
             res.status(200).send(result);
             return result;
@@ -583,6 +584,7 @@ app.use((err, req, res, next) => {
     if (!res.status){
         res.status(500).send('Error from nodejs api server.');
     }
+    return res;
 });
 
 const port = process.env.PORT || 8080;
