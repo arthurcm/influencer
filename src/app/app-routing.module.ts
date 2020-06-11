@@ -14,6 +14,7 @@ import { ImageReviewComponent } from './image-review/image-review.component';
 import { SignUpComponent } from './auth/sign-up/sign-up.component';
 import { MainComponent } from './main/main.component';
 import { EventCalendarComponent } from './main/event-calendar/event-calendar.component';
+import { BrandCampaignComponent } from './main/brand-campaign/brand-campaign.component';
 
 const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['login']);
 
@@ -52,6 +53,10 @@ const routes: Routes = [
             {
                 path: 'campaign/:id',
                 component: CampaignComponent,
+            },
+            {
+                path: 'brand-campaign/:id',
+                component: BrandCampaignComponent,
             },
             {
                 path: 'concept-feedback/:campaignId/:historyId',

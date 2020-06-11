@@ -284,6 +284,15 @@ export class CampaignComponent implements OnInit {
         });
     }
 
+    async completeCampaign() {
+        const completeCampaign = await this.campaignService.completeCampaign(this.campaign);
+        completeCampaign.subscribe(result => {
+            console.log(result);
+            this.router.navigate(['/app/home']);
+        });
+
+    }
+
     displayTime(end_time) {
         const endTime = moment(end_time).format('MMMM Do YYYY HH:mm');
         return endTime;

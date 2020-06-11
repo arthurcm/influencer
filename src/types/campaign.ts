@@ -2,6 +2,8 @@ export interface Campaign {
     campaign_data: CampaignDetail;
     camapign_ref: string;
     campaign_name: string;
+    campaign_id: string;
+    completed?: boolean;
 }
 
 export interface CampaignData {

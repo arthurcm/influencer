@@ -37,6 +37,10 @@ export class CampaignCardComponent implements OnInit {
         this.router.navigate([`/app/campaign/${this.campaign.campaign_id}`]);
     }
 
+    viewBrandCampaign() {
+        this.router.navigate([`/app/brand-campaign/${this.campaign.brand_campaign_id}`]);
+    }
+
     deleteCampaign() {
         this.onDeleteCampaign.emit(this.campaign);
     }

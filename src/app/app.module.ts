@@ -75,6 +75,8 @@ import { EventCalendarComponent } from './main/event-calendar/event-calendar.com
 import { CalendarModule, DateAdapter } from 'angular-calendar';
 import { adapterFactory } from 'angular-calendar/date-adapters/moment';
 import * as moment from 'moment';
+import { CampaignOverviewComponent } from './main/campaign-overview/campaign-overview.component';
+import { BrandCampaignComponent } from './main/brand-campaign/brand-campaign.component';
 
 export function momentAdapterFactory() {
     return adapterFactory(moment);
@@ -108,6 +110,8 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         MainComponent,
         CampaignCardComponent,
         EventCalendarComponent,
+        CampaignOverviewComponent,
+        BrandCampaignComponent,
     ],
     imports: [
         BrowserModule,

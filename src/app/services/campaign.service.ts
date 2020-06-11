@@ -47,6 +47,21 @@ export class CampaignService {
         );
     }
 
+    async getBrandCampaignById(brandCampaignId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/common/campaign/brand_campaign_id/${brandCampaignId}`;
+        return this.http.get<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     async createCamapaign(campaign) {
         const token = await (await this.auth.currentUser).getIdToken();
 
@@ -92,6 +107,21 @@ export class CampaignService {
         );
     }
 
+    async completeCampaign(campaign) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/complete_campaign/campaign_id/${campaign.campaign_id}`;
+        return this.http.put<any>(reqeustUrl, campaign, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     async signupCampaign(campaign: CampaignDetail) {
         const token = await (await this.auth.currentUser).getIdToken();
 
@@ -101,7 +131,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/sign_up_to_campaign/brand_campaign_id/${campaign.brand_campaign_id}`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/sign_up_campaign/brand_campaign_id/${campaign.brand_campaign_id}`;
         return this.http.put<any>(reqeustUrl, campaign, httpOptions).pipe(
             catchError(this.handleError)
         );

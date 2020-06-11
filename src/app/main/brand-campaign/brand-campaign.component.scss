@@ -1,0 +1,24 @@
+@import 'common';
+
+.header-background {
+    height: 260px;
+    background-color: $COLOR_BG;
+    position: absolute;
+    z-index: -1;
+    border-bottom-left-radius: 40px;
+    border-bottom-right-radius: 40px;
+    width: 100%;
+}
+
+.container {
+    width: calc(100% - 70px);
+    padding: 20px;
+
+    .header {
+        margin: 20px;
+        font-size: large;
+        font-weight: 800;
+        color: white;
+        display: inline-block;
+    }
+}
