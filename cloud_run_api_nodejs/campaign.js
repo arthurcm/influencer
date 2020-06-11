@@ -265,6 +265,23 @@ function createCampaign(data, uid, campaign_type){
 
 // called when an existing campaign gets updated, this include anything that campaign data touches on.
 // the data is expected to have the same schema (subset) of campaign data.
+function completeCampaign(campaign_id, uid){
+    // Get a new write batch
+    const batch = db.batch();
+
+    const campaignRef = db.collection('campaigns').doc(campaign_id);
+    batch.set(campaignRef, {completed: true}, {merge: true});
+
+    // get the updated campaign information, and add it to influencer's profile.
+    const influencerCamRef = db.collection('influencers')
+        .doc(uid).collection('campaigns')
+        .doc(campaign_id);
+    batch.set(influencerCamRef, {completed: true}, {merge: true});
+    return batch.commit();
+}
+
+// called when an existing campaign gets updated, this include anything that campaign data touches on.
+// the data is expected to have the same schema (subset) of campaign data.
 function updateCampaign(campaign_id, data, uid){
     console.log('input data is', data, 'updating campaign', campaign_id);
     // Get a new write batch
@@ -633,6 +650,17 @@ function listBrandCampaignForBrand(uid){
         });
 }
 
+// this is for brand to see their promotions
+function getBrandCampaignForBrand(uid, campaign_id){
+    console.log('Get all brand campaign meta data that belong to current brand.');
+    return db.collection('brands').doc(uid).collection('brand_campaigns').doc(campaign_id).get()
+        .then(querySnapshot => {
+            const brand_campaign = querySnapshot.data()
+            console.log('Found', brand_campaign);
+            return brand_campaign;
+        });
+}
+
 
 function updateBrandCampaign(data, uid, brand_campaign_id){
     if(!brand_campaign_id){
@@ -690,6 +718,7 @@ module.exports = {
     deleteCampaign,
     feedback,
     updateCampaign,
+    completeCampaign,
     finalizeCampaign,
     finalizeVideoDraft,
     createFeedbackThread,
@@ -702,6 +731,7 @@ module.exports = {
     getBrandCampaignTypes,
     createBrandCampaign,
     listBrandCampaignForBrand,
+    getBrandCampaignForBrand,
     updateBrandCampaign,
     deleteBrandCampaign,
     endBrandCampaign,

@@ -13,6 +13,8 @@ admin.initializeApp({
 
 // middleware for token verification
 app.use((req, res, next) => {
+
+    //all /share/* endpoints require no authorization
     if (req.path.startsWith('/share')){
         return next();
     }
@@ -30,7 +32,13 @@ app.use((req, res, next) => {
             // the following "additional claim" field "store_account" is set in shopify/sever.js to
             // sign up store accounts
             // /brand/* end points can only be accessed by store accounts
-            if (req.path.startsWith('/brand') && !decodedToken.store_account){
+            // /common/* endpoints require auth, can be accessed by both store and inf
+            if (req.path.startsWith('/common')){
+                res.locals.uid = uid;
+                next();
+                return decodedToken;
+            }
+            else if(req.path.startsWith('/brand') && !decodedToken.store_account){
                 return res.status(403).json({ error: 'Not authorized to brand portal'});
 
                 //other campaign related end points (except for /share) are not accessible to store accounts.
@@ -89,6 +97,18 @@ app.get('/get_campaign', (req, res, next) => {
     return campaign.getAllCampaign(uid)
         .then(result => {
             res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/complete_campaign/campaign_id/:campaign_id', (req, res, next) => {
+    const uid = res.locals.uid;
+    const campaign_id = req.params.campaign_id;
+    let results = campaign.completeCampaign(campaign_id, uid);
+    return results
+        .then(result => {
+            res.status(200).send({'status': 'OK'});
             return result;
         })
         .catch(next);
@@ -487,12 +507,19 @@ app.get('/brand/campaign', (req, res, next) => {
         .catch(next);
 });
 
-//TODO: Implement the following API
-app.get('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
-    return res.status(200).send({'status': 'OK'});
+
+app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const uid = res.locals.uid;
+    return campaign.getBrandCampaignForBrand(uid, brand_campaign_id)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
 });
 
-//
+
 // app.put('/update_brand_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
 //     const brand_campaign_id = req.params.brand_campaign_id;
 //     const uid = res.locals.uid;

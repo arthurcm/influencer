@@ -168,7 +168,6 @@ def token_verification(id_token):
     return uid
 
 
-
 @app.before_request
 def hook():
     # TODO: Add brand influencer access control
