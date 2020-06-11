@@ -3,8 +3,9 @@
 import os
 import flask
 import json
-import datetime
 import hashlib
+
+from validator_collection import checkers
 
 from flask import request
 from flask_cors import CORS
@@ -158,34 +159,43 @@ def orders_paid():
 def token_verification(id_token):
     try:
         decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token['uid']
     except ValueError or exceptions.InvalidArgumentError:
         logging.error('id_token not string or empty or invalid')
         return ''
     except auth.RevokedIdTokenError:
         logging.error('id_token has been revoked')
         return ''
-    return uid
+    return decoded_token
 
 
 @app.before_request
 def hook():
-    # TODO: Add brand influencer access control
-    logging.info(f'request url is: {request.url}')
-    if '/campaign' in request.url and not flask.session.get('uid'):
-        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
-        if not id_token:
-            logging.error('Valid id_token required')
-            response = flask.jsonify('Valid id_token required')
-            response.status_code = 400
-            return response
-        uid = token_verification(id_token)
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 400
-            return response
-        flask.session['uid'] = uid
+    if flask.session.get('uid'):
+        logging.info('request has been verified')
+        return
+    id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+    if not id_token:
+        logging.error('Valid id_token required')
+        response = flask.jsonify('Valid id_token required')
+        response.status_code = 400
+        return response
+    decoded_token = token_verification(id_token)
+    uid = decoded_token['uid']
+    if not uid:
+        logging.error('id_token verification failed')
+        response = flask.jsonify('id_token verification failed')
+        response.status_code = 400
+        return response
+    logging.info(f'request path is: {request.path}')
+    if (request.path.startswith('/brand') and not decoded_token.get('store_account'))\
+            or (request.path.startswith('/influencer') and decoded_token.get('store_account')):
+        response = flask.jsonify({"status": "not authorized"})
+        response.status_code = 403
+        return response
+
+    flask.session['uid'] = uid
+    flask.session['from_shopify'] = decoded_token.get('from_shopify')
+    flask.session['store_account'] = decoded_token.get('store_account')
 
 
 def create_tracker_id(uid):
@@ -195,7 +205,16 @@ def create_tracker_id(uid):
     return lifo_tracker_id
 
 
-@app.route("/campaign/lifo_tracker_id", methods=["POST"])
+def generate_shop_url(domain_or_url):
+    url = None
+    if checkers.is_domain(domain_or_url):
+        url = f'https://{domain_or_url}'
+    elif checkers.is_url(domain_or_url):
+        url = domain_or_url
+    return url
+
+
+@app.route("/influencer/lifo_tracker_id", methods=["POST"])
 def create_lifo_tracker_id():
     """
     This is the internal endpoint for creating lifo tracker id, and requires auth from Influencers.
@@ -203,19 +222,30 @@ def create_lifo_tracker_id():
     signing up for brand initiated campaigns.
     The request payload will include campaign_data as defined in campaign.js under api_nodejs.
     """
-
     # influencer uid, NOT shop
     uid = flask.session['uid']
+
+    # a flag to differentiate Shopify accounts, which use store domain as uid
+    from_shopify = flask.session['from_shopify']
+
     lifo_tracker_id = create_tracker_id(uid)
     campaign_data = flask.request.json
     try:
-        shop = campaign_data.get('brand')
-        tracking_url = f'https://{shop}/?lftracker={lifo_tracker_id}'
+        if from_shopify:
+            domain_or_url = campaign_data.get('brand_id')
+        else:
+            domain_or_url = campaign_data.get('website')
+        shop_url = generate_shop_url(domain_or_url)
+        if not shop_url:
+            response = flask.jsonify({'Status': 'Invalid shop url'})
+            response.status_code = 422
+            return response
+        tracking_url = f'{shop_url}/?lftracker={lifo_tracker_id}'
         commission = campaign_data.get('commission')
         commission_type = campaign_data.get('commission_type')
         commission_percentage = campaign_data.get('commission_percentage')
         campaign_id = campaign_data.get('campaign_id')
-        res = sql_handler.save_lifo_tracker_id(uid, lifo_tracker_id, shop, commission, commission_type,
+        res = sql_handler.save_lifo_tracker_id(uid, lifo_tracker_id, domain_or_url, commission, commission_type,
                                                commission_percentage, campaign_id, tracking_url)
         if len(res) > 0:
             logging.info(f'Data saved to cloud SQL: {tracking_url}')
@@ -224,7 +254,7 @@ def create_lifo_tracker_id():
         response = flask.jsonify({'Status': 'Failed'})
         response.status_code = 400
         return response
-    response = flask.jsonify(lifo_tracker_id=res)
+    response = flask.jsonify({"tracking_url": tracking_url})
     response.status_code = 200
     return response
 

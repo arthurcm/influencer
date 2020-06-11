@@ -5,6 +5,10 @@ app.use(express.json());
 app.use(cors());
 require('isomorphic-fetch');
 
+const isValidDomain = require('is-valid-domain');
+const validUrl = require('valid-url');
+
+
 const admin = require('firebase-admin');
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -14,7 +18,7 @@ admin.initializeApp({
 // middleware for token verification
 app.use((req, res, next) => {
 
-    //all /share/* endpoints require no authorization
+    // all /share/* endpoints require no authorization
     if (req.path.startsWith('/share')){
         return next();
     }
@@ -41,11 +45,13 @@ app.use((req, res, next) => {
             else if(req.path.startsWith('/brand') && !decodedToken.store_account){
                 return res.status(403).json({ error: 'Not authorized to brand portal'});
 
-                //other campaign related end points (except for /share) are not accessible to store accounts.
+                // other campaign related end points (except for /share) are not accessible to store accounts.
             }else if (!req.path.startsWith('/brand') && decodedToken.store_account){
                 return res.status(403).json({ error: 'Not authorized to user portal'});
             }
             res.locals.uid = uid;
+            res.locals.from_shopify = decodedToken.from_shopify
+            res.locals.store_account = decodedToken.store_account
             next();
             return decodedToken;
         })
@@ -58,11 +64,10 @@ app.post('/create_campaign', (req, res, next) => {
     console.log('/create_campaign received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
-    console.log('incoming uid is ', res.locals.uid);
-    let results = campaign.createCampaign(data, uid, campaign.GENERIC_INF_CREATED_CAMPAIGN);
+    const results = campaign.createCampaign(data, uid, campaign.GENERIC_INF_CREATED_CAMPAIGN);
     const campaign_id = results.campaign_id;
     const history_id = results.history_id;
-    let batch = results.batch_promise;
+    const batch = results.batch_promise;
     return batch.commit()
         .then(result => {
             res.status(200).send({campaign_id, history_id});
@@ -105,14 +110,38 @@ app.get('/get_campaign', (req, res, next) => {
 app.put('/complete_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
-    let results = campaign.completeCampaign(campaign_id, uid);
-    return results
+    return campaign.completeCampaign(campaign_id, uid)
         .then(result => {
-            res.status(200).send({'status': 'OK'});
+            res.status(200).send({status: 'OK'});
             return result;
         })
         .catch(next);
 });
+
+// update influencer profiles with payment information.
+app.post('/payment_info', (req, res, next) => {
+    const uid = res.locals.uid;
+    const data = req.body;
+    return campaign.updateInfluencerProfile('payment_info', uid, data)
+        .then(results => {
+            res.status(200).send({'status': 'OK'});
+            return results;
+        })
+        .catch(next);
+})
+
+
+// get influencer profiles with payment information.
+app.get('/influencer_profile', (req, res, next) => {
+    const uid = res.locals.uid;
+    return campaign.getInfluencerProfile(uid)
+        .then(results => {
+            res.status(200).send(results.data());
+            return result;
+        })
+        .catch(next);
+})
+
 
 app.put('/update_campaign/campaign_id/:campaign_id', (req, res, next) => {
     console.log('/update_campaign received a request', req.body);
@@ -423,24 +452,6 @@ app.get('/list_brand_campaigns_inf', (req, res, next) => {
         .catch(next);
 });
 
-async function get_referral_url(idToken, campaign_data, next){
-    let response_data;
-    await fetch('https://api.lifo.ai/campaign/lifo_tracker_id', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': idToken
-        },
-        body: JSON.stringify(campaign_data),
-    })
-        .then(response => {
-            response_data = response.json();
-            return response_data;
-        })
-        .catch(next);
-    return response_data;
-}
-
 
 // Main entry point for influencers to get
 app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
@@ -449,20 +460,18 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
     const idToken = req.headers.authorization;
     console.log('Receiving brand_campaign_id', brand_campaign_id, 'and uid', uid);
     if(!brand_campaign_id){
-        res.status(400).send('Require a valid brand_campaign_id');
+        res.status(422).send({status: 'Require a valid brand_campaign_id'});
     }
     // let results =  campaign.signupToBrandCampaign(brand_campaign_id, uid)
-    return campaign.signupToBrandCampaign(brand_campaign_id, uid)
+    return campaign.signupToBrandCampaign(brand_campaign_id, uid, idToken)
         .then(async (result) => {
             const campaign_id = result.campaign_id;
             const history_id = result.history_id;
             let batch = result.batch_promise;
             let campaign_data = result.campaign_data;
             campaign_data.campaign_id = campaign_id;
-            const tracking_data = await get_referral_url(idToken, campaign_data);
-            console.log('Got tracking data', tracking_data);
             batch.commit();
-            return {campaign_id, history_id, tracking_data};
+            return {campaign_id, history_id};
         })
         .then(result=>{
             res.status(200).send(result);
@@ -485,6 +494,14 @@ app.post('/brand/campaign', (req, res, next) => {
     const data = req.body;
     const uid = res.locals.uid;
     console.log('incoming uid is ', res.locals.uid);
+    const from_shopify = res.locals.from_shopify;
+    console.log('incoming uid is ', res.locals.uid);
+    if (from_shopify){
+        data.website = uid;
+    }
+    if (!isValidDomain(data.website) && !validUrl.isUri(data.website)){
+        res.status(422).send({status: 'Illegal website format'});
+    }
     let results = campaign.createBrandCampaign(data, uid);
     const campaign_id = results.campaign_id;
     let batch = results.batch_promise;
@@ -563,7 +580,9 @@ app.put('/brand/end_campaign/brand_campaign_id/:brand_campaign_id', (req, res, n
 app.use((err, req, res, next) => {
     // handle error
     console.error(err.stack);
-    res.status(500).send('Error from nodejs api server.');
+    if (!res.status){
+        res.status(500).send('Error from nodejs api server.');
+    }
 });
 
 const port = process.env.PORT || 8080;

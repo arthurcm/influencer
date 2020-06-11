@@ -20,6 +20,7 @@ BRAND_CAMPAIGN_TYPES[PERCENTAGE_RATE] = {
     ended: false,
     deleted: false,
     collaborating_influencers: [],
+    website: String(),
 };
 BRAND_CAMPAIGN_TYPES[FIXED_RATE] = {
     brand: String(),
@@ -34,6 +35,7 @@ BRAND_CAMPAIGN_TYPES[FIXED_RATE] = {
     ended: false,
     deleted: false,
     collaborating_influencers: [],
+    website: String(),
 };
 
 function uriParse(video_name){
@@ -219,7 +221,7 @@ function createCampaignData(campaign_id, data, uid, history_id){
 }
 
 // called when influencers decide to create a new campaign with related information. u
-function createCampaign(data, uid, campaign_type){
+function createCampaign(data, uid, campaign_type, is_new_campaign=true){
     let campaign_id = null;
     if (campaign_type === GENERIC_INF_CREATED_CAMPAIGN) {
         const campaignRef = db.collection('campaigns').doc();
@@ -239,12 +241,12 @@ function createCampaign(data, uid, campaign_type){
         campaignData = createCampaignData(campaign_id, data, uid, history_id);
     }else{
         console.log('Signing up to a brand initiated campaign');
-        campaignData = createBrandCampaignData(campaign_id, uid, data);
+        campaignData = createBrandCampaignData(campaign_id, uid, data, is_new_campaign);
     }
     const campaignDocRef = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').doc(history_id);
     batch.set(campaignDocRef, campaignData);
-    const docref =  db.collection('campaigns').doc(campaign_id);
+    const docref = db.collection('campaigns').doc(campaign_id);
     const infCampaignRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
@@ -579,10 +581,28 @@ function listBrandCampaignsInf(uid){
 }
 
 
+async function get_referral_url(idToken, campaign_data, next){
+    let response_data;
+    await fetch('https://api.lifo.ai/influencer/lifo_tracker_id', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': idToken
+        },
+        body: JSON.stringify(campaign_data),
+    })
+        .then(response => {
+            response_data = response.json();
+            return response_data;
+        })
+        .catch(next);
+    return response_data;
+}
+
 
 // this is gonna allow influencer to sign up for brand's campaign, and add campaign data into
 // influencer profile, and update the promotional campaign with affiliate information.
-function signupToBrandCampaign(brand_campaign_id, uid) {
+function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
     if (!brand_campaign_id) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
@@ -590,10 +610,13 @@ function signupToBrandCampaign(brand_campaign_id, uid) {
     const promotion_campaigns_ref = db.collection('brand_campaigns').doc(brand_campaign_id);
     let brand_campaign_data = null;
     return promotion_campaigns_ref.get()
-        .then((snapshot) => {
+        .then(async (snapshot) => {
             brand_campaign_data = snapshot.data();
+            const tracking_url = await get_referral_url(idToken, brand_campaign_data);
+            console.log('Got tracking data', tracking_url);
+            brand_campaign_data.tracking_url = tracking_url;
             console.log('Found brand campaign data', brand_campaign_data);
-            return createCampaign(brand_campaign_data, uid, brand_campaign_data.campaign_type);
+            return createCampaign(brand_campaign_data, uid, brand_campaign_data.campaign_type, false);
         });
 }
 
@@ -603,7 +626,7 @@ function getBrandCampaignTypes(){
 }
 
 
-function createBrandCampaignData(brand_campaign_id, uid, data){
+function createBrandCampaignData(brand_campaign_id, uid, data, is_new_camp=false){
     if(!brand_campaign_id){
         throw new functions.https.HttpsError('campaign_id must not be empty!');
     }
@@ -612,7 +635,11 @@ function createBrandCampaignData(brand_campaign_id, uid, data){
     }
     const FieldValue = admin.firestore.FieldValue;
     data.brand_campaign_id = brand_campaign_id;
-    data.brand_id = uid;
+
+    // only when set brand_id when creating a new campaign
+    if (is_new_camp) {
+        data.brand_id = uid;
+    }
     data.timestamp = FieldValue.serverTimestamp();
     return data;
 }
@@ -620,11 +647,10 @@ function createBrandCampaignData(brand_campaign_id, uid, data){
 
 function createBrandCampaign(data, uid){
     const batch = db.batch();
-
     const brandCampaignRef = db.collection('brands')
         .doc(uid).collection('brand_campaigns')
         .doc();
-    const brand_campaign_data = createBrandCampaignData(brandCampaignRef.id, uid, data);
+    const brand_campaign_data = createBrandCampaignData(brandCampaignRef.id, uid, data, true);
     batch.set(brandCampaignRef, brand_campaign_data);
     const allBrandCampaignRef = db.collection('brand_campaigns').doc(brandCampaignRef.id);
     batch.set(allBrandCampaignRef, brand_campaign_data);
@@ -710,6 +736,19 @@ function endBrandCampaign(data, uid){
 
 }
 
+// takes in a new data object, update the influencer profile with it.
+function updateInfluencerProfile(field_name, uid, data){
+    const influencerRef = db.collection('influencers').doc(uid);
+    return influencerRef.set(data, {merge: true});
+}
+
+function getInfluencerProfile(uid){
+    const influencerRef = db.collection('influencers').doc(uid);
+    return influencerRef.get();
+}
+
+
+
 
 module.exports = {
     getCampaign,
@@ -728,6 +767,8 @@ module.exports = {
     getAllThreads,
     listBrandCampaignsInf,
     signupToBrandCampaign,
+    updateInfluencerProfile,
+    getInfluencerProfile,
     getBrandCampaignTypes,
     createBrandCampaign,
     listBrandCampaignForBrand,

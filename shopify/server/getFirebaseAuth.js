@@ -16,6 +16,7 @@ const getFirebaseAuth = async  (ctx, shop, next, accessToken) => {
             shopinfo = await response.json();
             customClaims = {
                 store_account: true,
+                from_shopify:true,
                 store_email: shopinfo.shop.email,
                 store_name: shopinfo.shop.name,
             };

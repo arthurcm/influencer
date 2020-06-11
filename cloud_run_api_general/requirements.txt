@@ -12,6 +12,8 @@ google-cloud-videointelligence
 flask
 flask_cors
 
+validator_collection
+
 SQLAlchemy
 PyMySQL==0.9.3
 pg8000

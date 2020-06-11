@@ -1,15 +1,14 @@
 import unittest
-from cloud_sql import sql_handler
+from validator_collection import validators, checkers
+
 
 class TestLifoTrackerId(unittest.TestCase):
 
-    def test_get_lifo_orders(self):
-        result = sql_handler.get_lifo_orders('3652281172134')
-
-    def test_create_lifo_tracker_id(self):
-        result = sql_handler.save_lifo_tracker_id('1234567')
-        self.assertEqual('200 OK', result.status)
-        self.assertIsNotNone(result.response)
+    def test_url_validator(self):
+        self.assertEqual(validators.domain('lifo.ai'), 'lifo.ai')
+        self.assertEqual(validators.domain('www.lifo.ai'), 'www.lifo.ai')
+        self.assertEqual(validators.url('http://lifo.ai/login'), 'http://lifo.ai/login')
+        print(checkers.is_domain('lifo.ai'))
 
 if __name__ == '__main__':
     unittest.main()
