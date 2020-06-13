@@ -466,6 +466,9 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
     // let results =  campaign.signupToBrandCampaign(brand_campaign_id, uid)
     return campaign.signupToBrandCampaign(brand_campaign_id, uid, idToken)
         .then(async (result) => {
+            if (!result || Object.keys(result).length === 0){
+                res.status(201).send({status: 'already signed up'});
+            }
             const campaign_id = result.campaign_id;
             const history_id = result.history_id;
             let batch = result.batch_promise;
@@ -479,14 +482,6 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
             return result;
         })
         .catch(next);
-});
-
-
-app.get('/brand/get_brand_campaign_types', (req, res, next)=>{
-    let results = campaign.getBrandCampaignTypes();
-    console.log('Available campaign types are ', results);
-    res.status(200).send(results);
-    return results;
 });
 
 
@@ -528,8 +523,7 @@ app.get('/brand/campaign', (req, res, next) => {
 
 app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const brand_campaign_id = req.params.brand_campaign_id;
-    const uid = res.locals.uid;
-    return campaign.getBrandCampaignForBrand(uid, brand_campaign_id)
+    return campaign.getBrandCampaignForBrand(brand_campaign_id)
         .then(result => {
             res.status(200).send(result);
             return result;

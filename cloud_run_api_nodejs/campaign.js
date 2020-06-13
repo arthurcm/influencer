@@ -7,36 +7,6 @@ const PERCENTAGE_RATE = 'commission_per_sales_campaign';
 const FIXED_RATE = 'one_time_commission_campaign';
 const GENERIC_INF_CREATED_CAMPAIGN = 'generic_campaign';
 
-let BRAND_CAMPAIGN_TYPES = new Map();
-BRAND_CAMPAIGN_TYPES[PERCENTAGE_RATE] = {
-    brand: String(),
-    campaign_name: String(),
-    campaign_type: PERCENTAGE_RATE,
-    commission_percentage: Number(),
-    commission: Number(),
-    requirements: [],
-    milestones: [],
-    extra_info: {},
-    ended: false,
-    deleted: false,
-    collaborating_influencers: [],
-    website: String(),
-};
-BRAND_CAMPAIGN_TYPES[FIXED_RATE] = {
-    brand: String(),
-    campaign_name: String(),
-    campaign_type: FIXED_RATE,
-    commission_percentage: Number(),
-    commission: Number(),
-    total_budget: Number(),
-    requirements: [],
-    milestones: [],
-    extra_info: {},
-    ended: false,
-    deleted: false,
-    collaborating_influencers: [],
-    website: String(),
-};
 
 function uriParse(video_name){
     const tokens = video_name.split('/');
@@ -148,104 +118,36 @@ function getCampaign(data, uid, res) {
     return Promise.all([latest_history_ref, final_campaign_ref]);
 }
 
-function createCampaignData(campaign_id, data, uid, history_id){
-    if (!campaign_id){
-        throw new functions.https.HttpsError('campaign_id must not be empty!');
-    }
-    if(!uid) {
-        throw new functions.https.HttpsError('New campaign must have a valid uid!');
-    }
-
-    try{
-        const milestones = [];
-        if(data.milestones){
-            data.milestones.forEach((item) => {
-                milestones.push(item);
-            });
-        }else{
-            console.log('incoming milestone needs to be an array.');
-        }
-        const image = [];
-        if(data.image){
-            data.image.forEach((item) => {
-                image.push(item);
-            });
-        }else{
-            console.log('incoming image field needs to be an array.');
-        }
-        const requirements = [];
-        if(data.requirements){
-            data.requirements.forEach((item) => {
-                requirements.push(item);
-            });
-        }else{
-            console.log('incoming requirements needs to be an array.');
-        }
-        let extra_info = {};
-        try{
-            if(data.extra_info) {
-                extra_info = JSON.parse(data.extra_info);
-            }
-        }
-        catch(err){
-            console.log('incoming extra info needs to be json object', err);
-            extra_info = {};
-        }
-        const FieldValue = admin.firestore.FieldValue;
-        const campaignData  = {
-            campaign_id,
-            brand: String(data.brand),
-            campaign_name: String(data.campaign_name),
-            commision_dollar: Number(data.commision_dollar),
-            contacts: String(data.contacts),
-            content_concept: String(data.content_concept),
-            end_time: Number(data.end_time),
-            feed_back: String(data.feed_back),
-            image,
-            video: String(data.video),
-            milestones,
-            requirements,
-            extra_info,
-            shipping_address: String(data.shipping_address),
-            tracking_number: String(data.tracking_number),
-            influencer_id: uid,
-            timestamp: FieldValue.serverTimestamp(),
-            history_id: String(history_id),
-        };
-        return campaignData;
-    }
-    catch(err){
-        console.log('Error creating campaign data', err);
-        throw new functions.https.HttpsError('Failed to create campaign data');
-    }
+function updateCampaignData(uid, campaign_id, data, history_id){
+    const FieldValue = admin.firestore.FieldValue;
+    data.influencer_id = uid;
+    data.time_stamp = FieldValue.serverTimestamp();
+    data.campaign_id = campaign_id;
+    data.history_id = history_id;
+    return data;
 }
 
 // called when influencers decide to create a new campaign with related information. u
-function createCampaign(data, uid, campaign_type, is_new_campaign=true){
-    let campaign_id = null;
-    if (campaign_type === GENERIC_INF_CREATED_CAMPAIGN) {
-        const campaignRef = db.collection('campaigns').doc();
-        campaign_id = campaignRef.id;
+function createCampaign(data, uid, is_new_campaign=true){
+    const campaignRef = db.collection('campaigns').doc();
+    const campaign_id = campaignRef.id;
+    if(is_new_campaign){
+        if(data.brand_campaign_id){
+            console.error('Receiving a brand initiated campaign for influencer to sign up!');
+            return {};
+        }
         console.log('Creating a new campaign with id', campaign_id);
     }else{
-        campaign_id = data.brand_campaign_id;
-        console.log('Signing up to a new brand campaign with id', campaign_id);
+        console.log('Signing up to a brand campaign with data', data);
     }
     const batch = db.batch();
-    let campaignData;
     const historyRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = historyRef.id;
+    data = updateCampaignData(uid, campaign_id, data, history_id);
 
-    if (campaign_type === GENERIC_INF_CREATED_CAMPAIGN){
-        console.log('creating an inf campaign');
-        campaignData = createCampaignData(campaign_id, data, uid, history_id);
-    }else{
-        console.log('Signing up to a brand initiated campaign');
-        campaignData = createBrandCampaignData(campaign_id, uid, data, is_new_campaign);
-    }
     const campaignDocRef = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').doc(history_id);
-    batch.set(campaignDocRef, campaignData);
+    batch.set(campaignDocRef, data);
     const docref = db.collection('campaigns').doc(campaign_id);
     const infCampaignRef = db.collection('influencers')
         .doc(uid).collection('campaigns')
@@ -254,13 +156,13 @@ function createCampaign(data, uid, campaign_type, is_new_campaign=true){
         campaign_ref: docref.path,
         campaign_id,
         campaign_name: String(data.campaign_name),
-        campaign_data: campaignData,
+        campaign_data: data,
     });
     console.log('creating campaign with id', campaign_id);
     return {
         campaign_id,
         history_id,
-        campaign_data: campaignData,
+        campaign_data: data,
         batch_promise: batch
     };
 }
@@ -291,7 +193,7 @@ function updateCampaign(campaign_id, data, uid){
 
     const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = campaignHistoryRef.id;
-    const newCamp = createCampaignData(campaign_id, data, uid, history_id);
+    const newCamp = updateCampaignData(uid, campaign_id, data, history_id);
     console.log('Created new campaign data:', newCamp);
     batch.set(campaignHistoryRef, newCamp);
 
@@ -583,7 +485,7 @@ async function get_entitled_shops(idToken, next){
 }
 
 function updateCampaignCommissionWithEntitlement(campaign_data, entitled_shops){
-    const shop_detail = entitled_shops.get(campaign_data.brand)
+    const shop_detail = entitled_shops[campaign_data.brand];
     if (shop_detail){
         if(shop_detail.commission && shop_detail.commission > 0){
             campaign_data.commission = shop_detail.commission;
@@ -652,6 +554,18 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
     return promotion_campaigns_ref.get()
         .then(async (snapshot) => {
             brand_campaign_data = snapshot.data();
+
+            let collaborating_influencers = brand_campaign_data.collaborating_influencers;
+            if (!collaborating_influencers){
+                collaborating_influencers = [];
+            }else if(collaborating_influencers.includes(uid)){
+                console.debug('Influencer has already signed up')
+                return {};
+            }
+            collaborating_influencers.push(uid);
+            let uniq = [...new Set(collaborating_influencers)];
+            brand_campaign_data.collaborating_influencers = uniq;
+
             const tracking_url = await get_referral_url(idToken, brand_campaign_data);
             console.log('Got tracking data', tracking_url);
             brand_campaign_data.tracking_url = tracking_url;
@@ -659,12 +573,8 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
             console.log('Obtained entitled shops', entitled_shops);
             brand_campaign_data = updateCampaignCommissionWithEntitlement(brand_campaign_data, entitled_shops);
             console.log('Found brand campaign data', brand_campaign_data);
-            const results = createCampaign(brand_campaign_data, uid, brand_campaign_data.campaign_type, false);
+            const results = createCampaign(brand_campaign_data, uid,  false);
             let batch = results.batch_promise;
-            let collaborating_influencers = brand_campaign_data.collaborating_influencers;
-            collaborating_influencers.push(uid);
-            let uniq = [...new Set(collaborating_influencers)];
-            brand_campaign_data.collaborating_influencers = uniq;
             batch.update(promotion_campaigns_ref, brand_campaign_data)
             return {
                 campaign_id: results.campaign_id,
@@ -676,22 +586,20 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
 }
 
 
-function getBrandCampaignTypes(){
-    return BRAND_CAMPAIGN_TYPES;
-}
-
-
 function createBrandCampaignData(brand_campaign_id, uid, data, is_new_camp=false){
     if(!brand_campaign_id){
-        throw new functions.https.HttpsError('campaign_id must not be empty!');
+        throw new functions.https.HttpsError('invalid-argument','campaign_id must not be empty!');
     }
     if(!uid) {
-        throw new functions.https.HttpsError('New campaign must have a valid uid!');
+        throw new functions.https.HttpsError('invalid-argument', 'New campaign must have a valid uid!');
     }
     const FieldValue = admin.firestore.FieldValue;
+
+    // This is actually very important field to link brand initiated campaign with influencer "signed-up" campaigns
     data.brand_campaign_id = brand_campaign_id;
 
     // only when set brand_id when creating a new campaign
+    // this field is crucial as brand_id will be used to filter campaigns that belong to current brand.
     if (is_new_camp) {
         data.brand_id = uid;
     }
@@ -719,7 +627,7 @@ function createBrandCampaign(data, uid){
 // this is for brand to see their promotions
 function listBrandCampaignForBrand(uid){
     console.log('Get all brand campaign meta data that belong to current brand.');
-    return db.collection('brands').doc(uid).collection('brand_campaigns').get()
+    return db.collection('brand_campaigns').where('brand_id', '==', uid).get()
         .then(querySnapshot => {
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
@@ -732,7 +640,7 @@ function listBrandCampaignForBrand(uid){
 }
 
 // this is for brand to see their promotions
-function getBrandCampaignForBrand(uid, campaign_id){
+function getBrandCampaignForBrand(campaign_id){
     return db.collection('brand_campaigns').doc(campaign_id).get()
         .then(querySnapshot => {
             const brand_campaign = querySnapshot.data()
@@ -823,7 +731,6 @@ module.exports = {
     signupToBrandCampaign,
     updateInfluencerProfile,
     getInfluencerProfile,
-    getBrandCampaignTypes,
     createBrandCampaign,
     listBrandCampaignForBrand,
     getBrandCampaignForBrand,

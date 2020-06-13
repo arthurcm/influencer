@@ -15,26 +15,32 @@ export interface CampaignData {
 }
 
 export interface CampaignDetail {
-    content_concept?: string;
-    image?: string;
-    images?: any[];
-    feed_back?: string;
-    end_time: number;
-    campaign_id?: string;
-    brand_campaign_id?: string;
-    time_stamp?: number;
-    video?: string;
-    brand: string;
-    influencer_id?: string;
+    campaign_id?: string; // set on server side during creation.
+    influencer_id: string; // set on server side during creation. Will be used for access control.
+    brand: string; // crucial as shop name identifier for brand campaigns. Different from brand_id, which is used for firebase auth.
+    brand_id: string; //  set on server side during creation. Crucial for brand initiated campaigns, Will be used for access control.
+    brand_campaign_id?: string; // set on server side during creation.
+    commission_type?: CommissionType;
     campaign_name: string;
+    commission: number;
+    commission_percentage: number;
     contacts: string;
-    commision_dollar: number;
+    content_concept?: string;
+    end_time: number;
+    feed_back?: string;
+    images?: any[];
+    video?: string;
     milestones?: string[];
     requirements?: string[];
+    extra_info?: string | CampaignExtraInfo;
     shipping_address?: string;
     tracking_number?: string;
-    history_id?: string;
-    extra_info?: string | CampaignExtraInfo;
+    time_stamp?: number;
+    history_id?: string; // set on server side during creation and updates
+    ended?: boolean;
+    deleted?: boolean;
+    collaborating_influencers?: string[];
+    website?: string;
 }
 
 export interface CampaignExtraInfo {
@@ -42,7 +48,6 @@ export interface CampaignExtraInfo {
     platform?: string;
     post_time?: number;
     contracts: UploadFile[];
-    commissionType: CommissionType;
 }
 
 
