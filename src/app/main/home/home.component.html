@@ -23,42 +23,54 @@
     </div>
     <mat-divider></mat-divider>
     
-    <div class="home-subtitle">
-        Ongoing Promotion Campaign:
-        <button class="create-button" mat-flat-button color="secondary" (click)="createCampaign()">Create Campaign</button>
+    <div *ngIf="!isBrandView">
+        <div class="home-subtitle white-header">
+            Ongoing Promotion Campaign:
+        </div>
+
+        <div class="campaign-item" *ngFor="let element of promotionCampaigns">
+          <app-campaign-card 
+              [campaign]="element"
+              [promotionCampaign]="true"
+              (onDeleteCampaign)="deleteCampaign($event)"
+              (onSignupCampaign)="signupCampaign($event)"
+          ></app-campaign-card>
+        </div>
+
+        <div class="home-subtitle">
+            Active Campaign:
+            <button class="create-button" mat-flat-button color="primary" (click)="createCampaign()">Create Campaign</button>
+        </div>
+
+        <div class="campaign-item" *ngFor="let element of campaigns">
+          <app-campaign-card 
+              [campaign]="element.campaign_data"
+              (onDeleteCampaign)="deleteCampaign($event)"></app-campaign-card>
+        </div>
+
+        <div class="home-subtitle">
+            Complete Campaign:
+        </div>
+
+        <div class="campaign-item" *ngFor="let element of completeCampaigns">
+          <app-campaign-card 
+              [campaign]="element.campaign_data"
+              (onDeleteCampaign)="deleteCampaign($event)"></app-campaign-card>
+        </div>
     </div>
 
-    <div class="campaign-item" *ngFor="let element of promotionCampaigns">
-      <app-campaign-card 
-          [campaign]="element"
-          [promotionCampaign]="true"
-          (onDeleteCampaign)="deleteCampaign($event)"
-          (onSignupCampaign)="signupCampaign($event)"
-      ></app-campaign-card>
+    <div *ngIf="isBrandView">
+        <div class="home-subtitle" >
+            Brand Campaign:
+            <button class="create-button" mat-flat-button color="primary" (click)="createCampaign()">Create Campaign</button>
+        </div>
+    
+        <div class="campaign-item" *ngFor="let element of brandCampaigns">
+            <app-campaign-card 
+                [campaign]="element"
+                (onDeleteCampaign)="deleteCampaign($event)"></app-campaign-card>
+        </div>
     </div>
-
-    <div class="home-subtitle">
-        Active Campaign:
-        <button class="create-button" mat-flat-button color="secondary" (click)="createCampaign()">Create Campaign</button>
-    </div>
-
-    <div class="campaign-item" *ngFor="let element of campaigns">
-       <app-campaign-card 
-          [campaign]="element.campaign_data"
-          (onDeleteCampaign)="deleteCampaign($event)"></app-campaign-card>
-    </div>
-
-    <div class="home-subtitle">
-      Brand Campaign:
-      <button class="create-button" mat-flat-button color="secondary" (click)="createCampaign()">Create Campaign</button>
-    </div>
-
-    <div class="campaign-item" *ngFor="let element of brandCampaigns">
-      <app-campaign-card 
-          [campaign]="element"
-          (onDeleteCampaign)="deleteCampaign($event)"></app-campaign-card>
-    </div>
-
 </div>
 
 

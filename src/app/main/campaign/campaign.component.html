@@ -1,72 +1,17 @@
 <div *ngIf="campaign">
+    <div class="left-panel">
+        <div class="side-background"></div>
+
+        <div class="overview-tab selected-tab"> Overview </div>
+        <div class="review-tab "> Content Review </div>
+        <div class="post-tab selected-tab"> Post </div>
+    </div>
     <div class="right-panel">
         <mat-horizontal-stepper [linear]="false" #stepper>
             <mat-step>
                 <ng-template matStepLabel>Overview</ng-template>
-
-                <table class="overview-table">
-                    <tr>
-                        <td rowspan="5">
-                            <div class="overview-title">Campaign Name</div>
-                            <div class="overview-content">{{campaign.campaign_name}}</div>
-                            <div class="space"></div>
-                            <div class="overview-title">Commision</div>
-                            <div class="overview-content">$ {{campaign.commision_dollar}}</div>
-                            <div class="space"></div>
-                            <div class="overview-title">Review Deadline</div>
-                            <div class="overview-content">{{ displayTime(campaign.end_time) }}</div>
-                            <div class="space"></div>
-                            <div class="overview-title">Requirements</div>
-                            <div class="overview-content">
-                                <div  *ngFor="let item of campaign.requirements">
-                                    <mat-checkbox> {{ item }}</mat-checkbox>
-                                </div>
-                            </div>
-                            <div class="space"></div>
-                            <div class="overview-title">Millstones</div>
-                            <div class="overview-content">
-                                <div  *ngFor="let item of campaign.milestones">
-                                    <mat-checkbox> {{ item }}</mat-checkbox>
-                                </div>
-                            </div>
-                            <div class="space"></div>
-                            <div class="overview-title">Contatcs</div>
-                            <div class="overview-content">
-                                <div class="contract-list-item" *ngFor="let contract of campaign.extra_info['contracts']; index as i"> 
-                                    {{ contract }} 
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="overview-title">Brand</div>
-                            <div class="overview-content">{{campaign.brand}}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="overview-title">Platform</div>
-                            <div class="overview-content">{{campaign.extra_info['platform']}}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="overview-title">Contact Name</div>
-                            <div class="overview-content">{{campaign.contacts}}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="overview-title">Contact Email</div>
-                            <div class="overview-content">{{campaign.contacts}}</div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="overview-title">Post Deadline</div>
-                            <div class="overview-content">{{ displayTime(campaign.extra_info['post_time']) }}</div>
-                        </td>
-                    </tr>
-                </table>
+                <app-campaign-overview [campaign]="campaign"></app-campaign-overview>
+                <button mat-flat-button color="primary" (click)="completeCampaign()">Complete Campaign</button>
             </mat-step>
             <mat-step>
                 <ng-template matStepLabel>

@@ -15,9 +15,11 @@ import { CampaignService } from 'src/app/services/campaign.service';
 })
 export class HomeComponent implements OnInit {
     campaigns: Campaign[];
+    completeCampaigns: Campaign[];
     brandCampaigns: CampaignDetail[];
     promotionCampaigns: CampaignDetail[];
     campaignDataSource: MatTableDataSource<Campaign>;
+    isBrandView: boolean;
 
     @ViewChild(MatSort, {static: true}) sort: MatSort;
 
@@ -34,17 +36,51 @@ export class HomeComponent implements OnInit {
 
     async ngOnInit() {
         this.loadingService.show();
+        // Get User Info
         const user =  await this.auth.currentUser;
         console.log(user);
+
+        this.auth.idTokenResult.subscribe(idToken => {
+            if (idToken.claims && idToken.claims.store_account === true) {
+                this.isBrandView = true;
+                this.loadBrandCampaign();
+            } else {
+                this.isBrandView = false;
+                this.loadInfluencerCampaign();
+            }
+        });
+    }
+
+    async loadBrandCampaign() {
+        const brand_campaign = await this.campaignService.getBrandCampaign();
+        brand_campaign.subscribe(result => {
+            console.log(result);
+            result.forEach(campaign => {
+                const extraInfo = campaign['extra_info'];
+                if ( typeof extraInfo === 'string') {
+                    campaign.extra_info  = JSON.parse(extraInfo);
+                }
+            });
+            this.brandCampaigns = result;
+            this.loadingService.hide();
+        });
+    }
+
+    async loadInfluencerCampaign() {
         const campaign = await this.campaignService.getAllCampaignForUser();
         campaign.subscribe(result => {
             this.campaigns = result.filter(campaign => {
-                return campaign.campaign_data;
+                return campaign.campaign_data && !campaign.completed;
+            });
+
+            this.completeCampaigns = result.filter(campaign => {
+                return campaign.campaign_data && campaign.completed;
             });
 
             console.log(result);
             this.loadingService.hide();
         });
+
 
         const brand_campaign_inf = await this.campaignService.getAllBrandCamapignInf();
         brand_campaign_inf.subscribe(result => {
@@ -56,21 +92,6 @@ export class HomeComponent implements OnInit {
                 }
             });
             this.promotionCampaigns = result;
-
-            this.loadingService.hide();
-        });
-
-        const brand_campaign = await this.campaignService.getBrandCampaign();
-        brand_campaign.subscribe(result => {
-            console.log(result);
-            result.forEach(campaign => {
-                const extraInfo = campaign['extra_info'];
-                if ( typeof extraInfo === 'string') {
-                    campaign.extra_info  = JSON.parse(extraInfo);
-                }
-            });
-            this.brandCampaigns = result;
-
             this.loadingService.hide();
         });
     }

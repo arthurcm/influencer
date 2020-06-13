@@ -17,8 +17,11 @@
         margin: 20px;
         font-size: large;
         font-weight: 800;
-        color: white;
         display: inline-block;
+        color: white;
+    }
+    .white-header {
+        color: white;
     }
 
     .welcome-message {
@@ -41,8 +44,8 @@
         margin: 10px 20px;
         height: 36px;
         line-height: 36px;
-        color: white;
         margin-bottom: 15px;
+        font-weight: 800;
 
         .create-button {
             float: right;

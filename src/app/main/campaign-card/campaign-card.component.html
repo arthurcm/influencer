@@ -31,7 +31,10 @@
         <div class="content commision">$ {{campaign.commision_dollar}} </div>
     </div>
 
-    <div class="icon" (click)="viewCampaign()">
+    <div class="icon" (click)="viewBrandCampaign()" *ngIf="promotionCampaign">
+        <span class="material-icons">arrow_forward</span>
+    </div>
+    <div class="icon" (click)="viewCampaign()" *ngIf="!promotionCampaign">
         <span class="material-icons">arrow_forward</span>
     </div>
     <div class="icon" (click)="signupCampaign()" *ngIf="promotionCampaign">
