@@ -67,6 +67,8 @@ server
                     secure: true,
                     sameSite: 'none',
                 });
+
+                // We will stay free until we are ready to charge customers.
                 await getSubscriptionUrl(ctx, accessToken, shop);
                 const order = await registerWebhook({
                     address: `${HOST}/webhooks/orders/paid`,

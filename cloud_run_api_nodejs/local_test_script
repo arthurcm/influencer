@@ -18,5 +18,9 @@ curl  -H "Content-Type: application/json" -H "Authorization:<idToken>"" -X PUT h
 get test idToken:
 curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
 
+curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"test@lifo.ai","password":"PASSWORD","returnSecureToken":true}'
+
 get refreshed idToken:
 curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'
+
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nf_J0XU27QQtxMZai8jB-vONMD-2ysShmOK02EgFjryP_WGxbD4f8Cf3UKHEXLkVqQg8c95ZuYCGptz0e9WWqdmF5YqI1D7olYqlejNGeWDhvJy_TOOFhl0YY7CnxRhLs_urWtxA3k_gHvXfA33F-53ULD_s7yffmb7v8iZkuxFpgwFli5b43qF3D2N-_7-wGeBYmohgeftbSFcZ2eXbXAEAY_1aQ'

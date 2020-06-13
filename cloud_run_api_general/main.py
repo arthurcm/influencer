@@ -305,8 +305,8 @@ def entitlement():
         response.status_code = 422
         return response
     shops = sql_handler.get_campaign_entitlement(influencer_email)
-    res = {"shops": [individual_shop['shop'] for individual_shop in shops]}
-    response = flask.jsonify(json.dumps(res))
+    res = {individual_shop['shop']: individual_shop for individual_shop in shops}
+    response = flask.jsonify(res)
     response.status_code = 200
     return response
 

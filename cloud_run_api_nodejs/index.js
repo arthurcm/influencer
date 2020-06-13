@@ -132,8 +132,8 @@ app.post('/payment_info', (req, res, next) => {
 
 
 // get influencer profiles with payment information.
-app.get('/influencer_profile', (req, res, next) => {
-    const uid = res.locals.uid;
+app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
+    const uid = req.params.uid;
     return campaign.getInfluencerProfile(uid)
         .then(results => {
             res.status(200).send(results.data());

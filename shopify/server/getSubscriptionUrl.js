@@ -3,22 +3,14 @@ const getSubscriptionUrl = async (ctx, accessToken, shop) => {
     const query = JSON.stringify({
         query: `mutation {
       appSubscriptionCreate(
-          name: "Super Duper Plan"
+          name: "Lifo Free to Use Plan"
           returnUrl: "${process.env.HOST}"
           test: true
           lineItems: [
           {
             plan: {
-              appUsagePricingDetails: {
-                  cappedAmount: { amount: 10, currencyCode: USD }
-                  terms: "$1 for 1000 emails"
-              }
-            }
-          }
-          {
-            plan: {
               appRecurringPricingDetails: {
-                  price: { amount: 10, currencyCode: USD }
+                  price: { amount: 0, currencyCode: USD }
               }
             }
           }
@@ -46,8 +38,9 @@ const getSubscriptionUrl = async (ctx, accessToken, shop) => {
     });
 
     const responseJson = await response.json();
+    console.log('subscription response is ', responseJson);
     const confirmationUrl = responseJson.data.appSubscriptionCreate.confirmationUrl;
-    console.log('confirmation url is', confirmationUrl)
+    console.log('confirmation url is', confirmationUrl);
     return ctx.redirect(confirmationUrl);
 };
 

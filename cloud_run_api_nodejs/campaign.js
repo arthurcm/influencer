@@ -582,18 +582,37 @@ async function get_entitled_shops(idToken, next){
     return response_data;
 }
 
+function updateCampaignCommissionWithEntitlement(campaign_data, entitled_shops){
+    const shop_detail = entitled_shops.get(campaign_data.brand)
+    if (shop_detail){
+        if(shop_detail.commission && shop_detail.commission > 0){
+            campaign_data.commission = shop_detail.commission;
+        }
+        if(shop_detail.commission_percentage && shop_detail.commission_percentage > 0){
+            campaign_data.commission_percentage = shop_detail.commission_percentage;
+        }
+    }
+    return campaign_data;
+}
+
+
 // List all available brand initiated campaigns for current influencer, currently there's no filtering
 // of eligibility yet.
 async function listBrandCampaignsInf(uid, idToken){
     const entitled_shops = await get_entitled_shops(idToken)
-    console.log('Obtained entitled shops', entitled_shops, JSON.parse(entitled_shops));
-    let shops = JSON.parse(entitled_shops).shops;
-    console.log('Obtained entitled shops', shops);
-    return db.collection('brand_campaigns').where('brand', 'in', shops).get()
+    console.log('Obtained entitled shops', entitled_shops);
+    let shop_list = Object.keys(entitled_shops);
+    if (shop_list.length === 0){
+
+        // this is a hack to avoid empty list error by the .where() clause below.
+        shop_list.push('TestStoreLfioDefault');
+    }
+    return db.collection('brand_campaigns').where('brand', 'in', shop_list).get()
         .then(querySnapshot => {
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
-                const doc_snap = doc.data();
+                let doc_snap = doc.data();
+                doc_snap = updateCampaignCommissionWithEntitlement(doc_snap);
                 brand_campaigns.push(doc_snap);
             });
             console.log('Found', brand_campaigns.length, 'results');
@@ -636,8 +655,23 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
             const tracking_url = await get_referral_url(idToken, brand_campaign_data);
             console.log('Got tracking data', tracking_url);
             brand_campaign_data.tracking_url = tracking_url;
+            const entitled_shops = await get_entitled_shops(idToken)
+            console.log('Obtained entitled shops', entitled_shops);
+            brand_campaign_data = updateCampaignCommissionWithEntitlement(brand_campaign_data, entitled_shops);
             console.log('Found brand campaign data', brand_campaign_data);
-            return createCampaign(brand_campaign_data, uid, brand_campaign_data.campaign_type, false);
+            const results = createCampaign(brand_campaign_data, uid, brand_campaign_data.campaign_type, false);
+            let batch = results.batch_promise;
+            let collaborating_influencers = brand_campaign_data.collaborating_influencers;
+            collaborating_influencers.push(uid);
+            let uniq = [...new Set(collaborating_influencers)];
+            brand_campaign_data.collaborating_influencers = uniq;
+            batch.update(promotion_campaigns_ref, brand_campaign_data)
+            return {
+                campaign_id: results.campaign_id,
+                history_id: results.history_id,
+                campaign_data: results.campaign_data,
+                batch_promise: results.batch_promise
+            };
         });
 }
 

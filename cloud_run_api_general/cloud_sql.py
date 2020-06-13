@@ -364,8 +364,8 @@ class Sqlhandler:
             response=ret
         )
 
-    def save_campaign_entitlement(self, influencer_email, shop, commission, commission_percentage=0,
-                                  lifo_tracker_id='', commission_type='one_time_commission_campaign'):
+    def save_campaign_entitlement(self, influencer_email, shop, commission, commission_percentage=None,
+                                  lifo_tracker_id=None, commission_type='one_time_commission_campaign'):
         try:
             # # Using a with statement ensures that the connection is always released
             # # back into the pool at the end of statement (even if an error occurs)
