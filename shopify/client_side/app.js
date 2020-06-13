@@ -39,7 +39,7 @@ function trackVisit(){
             req.open("POST", "https://api.lifo.ai/track"),
             req.setRequestHeader("Content-Type", "application/json;charset=UTF-8"),
             req.send(JSON.stringify({
-                lifo_tracker_id: lifo_tracker_id,
+                lifo_tracker_id,
                 shop: getShop(),
                 location: document.location,
                 user_agent: navigator.userAgent,

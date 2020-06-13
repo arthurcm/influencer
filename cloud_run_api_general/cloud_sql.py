@@ -131,9 +131,9 @@ class Sqlhandler:
             Column('shop', String, primary_key=True),
             Column('influencer_email', String, primary_key=True),
             Column('lifo_tracker_id', String),
-            Column('commission', Numeric),
+            Column('commission', Numeric, nullable=False),
             Column('commission_type', String),
-            Column('commission_percentage', Numeric),
+            Column('commission_percentage', Numeric, nullable=False),
             Column('timestamp', DateTime)
         )
 
@@ -364,7 +364,7 @@ class Sqlhandler:
             response=ret
         )
 
-    def save_campaign_entitlement(self, influencer_email, shop, commission, commission_percentage=None,
+    def save_campaign_entitlement(self, influencer_email, shop, commission=0, commission_percentage=0,
                                   lifo_tracker_id=None, commission_type='one_time_commission_campaign'):
         try:
             # # Using a with statement ensures that the connection is always released
@@ -412,8 +412,8 @@ class Sqlhandler:
                 results = conn.execute(stmt, {"influencer_email": influencer_email}).fetchall()
                 shops = [{
                     "shop": row[0],
-                    "commission": row[1],
-                    "commission_percentage": row[2],
+                    "commission": float(row[1]),
+                    "commission_percentage": float(row[2]),
                     "lifo_tracker_id": row[3]
                 } for row in results]
         except Exception as e:

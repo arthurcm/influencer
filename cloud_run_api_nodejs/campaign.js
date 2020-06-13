@@ -85,7 +85,7 @@ function getCampaign(data, uid, res) {
     const markers = [];
     const campaign_id = data.campaign_id;
     console.log('Querying campaign', campaign_id);
-    let latest_history_ref = db.collection('campaigns').doc(campaign_id)
+    const latest_history_ref = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').orderBy('timestamp', 'desc').get()
         .then(querySnapshot => {
             querySnapshot.docs.forEach(doc => {
@@ -98,7 +98,7 @@ function getCampaign(data, uid, res) {
     let final_campaign = {};
     let final_video_draft_history_id = '';
     let final_video_draft = {};
-    let final_campaign_ref = db.collection('campaigns').doc(campaign_id).get()
+    const final_campaign_ref = db.collection('campaigns').doc(campaign_id).get()
         .then(camSnapShot => {
             if (!camSnapShot.exists){
                 return {};
@@ -163,7 +163,7 @@ function createCampaign(data, uid, is_new_campaign=true){
         campaign_id,
         history_id,
         campaign_data: data,
-        batch_promise: batch
+        batch_promise: batch,
     };
 }
 
@@ -473,10 +473,15 @@ async function get_entitled_shops(idToken, next){
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': idToken
+            Authorization: idToken,
         },
     })
         .then(response => {
+            if (response.statusCode > 299){
+                console.error('failed to retrieve entitlement information with code', response.statusCode, response.statusText);
+                throw new functions.https.HttpsError('not-found','failed to get matched shops');
+            }
+            console.debug('https://api.lifo.ai/influencer/entitlement response is:', response);
             response_data = response.json();
             return response_data;
         })
@@ -500,10 +505,10 @@ function updateCampaignCommissionWithEntitlement(campaign_data, entitled_shops){
 
 // List all available brand initiated campaigns for current influencer, currently there's no filtering
 // of eligibility yet.
-async function listBrandCampaignsInf(uid, idToken){
-    const entitled_shops = await get_entitled_shops(idToken)
+async function listBrandCampaignsInf(uid, idToken, next){
+    const entitled_shops = await get_entitled_shops(idToken, next);
     console.log('Obtained entitled shops', entitled_shops);
-    let shop_list = Object.keys(entitled_shops);
+    const shop_list = Object.keys(entitled_shops);
     if (shop_list.length === 0){
 
         // this is a hack to avoid empty list error by the .where() clause below.
@@ -514,10 +519,10 @@ async function listBrandCampaignsInf(uid, idToken){
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
                 let doc_snap = doc.data();
-                doc_snap = updateCampaignCommissionWithEntitlement(doc_snap);
+                doc_snap = updateCampaignCommissionWithEntitlement(doc_snap, entitled_shops);
                 brand_campaigns.push(doc_snap);
             });
-            console.log('Found', brand_campaigns.length, 'results');
+            console.debug('Found', brand_campaigns.length, 'results for uid', uid);
             return brand_campaigns;
         });
 }
@@ -529,11 +534,16 @@ async function get_referral_url(idToken, campaign_data, next){
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': idToken
+            Authorization: idToken,
         },
         body: JSON.stringify(campaign_data),
     })
         .then(response => {
+            if (response.statusCode > 299){
+                console.error('failed to retrieve referral url with statusCode', response.statusCode, response.statusText);
+                throw new functions.https.HttpsError('not-found','failed to get matched shops');
+            }
+            console.debug('https://api.lifo.ai/influencer/lifo_tracker_id response is:', response);
             response_data = response.json();
             return response_data;
         })
@@ -544,7 +554,7 @@ async function get_referral_url(idToken, campaign_data, next){
 
 // this is gonna allow influencer to sign up for brand's campaign, and add campaign data into
 // influencer profile, and update the promotional campaign with affiliate information.
-function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
+function signupToBrandCampaign(brand_campaign_id, uid, idToken, next) {
     if (!brand_campaign_id) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
@@ -559,28 +569,28 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken) {
             if (!collaborating_influencers){
                 collaborating_influencers = [];
             }else if(collaborating_influencers.includes(uid)){
-                console.debug('Influencer has already signed up')
+                console.debug('Influencer has already signed up');
                 return {};
             }
             collaborating_influencers.push(uid);
-            let uniq = [...new Set(collaborating_influencers)];
+            const uniq = [...new Set(collaborating_influencers)];
             brand_campaign_data.collaborating_influencers = uniq;
 
             const tracking_url = await get_referral_url(idToken, brand_campaign_data);
             console.log('Got tracking data', tracking_url);
             brand_campaign_data.tracking_url = tracking_url;
-            const entitled_shops = await get_entitled_shops(idToken)
+            const entitled_shops = await get_entitled_shops(idToken, next);
             console.log('Obtained entitled shops', entitled_shops);
             brand_campaign_data = updateCampaignCommissionWithEntitlement(brand_campaign_data, entitled_shops);
             console.log('Found brand campaign data', brand_campaign_data);
             const results = createCampaign(brand_campaign_data, uid,  false);
-            let batch = results.batch_promise;
-            batch.update(promotion_campaigns_ref, brand_campaign_data)
+            const batch = results.batch_promise;
+            batch.update(promotion_campaigns_ref, brand_campaign_data);
             return {
                 campaign_id: results.campaign_id,
                 history_id: results.history_id,
                 campaign_data: results.campaign_data,
-                batch_promise: results.batch_promise
+                batch_promise: results.batch_promise,
             };
         });
 }
@@ -619,7 +629,7 @@ function createBrandCampaign(data, uid){
     batch.set(allBrandCampaignRef, brand_campaign_data);
     return {
         campaign_id: brandCampaignRef.id,
-        batch_promise: batch
+        batch_promise: batch,
     };
 }
 
@@ -643,7 +653,7 @@ function listBrandCampaignForBrand(uid){
 function getBrandCampaignForBrand(campaign_id){
     return db.collection('brand_campaigns').doc(campaign_id).get()
         .then(querySnapshot => {
-            const brand_campaign = querySnapshot.data()
+            const brand_campaign = querySnapshot.data();
             console.log('Found', brand_campaign);
             return brand_campaign;
         });
@@ -668,7 +678,7 @@ function deleteBrandCampaign(data, uid){
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
     }
-    let batch = db.batch();
+    const batch = db.batch();
 
     const brand_campaign_ref = db.collection('brands')
         .doc(uid).collection('brand_campaigns')
@@ -685,7 +695,7 @@ function endBrandCampaign(data, uid){
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
     }
-    let batch = db.batch();
+    const batch = db.batch();
 
     const brand_campaign_ref = db.collection('brands')
         .doc(uid).collection('brand_campaigns')
@@ -708,8 +718,6 @@ function getInfluencerProfile(uid){
     const influencerRef = db.collection('influencers').doc(uid);
     return influencerRef.get();
 }
-
-
 
 
 module.exports = {
