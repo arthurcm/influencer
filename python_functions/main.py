@@ -23,7 +23,7 @@ from video_intel import video_text_reg, uri_parser
 from nlp_gcp import nlp_text_sentiment
 from cv_gcp import web_entities_include_geo_results_uri
 from gcp_utils import get_secret
-from email_util import send_welcome_email, share_draft_email
+from email_util import send_welcome_email
 
 # Imports the Google Cloud client library
 import google.cloud.logging
@@ -310,7 +310,7 @@ def video_text_reg_gcf(data, context):
     :param context: (google.cloud.functions.Context): Metadata of triggering event.
     :return: None
     """
-    print(f"receving data {data} with {context}")
+    print(f"Receiving data {data} with {context}")
     if not data['contentType'].startswith('video/'):
         print('This is not a video')
         return None
@@ -319,7 +319,7 @@ def video_text_reg_gcf(data, context):
     bucket = data['bucket']
     video_uri = f'gs://{bucket}/{name}'
     try:
-        uid, campaign_id, history_id, _ = uri_parser(name)
+        uid, campaign_id, vidoe_name = uri_parser(name)
     except Exception as e:
         print(f'Parsing video URI {video_uri} error: {e}')
         return None
@@ -331,7 +331,7 @@ def video_text_reg_gcf(data, context):
         return None
 
     return (db.collection(u'campaigns').document(campaign_id)
-            .collection(u'videos').document(history_id) # note: here we use the campaign history_id to distinct videos
+            .collection(u'videos').document(vidoe_name) # note: here we use the campaign history_id to distinct videos
             .set({u'text_reg_res': res}, merge=True))
 
 
@@ -348,7 +348,7 @@ def web_entities_detection_gcf(data, context):
     :param context: (google.cloud.functions.Context): Metadata of triggering event.
     :return: None
     """
-    logging.info(f"receving data {data} with {context}")
+    logging.info(f"Receiving data {data} with {context}")
     if not data['contentType'].startswith('image/'):
         logging.info('This is not an image')
         return None
@@ -357,15 +357,14 @@ def web_entities_detection_gcf(data, context):
     bucket = data['bucket']
     image_uri = f'gs://{bucket}/{name}'
     try:
-        uid, campaign_id, history_id, file_name = uri_parser(name)
+        uid, campaign_id, file_name = uri_parser(name)
     except Exception as e:
         print(f'Parsing image URI {image_uri} error: {e}')
         return None
     res = web_entities_include_geo_results_uri(image_uri)
     # note: here we use the campaign history_id to distinct videos
     return (db.collection(u'campaigns').document(campaign_id)
-            .collection(u'images').document(history_id)
-            .collection(u'single_image').document(file_name)
+            .collection(u'images').document(file_name)
             .set({u'entity_detect_res': res}, merge=True))
 
 
@@ -403,14 +402,3 @@ def send_welcome_email_gcf(data, context):
     This function sends out a welcoming email for any new user sign up.
     """
     send_welcome_email(data, context)
-
-
-def share_draft_email_gcf(request):
-    """
-    gcloud functions deploy share_draft_email_gcf --trigger-event providers/firebase.auth/eventTypes/user.create --trigger-resource influencer-272204 --runtime python37
-    This function sends out a welcoming email for any new user sign up.
-    """
-    share_draft_email(data, context)
-
-
-

@@ -2,25 +2,32 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const db = admin.firestore();
 
+const path = require('path');
 
 const PERCENTAGE_RATE = 'commission_per_sales_campaign';
 const FIXED_RATE = 'one_time_commission_campaign';
 const GENERIC_INF_CREATED_CAMPAIGN = 'generic_campaign';
 
 
-function uriParse(video_name){
-    const tokens = video_name.split('/');
-    return {
+function uriParse(media_name){
+    const tokens = media_name.split('/');
+    const results = {
         uid: tokens[1],
         campaign_id: tokens[2],
-        history_id: tokens[3],
-        file_name: tokens[4],
+        // history_id: tokens[3],
+        file_name: tokens[3],
     };
+    console.debug('Parsed tokens are', results);
+    if(!results.file_name){
+        console.error('invalid media path provided, causing file_name to be undefined', filePath);
+        throw new functions.https.HttpsError('invalid-argument', 'invalid media path provided');
+    }
+    return results;
 }
 
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
 function retrieveVideoMetaRef(filePath){
     // The following is to handle the auth, campaign id, and history id parsing.
     return retrieveMediaMetaRef(filePath, 'videos');
@@ -33,17 +40,17 @@ function retrieveSingleImageMetaRef(filePath) {
     return image_ref.collection('single_image').doc(file_name);
 }
 
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
 function retrieveImageMetaRef(filePath){
     // The following is to handle the auth, campaign id, and history id parsing.
     return retrieveMediaMetaRef(filePath, 'images');
 }
 
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
-// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
+// this is copy-pasted from cloud_run_video_transcoding, make sure update both when change the following.
 function retrieveMediaMetaRef(filePath, mediaType){
     // mediaType has to be one of "videos", "images"
     // The following is to handle the auth, campaign id, and history id parsing.
@@ -58,16 +65,14 @@ function retrieveMediaMetaRef(filePath, mediaType){
         throw new Error('Parsing error for uri:'.concat(filePath));
     }
     const campaign_id = parsedTokens.campaign_id;
-
-    // here we will use the campaign history_id to identify unique video versions.
-    const video_id = parsedTokens.history_id;
+    const media_id = parsedTokens.file_name;
     return db.collection('campaigns').doc(campaign_id)
-        .collection(mediaType).doc(video_id);
+        .collection(mediaType).doc(media_id);
 }
 
 
 function getAllCampaign(uid) {
-    console.log('Get all campaign meta data that belong to current user.');
+    console.info('Get all campaign meta data that belong to current user.');
     return db.collection('influencers').doc(uid).collection('campaigns').get()
         .then(querySnapshot => {
             const markers = [];
@@ -75,7 +80,7 @@ function getAllCampaign(uid) {
                 const doc_snap = doc.data();
                 markers.push(doc_snap);
             });
-            console.log('Found', markers.length, 'results');
+            console.debug('Found', markers.length, 'results');
             return markers;
         });
 }
@@ -84,14 +89,14 @@ function getAllCampaign(uid) {
 function getCampaign(data, uid, res) {
     const markers = [];
     const campaign_id = data.campaign_id;
-    console.log('Querying campaign', campaign_id);
+    console.info('Querying campaign', campaign_id);
     const latest_history_ref = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').orderBy('timestamp', 'desc').get()
         .then(querySnapshot => {
             querySnapshot.docs.forEach(doc => {
                 markers.push(doc.data());
             });
-            console.log('Found', markers.length, 'results');
+            console.debug('Found', markers.length, 'results');
             return markers;
         });
     let final_history_id = '';
@@ -136,9 +141,9 @@ function createCampaign(data, uid, is_new_campaign=true){
             console.error('Receiving a brand initiated campaign for influencer to sign up!');
             return {};
         }
-        console.log('Creating a new campaign with id', campaign_id);
+        console.info('Creating a new campaign with id', campaign_id);
     }else{
-        console.log('Signing up to a brand campaign with data', data);
+        console.info('Signing up to a brand campaign with data', data);
     }
     const batch = db.batch();
     const historyRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
@@ -158,7 +163,7 @@ function createCampaign(data, uid, is_new_campaign=true){
         campaign_name: String(data.campaign_name),
         campaign_data: data,
     });
-    console.log('creating campaign with id', campaign_id);
+    console.info('creating campaign with id', campaign_id);
     return {
         campaign_id,
         history_id,
@@ -187,14 +192,14 @@ function completeCampaign(campaign_id, uid){
 // called when an existing campaign gets updated, this include anything that campaign data touches on.
 // the data is expected to have the same schema (subset) of campaign data.
 function updateCampaign(campaign_id, data, uid){
-    console.log('input data is', data, 'updating campaign', campaign_id);
+    console.debug('input data is', data, 'updating campaign', campaign_id);
     // Get a new write batch
     const batch = db.batch();
 
     const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = campaignHistoryRef.id;
     const newCamp = updateCampaignData(uid, campaign_id, data, history_id);
-    console.log('Created new campaign data:', newCamp);
+    console.debug('Created new campaign data:', newCamp);
     batch.set(campaignHistoryRef, newCamp);
 
     // get the updated campaign information, and add it to influencer's profile.
@@ -215,7 +220,7 @@ function deleteCampaign(data, uid){
     }
 
     const campaign_id = data.campaign_id;
-    console.log('Deleting campaign', campaign_id, 'from influencer', uid);
+    console.info('Deleting campaign', campaign_id, 'from influencer', uid);
     const campaignRef = db.collection('campaigns').doc(campaign_id);
 
     const batch = db.batch();
@@ -277,7 +282,15 @@ function createFeedbackThread(data, uid){
     batch.set(thread_ref, new_thread);
     const feedback_ref = thread_ref.collection('feedback_list').doc();
     batch.set(feedback_ref, feedback_obj);
-    return batch.commit();
+    const thread_path = path.join(media_object_path, 'feedback_threads', thread_ref.id);
+    const feedback_path = path.join(thread_path, 'feedback_list', feedback_ref.id);
+    return {
+        batch_promise: batch.commit(),
+        thread_id: thread_ref.id,
+        feedback_id: feedback_ref.id,
+        thread_path,
+        feedback_path,
+    };
 }
 
 async function getAllThreads(data, uid) {
@@ -353,7 +366,7 @@ function retrieveMediaObjRef(media_object_path){
     if(media_object_path.startsWith('video/')){
         media_object_ref = retrieveVideoMetaRef(media_object_path);
     }else if(media_object_path.startsWith('image/')){
-        media_object_ref = retrieveSingleImageMetaRef(media_object_path);
+        media_object_ref = retrieveImageMetaRef(media_object_path);
     }else{
         throw new Error('Not supported object type');
     }

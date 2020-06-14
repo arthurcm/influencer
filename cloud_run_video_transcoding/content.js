@@ -25,16 +25,24 @@ async function streamToString(stream) {
     });
 }
 
-function uriParse(file_name){
-    const tokens = file_name.split('/');
-    return {
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+// this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
+function uriParse(media_name){
+    const tokens = media_name.split('/');
+    const results = {
         uid: tokens[1],
         campaign_id: tokens[2],
-        history_id: tokens[3],
-        file_name: tokens[4],
+        // history_id: tokens[3],
+        file_name: tokens[3],
     };
+    console.debug('Parsed tokens are', results);
+    if(!results.file_name){
+        console.error('invalid media path provided, causing file_name to be undefined', filePath);
+        throw new functions.https.HttpsError('invalid-argument', 'invalid media path provided');
+    }
+    return results;
 }
-
 
 async function firestore_callback(campaign_id, history_id, transcodeLocalPath, tempLocalFile, uploadPathName){
     const CHUNK_SIZE = 200000; // each doc has to be below 1MB
@@ -223,6 +231,7 @@ function retrieveImageMetaRef(filePath){
     return retrieveMediaMetaRef(filePath, 'images');
 }
 
+
 // this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
 // this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
 // this is copy-pasted to cloud_run_api_nodejs, make sure update both when change the following.
@@ -240,11 +249,9 @@ function retrieveMediaMetaRef(filePath, mediaType){
         throw new Error('Parsing error for uri:'.concat(filePath));
     }
     const campaign_id = parsedTokens.campaign_id;
-
-    // here we will use the campaign history_id to identify unique video versions.
-    const video_id = parsedTokens.history_id;
+    const media_id = parsedTokens.file_name;
     return db.collection('campaigns').doc(campaign_id)
-        .collection(mediaType).doc(video_id);
+        .collection(mediaType).doc(media_id);
 }
 
 function createVideoMeta(filePath, transcoded, resolution_height, uploadPathName) {
@@ -287,7 +294,7 @@ function retrieveMediaObjRef(media_object_path){
     if(media_object_path.startsWith('video/')){
         media_object_ref = retrieveVideoMetaRef(media_object_path);
     }else if(media_object_path.startsWith('image/')){
-        media_object_ref = retrieveSingleImageMetaRef(media_object_path);
+        media_object_ref = retrieveImageMetaRef(media_object_path);
     }else{
         throw new Error('Not supported object type');
     }

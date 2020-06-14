@@ -21,7 +21,8 @@
     "firebase-functions": "^3.3.0",
     "isomorphic-fetch": "^2.2.1",
     "is-valid-domain": "^0.0.14",
-    "valid-url": "^1.0.9"
+    "valid-url": "^1.0.9",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^2.27.0",

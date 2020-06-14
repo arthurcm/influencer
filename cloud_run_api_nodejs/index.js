@@ -293,23 +293,45 @@ app.post('/create_feedback_thread', (req, res, next)=>{
     const data = req.body;
     const uid = res.locals.uid;
     console.log('incoming uid is ', res.locals.uid);
-    return campaign.createFeedbackThread(data, uid)
-        .then(result => {
-            res.status(200).send({status : 'OK'});
-            return result;
-        })
+    const results = campaign.createFeedbackThread(data, uid);
+    const thread_id = results.thread_id;
+    const feedback_id = results.feedback_id;
+    const batch_promise = results.batch_promise;
+    const thread_path = results.thread_path;
+    const feedback_path = results.feedback_path;
+    return batch_promise.then(result => {
+        res.status(200).send({
+            thread_id,
+            feedback_id,
+            thread_path,
+            feedback_path
+        });
+        return result;
+    })
         .catch(next);
 });
 
 
 app.post('/share/create_feedback_thread', (req, res, next)=>{
-    console.log('/create_feedback_thread received a request', req.body);
+    console.log('/share/create_feedback_thread received a request', req.body);
     const data = req.body;
-    return campaign.createFeedbackThread(data, 'no_uid')
-        .then(result => {
-            res.status(200).send({status : 'OK'});
-            return result;
-        })
+    const uid = res.locals.uid;
+    console.log('incoming uid is ', res.locals.uid);
+    const results = campaign.createFeedbackThread(data, uid);
+    const thread_id = results.thread_id;
+    const feedback_id = results.feedback_id;
+    const batch_promise = results.batch_promise;
+    const thread_path = results.thread_path;
+    const feedback_path = results.feedback_path;
+    return batch_promise.then(result => {
+        res.status(200).send({
+            thread_id,
+            feedback_id,
+            thread_path,
+            feedback_path
+        });
+        return result;
+    })
         .catch(next);
 });
 
@@ -530,8 +552,6 @@ app.get('/brand/campaign', (req, res, next) => {
 });
 
 
-
-
 app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     console.log('Receiving campaign id', req.params.brand_campaign_id);
@@ -597,11 +617,11 @@ app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
 
 
 app.use((err, req, res, next) => {
+    console.error(err.stack);
     if (res.headersSent) {
         return next(err);
     }
-    res.status(500);
-    res.render('error', { error: err });
+    res.status(500).send({ error: err });
     return res;
 });
 
