@@ -118,6 +118,7 @@ class Sqlhandler:
                 'tracker_id', MetaData(),
                 Column('lifo_tracker_id', String, primary_key=True),
                 Column('shop', String, primary_key=True),
+                Column('uid', String, primary_key=True),
                 Column('campaign_id', String, primary_key=True),
                 Column('commission', String),
                 Column('commission_type', String),

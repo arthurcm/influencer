@@ -481,7 +481,6 @@ async function get_entitled_shops(idToken, next){
                 console.error('failed to retrieve entitlement information with code', response.statusCode, response.statusText);
                 throw new functions.https.HttpsError('not-found','failed to get matched shops');
             }
-            console.debug('https://api.lifo.ai/influencer/entitlement response is:', response);
             response_data = response.json();
             return response_data;
         })
@@ -529,7 +528,7 @@ async function listBrandCampaignsInf(uid, idToken, next){
 
 
 async function get_referral_url(idToken, campaign_data, next){
-    let response_data;
+    let response_data = {};
     await fetch('https://api.lifo.ai/influencer/lifo_tracker_id', {
         method: 'POST',
         headers: {
@@ -541,9 +540,8 @@ async function get_referral_url(idToken, campaign_data, next){
         .then(response => {
             if (response.statusCode > 299){
                 console.error('failed to retrieve referral url with statusCode', response.statusCode, response.statusText);
-                throw new functions.https.HttpsError('not-found','failed to get matched shops');
+                return new functions.https.HttpsError('not-found','failed to get matched shops');
             }
-            console.debug('https://api.lifo.ai/influencer/lifo_tracker_id response is:', response);
             response_data = response.json();
             return response_data;
         })
@@ -573,24 +571,34 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken, next) {
                 return {};
             }
             collaborating_influencers.push(uid);
-            const uniq = [...new Set(collaborating_influencers)];
-            brand_campaign_data.collaborating_influencers = uniq;
+            const uniq_inf = [...new Set(collaborating_influencers)];
+            // brand_campaign_data.collaborating_influencers = uniq;
 
-            const tracking_url = await get_referral_url(idToken, brand_campaign_data);
-            console.log('Got tracking data', tracking_url);
-            brand_campaign_data.tracking_url = tracking_url;
+            const tracking_url = await get_referral_url(idToken, brand_campaign_data, next);
+            console.log('Obtained tracking url', tracking_url);
             const entitled_shops = await get_entitled_shops(idToken, next);
             console.log('Obtained entitled shops', entitled_shops);
             brand_campaign_data = updateCampaignCommissionWithEntitlement(brand_campaign_data, entitled_shops);
-            console.log('Found brand campaign data', brand_campaign_data);
             const results = createCampaign(brand_campaign_data, uid,  false);
             const batch = results.batch_promise;
-            batch.update(promotion_campaigns_ref, brand_campaign_data);
+
+            // unique influencers are only updated to brand side campaign and not influencer side.
+            batch.set(promotion_campaigns_ref, {collaborating_influencers: uniq_inf}, {merge: true});
+            const new_inf_campaign_ref = db.collection('campaigns').doc(results.campaign_id)
+                .collection('campaignHistory').doc(results.history_id);
+
+            // TODO: check "status" existence
+            if (tracking_url){
+                console.log('Updating tracking url with data', tracking_url);
+                batch.set(new_inf_campaign_ref, tracking_url, {merge: true});
+            }else{
+                console.warn('Failed to update tracking url for campaign', brand_campaign_data);
+            }
             return {
                 campaign_id: results.campaign_id,
                 history_id: results.history_id,
                 campaign_data: results.campaign_data,
-                batch_promise: results.batch_promise,
+                batch_promise: batch,
             };
         });
 }
@@ -709,7 +717,7 @@ function endBrandCampaign(data, uid){
 }
 
 // takes in a new data object, update the influencer profile with it.
-function updateInfluencerProfile(field_name, uid, data){
+function updateInfluencerProfile(uid, data){
     const influencerRef = db.collection('influencers').doc(uid);
     return influencerRef.set(data, {merge: true});
 }

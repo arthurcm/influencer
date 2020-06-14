@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 
     // idToken comes from the client
     if (!req.headers.authorization) {
-        return res.status(403).json({ error: 'No credentials sent!' });
+        return res.status(401).json({ error: 'No credentials sent!' });
     }
     const idToken = req.headers.authorization;
     return admin.auth().verifyIdToken(idToken)
@@ -126,7 +126,7 @@ app.put('/complete_campaign/campaign_id/:campaign_id', (req, res, next) => {
 app.post('/payment_info', (req, res, next) => {
     const uid = res.locals.uid;
     const data = req.body;
-    return campaign.updateInfluencerProfile('payment_info', uid, data)
+    return campaign.updateInfluencerProfile(uid, data)
         .then(results => {
             res.status(200).send({status : 'OK'});
             return results;
