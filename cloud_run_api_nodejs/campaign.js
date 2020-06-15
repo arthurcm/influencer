@@ -85,18 +85,34 @@ function getAllCampaign(uid) {
         });
 }
 
+
+function getLatestCampaignPath(uid, campaign_id){
+    return db.collection('campaigns').doc(campaign_id)
+        .collection('campaignHistory').orderBy('time_stamp', 'desc').limit(1).get()
+        .then(querySnapshot => {
+            const campaigns = [];
+            querySnapshot.docs.forEach(doc => {
+                campaigns.push(doc.data());
+            });
+            return campaigns;
+        })
+        .then(campaigns => {
+            const campaign_data = campaigns[0];
+            return `${uid  }/${  campaign_id  }/${  campaign_data.history_id}`;
+        });
+}
+
 // Get campaign meta information when been called.
 function getCampaign(data, uid, res) {
     const markers = [];
     const campaign_id = data.campaign_id;
     console.info('Querying campaign', campaign_id);
     const latest_history_ref = db.collection('campaigns').doc(campaign_id)
-        .collection('campaignHistory').orderBy('timestamp', 'desc').get()
+        .collection('campaignHistory').orderBy('time_stamp', 'desc').get()
         .then(querySnapshot => {
             querySnapshot.docs.forEach(doc => {
                 markers.push(doc.data());
             });
-            console.debug('Found', markers.length, 'results');
             return markers;
         });
     let final_history_id = '';
@@ -255,7 +271,7 @@ function createFeedbackObject(feedback_str, media_object_path, displayName='', l
 
 
 // for creating a new thread of feedbacks
-function createFeedbackThread(data, uid){
+function createFeedbackThread(data, uid, name){
     if (!data.feedback_str) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a none-empty feedback_str.');
@@ -266,9 +282,8 @@ function createFeedbackThread(data, uid){
     }
     const feedback_str = data.feedback_str;
     const media_object_path = data.media_object_path;
-    const displayName = data.displayName;
     const FieldValue = admin.firestore.FieldValue;
-    const feedback_obj = createFeedbackObject(feedback_str, media_object_path, displayName);
+    const feedback_obj = createFeedbackObject(feedback_str, media_object_path, name);
     const new_thread = {
         media_object_path,
         resolved: false,
@@ -313,7 +328,7 @@ async function getAllThreads(data, uid) {
     });
 }
 
-function replyToFeedbackThread(data, uid){
+function replyToFeedbackThread(data, uid, name){
     if (!data.feedback_str) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a none-empty feedback_str.');
@@ -328,9 +343,8 @@ function replyToFeedbackThread(data, uid){
     }
     const feedback_str = data.feedback_str;
     const media_object_path = data.media_object_path;
-    const displayName = data.displayName;
     const thread_id = data.thread_id;
-    const feedback_obj = createFeedbackObject(feedback_str, media_object_path, displayName);
+    const feedback_obj = createFeedbackObject(feedback_str, media_object_path, name);
     const media_object_ref = retrieveMediaObjRef(media_object_path);
     return media_object_ref
         .collection('feedback_threads').doc(thread_id)
@@ -570,9 +584,9 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken, next) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
     }
-    const promotion_campaigns_ref = db.collection('brand_campaigns').doc(brand_campaign_id);
+    const brand_campaigns_ref = db.collection('brand_campaigns').doc(brand_campaign_id);
     let brand_campaign_data = null;
-    return promotion_campaigns_ref.get()
+    return brand_campaigns_ref.get()
         .then(async (snapshot) => {
             brand_campaign_data = snapshot.data();
 
@@ -596,7 +610,16 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken, next) {
             const batch = results.batch_promise;
 
             // unique influencers are only updated to brand side campaign and not influencer side.
-            batch.set(promotion_campaigns_ref, {collaborating_influencers: uniq_inf}, {merge: true});
+            batch.set(brand_campaigns_ref, {collaborating_influencers: uniq_inf}, {merge: true});
+
+            // when influencers sign up to a campaign, save the influencer campaign id pairs.
+            let inf_campaign_dict = brand_campaign_data.inf_campaign;
+            if (!inf_campaign_dict) {
+                inf_campaign_dict = {};
+            }
+            inf_campaign_dict[uid] = results.campaign_id;
+            batch.set(brand_campaigns_ref, {inf_campaign_dict}, {merge: true});
+
             const new_inf_campaign_ref = db.collection('campaigns').doc(results.campaign_id)
                 .collection('campaignHistory').doc(results.history_id);
 
@@ -634,7 +657,7 @@ function createBrandCampaignData(brand_campaign_id, uid, data, is_new_camp=false
     if (is_new_camp) {
         data.brand_id = uid;
     }
-    data.timestamp = FieldValue.serverTimestamp();
+    data.time_stamp = FieldValue.serverTimestamp();
     return data;
 }
 
@@ -667,6 +690,20 @@ function listBrandCampaignForBrand(uid){
             });
             console.log('Found', brand_campaigns.length, 'results');
             return brand_campaigns;
+        });
+}
+
+function totalInfCount(uid){
+    return listBrandCampaignForBrand(uid)
+        .then(brand_campaigns => {
+            let inf_ids = [];
+            brand_campaigns.forEach(campaign => {
+                if(campaign.collaborating_influencers && campaign.collaborating_influencers.length >0){
+                    inf_ids = inf_ids.concat(campaign.collaborating_influencers);
+                }
+            });
+            let results = [... new Set(inf_ids)];
+            return results;
         });
 }
 
@@ -744,6 +781,7 @@ function getInfluencerProfile(uid){
 module.exports = {
     getCampaign,
     getAllCampaign,
+    getLatestCampaignPath,
     createCampaign,
     deleteCampaign,
     feedback,
@@ -766,6 +804,7 @@ module.exports = {
     updateBrandCampaign,
     deleteBrandCampaign,
     endBrandCampaign,
+    totalInfCount,
     GENERIC_INF_CREATED_CAMPAIGN,
     FIXED_RATE,
     PERCENTAGE_RATE,

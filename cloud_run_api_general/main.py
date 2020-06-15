@@ -16,7 +16,8 @@ import logging
 
 from email_util import share_draft_email
 from cloud_sql import sql_handler
-from campaign_perf_utils import fixed_commission_per_shop, percentage_commission_per_shop, combine_final_commissions
+from campaign_perf_utils import (fixed_commission_per_shop, percentage_commission_per_shop, combine_final_commissions,
+                                 count_visits_daily)
 
 # Instantiates a client
 client = google.cloud.logging.Client()
@@ -170,32 +171,35 @@ def token_verification(id_token):
 
 @app.before_request
 def hook():
-    if flask.session.get('uid'):
-        logging.info('request has been verified')
-        return
-    id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
-    if not id_token:
-        logging.error('Valid id_token required')
-        response = flask.jsonify('Valid id_token required')
-        response.status_code = 401
-        return response
-    decoded_token = token_verification(id_token)
-    uid = decoded_token['uid']
-    if not uid:
-        logging.error('id_token verification failed')
-        response = flask.jsonify('id_token verification failed')
-        response.status_code = 401
-        return response
-    logging.info(f'request path is: {request.path}')
-    if (request.path.startswith('/brand') and not decoded_token.get('store_account'))\
-            or (request.path.startswith('/influencer') and decoded_token.get('store_account')):
-        response = flask.jsonify({"status": "not authorized"})
-        response.status_code = 403
-        return response
+    if request.path.startswith('/brand') or request.path.startswith('/tam') or request.path.startswith('/influencer'):
+        if flask.session.get('uid'):
+            logging.info('request has been verified')
+            return
+        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+        if not id_token:
+            logging.error('Valid id_token required')
+            response = flask.jsonify('Valid id_token required')
+            response.status_code = 401
+            return response
+        decoded_token = token_verification(id_token)
+        uid = decoded_token['uid']
+        if not uid:
+            logging.error('id_token verification failed')
+            response = flask.jsonify('id_token verification failed')
+            response.status_code = 401
+            return response
+        logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
+        if (request.path.startswith('/brand') and not decoded_token.get('store_account'))\
+                or (request.path.startswith('/influencer') and decoded_token.get('store_account')):
+            response = flask.jsonify({"status": "not authorized"})
+            response.status_code = 403
+            return response
 
-    flask.session['uid'] = uid
-    flask.session['from_shopify'] = decoded_token.get('from_shopify')
-    flask.session['store_account'] = decoded_token.get('store_account')
+        flask.session['uid'] = uid
+        flask.session['from_shopify'] = decoded_token.get('from_shopify')
+        flask.session['store_account'] = decoded_token.get('store_account')
+    else:
+        logging.debug(f'By passing auth for request {request.path}')
 
 
 def create_tracker_id(uid):
@@ -359,18 +363,14 @@ def track_visits():
         response = flask.jsonify({'Status': 'Failed'})
         response.status_code = 422
         return response
-    visits = {}
     try:
         # schema: COUNT(*) as visits, shop
         sql_results = sql_handler.counts_visits_per_shop(shop)
-        if not sql_results:
-            visits['visit_counts'] = 0
-        else:
-            visits['visit_counts'] = int(sql_results[0][0])
+        visit_results = count_visits_daily(sql_results)
     except Exception as e:
         logging.error(f'Getting track_visit error: {e}')
-        visits['visit_counts'] = 0
-    response = flask.jsonify(visits)
+    logging.debug(f'Obtained tracking report {visit_results}')
+    response = flask.jsonify(visit_results)
     response.status_code = 200
     return response
 

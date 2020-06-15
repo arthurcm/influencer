@@ -534,19 +534,16 @@ class Sqlhandler:
             return None
 
     def counts_visits_per_shop(self, shop):
-        """
-        :param uid: uid of influencer who is currently logged in.
-        """
         try:
             with self.db.connect() as conn:
                 stmt = text(
                     """
-                    select COUNT(*) as visits, track_visit.shop
+                    select COUNT(track_visit.timestamp) as visits, track_visit.shop, DATE(track_visit.timestamp) as visit_date
                     from track_visit join tracker_id
                     on track_visit.lifo_tracker_id = tracker_id.lifo_tracker_id 
                         and track_visit.shop = tracker_id.shop
                     WHERE track_visit.shop = :shop 
-                    group by track_visit.shop
+                    group by track_visit.shop, DATE(track_visit.timestamp)
                     """)
                 stmt = stmt.bindparams(shop=shop)
                 result = conn.execute(stmt, {"shop": shop}).fetchall()

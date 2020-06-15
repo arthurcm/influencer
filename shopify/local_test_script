@@ -22,7 +22,7 @@ gcloud run deploy shopify-app --image gcr.io/influencer-272204/shopify_app --pla
 For development purposes only:
 
 Local testing for Shopify requires ngrok tunneling, after running the following command,
-replace the HOST in .evn with the randomly generated forwarding domain https://xxx.ngrok.io, also go to
+replace the HOST in .env with the randomly generated forwarding domain https://xxx.ngrok.io, also go to
 https://partners.shopify.com/, update the "app setup" --> "App URL" and "Whitelisted redirection URL(s)"
 using the ngrok.io domain obtained above:
 

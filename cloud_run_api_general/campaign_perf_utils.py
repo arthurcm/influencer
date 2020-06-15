@@ -82,3 +82,27 @@ def combine_final_commissions(fixed_commission, percentage_commission):
     final_results['per_campaign_percentage'] = percentage_commission
     return final_results
 
+
+def count_visits_daily(sqldata):
+    """
+    :param sqldata: results from the SQL query
+            select COUNT(*) as visits, track_visit.shop, DATE(track_visit.timestamp) as visit_date
+    """
+    visits = {}
+    if not sqldata or len(sqldata) == 0:
+        visits['visit_counts'] = 0
+        visits['daily_visit'] = []
+    else:
+        total_cnt = 0
+        daily_visit = {}
+        for row in sqldata:
+            visit_count = int(row[0])
+            visit_date = str(row[2])
+            if visit_date in daily_visit:
+                daily_visit[visit_date] += visit_count
+            else:
+                daily_visit[visit_date] = visit_count
+            total_cnt += visit_count
+        visits['visit_counts'] = total_cnt
+        visits['daily_visit'] = daily_visit
+    return visits

@@ -52,6 +52,7 @@ app.use((req, res, next) => {
             res.locals.uid = uid;
             res.locals.from_shopify = decodedToken.from_shopify;
             res.locals.store_account = decodedToken.store_account;
+            res.locals.name = decodedToken.name;
             next();
             return decodedToken;
         })
@@ -90,6 +91,7 @@ app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     }
     return campaign.getCampaign(req.params, uid, res)
         .then(result => {
+            console.debug('get campaign results', result);
             const history_list = result[0];
             const finalized_campaign_data = result[1];
             res.status(200).send({
@@ -292,8 +294,12 @@ app.post('/create_feedback_thread', (req, res, next)=>{
     console.log('/create_feedback_thread received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
+    let name = res.locals.name;
+    if(!name){
+        name = 'Anonymous';
+    }
     console.log('incoming uid is ', res.locals.uid);
-    const results = campaign.createFeedbackThread(data, uid);
+    const results = campaign.createFeedbackThread(data, uid, name);
     const thread_id = results.thread_id;
     const feedback_id = results.feedback_id;
     const batch_promise = results.batch_promise;
@@ -304,7 +310,7 @@ app.post('/create_feedback_thread', (req, res, next)=>{
             thread_id,
             feedback_id,
             thread_path,
-            feedback_path
+            feedback_path,
         });
         return result;
     })
@@ -316,8 +322,11 @@ app.post('/share/create_feedback_thread', (req, res, next)=>{
     console.log('/share/create_feedback_thread received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
-    console.log('incoming uid is ', res.locals.uid);
-    const results = campaign.createFeedbackThread(data, uid);
+    let name = res.locals.name;
+    if(!name){
+        name = 'Anonymous';
+    }
+    const results = campaign.createFeedbackThread(data, uid, name);
     const thread_id = results.thread_id;
     const feedback_id = results.feedback_id;
     const batch_promise = results.batch_promise;
@@ -328,13 +337,12 @@ app.post('/share/create_feedback_thread', (req, res, next)=>{
             thread_id,
             feedback_id,
             thread_path,
-            feedback_path
+            feedback_path,
         });
         return result;
     })
         .catch(next);
 });
-
 
 app.get('/get_threads/media_object_path/:media_object_path', async (req, res, next) => {
     const uid = res.locals.uid;
@@ -375,8 +383,12 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
     console.log('/reply_feedback_thread received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
+    let name = res.locals.name;
+    if(!name){
+        name = 'Anonymous';
+    }
     console.log('incoming uid is ', res.locals.uid);
-    return campaign.replyToFeedbackThread(data, uid)
+    return campaign.replyToFeedbackThread(data, uid, name)
         .then(result => {
             res.status(200).send({status : 'OK'});
             return result;
@@ -385,9 +397,15 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
 });
 
 app.post('/share/reply_feedback_thread', (req, res, next)=>{
-    console.log('/reply_feedback_thread received a request', req.body);
+    console.log('/share/reply_feedback_thread received a request', req.body);
     const data = req.body;
-    return campaign.replyToFeedbackThread(data, 'no_uid')
+    const uid = res.locals.uid;
+    let name = res.locals.name;
+    if(!name){
+        name = 'Anonymous';
+    }
+    console.log('incoming uid is ', res.locals.uid);
+    return campaign.replyToFeedbackThread(data, uid, name)
         .then(result => {
             res.status(200).send({status : 'OK'});
             return result;
@@ -552,6 +570,21 @@ app.get('/brand/campaign', (req, res, next) => {
 });
 
 
+app.get('/brand/influencers', (req, res, next) => {
+    const uid = res.locals.uid;
+    return campaign.totalInfCount(uid)
+        .then(inf_ids => {
+            console.debug('collaborating influencers', inf_ids);
+            res.status(200).send({
+                influencer_ids : inf_ids,
+                influencer_counts : inf_ids.length,
+            });
+            return inf_ids;
+        })
+        .catch(next);
+});
+
+
 app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     console.log('Receiving campaign id', req.params.brand_campaign_id);
@@ -614,6 +647,17 @@ app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
         })
         .catch(next);
 });
+
+// app.get('/brand/view_content/uid/:uid/campaign_id/:campaign_id', (req, res, next) => {
+//     const requested_uid = req.params.uid;
+//     const campaign_id = req.params.campaign_id;
+//     return campaign.getLatestCampaignPath(requested_uid, campaign_id)
+//         .then(results => {
+//             res.status(200).send(results);
+//             return results;
+//         })
+//         .catch(next);
+// });
 
 
 app.use((err, req, res, next) => {

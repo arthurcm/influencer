@@ -32,7 +32,7 @@ const firebaseConfig = {
     storageBucket: "influencer-272204.appspot.com",
     messagingSenderId: "65044462485",
     appId: "1:65044462485:web:04b7c9263f4cd45ec2549c",
-    measurementId: "G-T0Y1HQYZ1K"
+    measurementId: "G-T0Y1HQYZ1K",
 };
 firebase.initializeApp(firebaseConfig);
 

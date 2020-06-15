@@ -1,6 +1,6 @@
 import unittest
 from campaign_perf_utils import (percentage_commission_per_row, percentage_commission_per_shop,
-                                 fixed_commission_per_shop, combine_final_commissions)
+                                 fixed_commission_per_shop, combine_final_commissions, count_visits_daily)
 
 class TestCampaignPerf(unittest.TestCase):
     def gen_per_shop_per_campaign_join_data(self):
@@ -59,6 +59,21 @@ class TestCampaignPerf(unittest.TestCase):
                                                                                              'campaign2': 12.0}}}
                          )
 
+    def gen_count_visits_daily_query_data(self):
+        """
+        cloud_sql.get_fixed_commission_per_shop_per_campaign()
+        fixed_commission, shop, campaign_id
+        """
+        return [
+            [10, 'Lifo shop', '2019-10-1'],
+            [20, 'Lifo shop', '2019-10-2'],
+            [30, 'Lifo shop', '2019-10-2'],
+        ]
+
+    def test_count_visits_daily(self):
+        daily_visits = self.gen_count_visits_daily_query_data()
+        results = count_visits_daily(daily_visits)
+        self.assertEqual(results, {'visit_counts': 60, 'daily_visit': {'2019-10-1': 10, '2019-10-2': 50}})
 
 
 if __name__ == '__main__':
