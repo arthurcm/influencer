@@ -8,4 +8,16 @@
     <div>
         <app-campaign-overview [campaign]="campaign"></app-campaign-overview>
     </div>
+
+    <div class="influencer-container" *ngIf="campaign && campaign.collaborating_influencers.length > 0">
+        <div class="influencer-header">
+            Influencer
+        </div>
+
+        <div class="influencer-list">
+            <div class="influencer-card" *ngFor="let influencer of campaign.collaborating_influencers">
+                {{ influencer }}
+            </div>
+        </div>
+    </div>
 </div>

@@ -7,10 +7,10 @@
         Days Left
     </div>
     <div class="preview" *ngIf="campaign.extra_info['type'] === 'video'">
-        Video
+        <span class="material-icons"> videocam  </span>
     </div>
     <div class="preview" *ngIf="campaign.extra_info['type'] === 'image'">
-        Image
+        <span class="material-icons"> image  </span>
     </div>
 
     <div class="name">
@@ -31,10 +31,10 @@
         <div class="content commision">$ {{campaign.commision_dollar}} </div>
     </div>
 
-    <div class="icon" (click)="viewBrandCampaign()" *ngIf="promotionCampaign">
+    <div class="icon" (click)="viewBrandCampaign()" *ngIf="promotionCampaign || brandCampaign">
         <span class="material-icons">arrow_forward</span>
     </div>
-    <div class="icon" (click)="viewCampaign()" *ngIf="!promotionCampaign">
+    <div class="icon" (click)="viewCampaign()" *ngIf="!promotionCampaign && !brandCampaign">
         <span class="material-icons">arrow_forward</span>
     </div>
     <div class="icon" (click)="signupCampaign()" *ngIf="promotionCampaign">

@@ -22,7 +22,14 @@ export class LoginComponent implements OnInit {
             console.log(params);
             if (params['idToken']) {
                 this.auth.signInWithCustomToken(params['idToken']).then(result => {
-                    this.router.navigate(['/app/home']);
+                    console.log(result);
+                    this.auth.idTokenResult.subscribe(idToken => {
+                        if (idToken.claims && idToken.claims.store_account === true) {
+                            this.router.navigate(['/app/brand-home']);
+                        } else {
+                            this.router.navigate(['/app/home']);
+                        }
+                    });
                 });
             }
         });

@@ -69,6 +69,14 @@ export class HomeComponent implements OnInit {
     async loadInfluencerCampaign() {
         const campaign = await this.campaignService.getAllCampaignForUser();
         campaign.subscribe(result => {
+            result.filter(campaign => {
+                return campaign.campaign_data;
+            }).forEach(campaign => {
+                const extraInfo = campaign.campaign_data['extra_info'];
+                if (typeof extraInfo === 'string') {
+                    campaign.campaign_data.extra_info  = JSON.parse(extraInfo);
+                }
+            })
             this.campaigns = result.filter(campaign => {
                 return campaign.campaign_data && !campaign.completed;
             });

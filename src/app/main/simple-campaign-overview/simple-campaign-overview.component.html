@@ -1,0 +1,29 @@
+<div class="table-container">
+    <div class="overview-title">{{campaign.campaign_name}}</div>
+    <table class="overview-table">
+        <tr>
+            <td>
+                <div class="overview-title">Brand</div>
+            </td>
+            <td>
+                <div class="overview-content">{{campaign.brand}}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="overview-title">Platform</div>
+            </td>
+            <td>
+                <div class="overview-content">{{campaign.extra_info['platform']}}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="overview-title">Post Deadline</div>
+            </td>
+            <td>
+                <div class="overview-content">{{ displayTime(campaign.extra_info['post_time']) }}</div>
+            </td>
+        </tr>
+    </table>
+</div>

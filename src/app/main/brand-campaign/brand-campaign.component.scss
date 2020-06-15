@@ -22,3 +22,32 @@
         display: inline-block;
     }
 }
+
+.influencer-container {
+    background: #FFFFFF;
+    border: 1px solid #DFE0EB;
+    box-sizing: border-box;
+    border-radius: 8px;
+    width: calc(100% - 80px);
+    margin: 20px 40px;
+    padding: 20px;
+    .influencer-header {
+        font-size: 20px;
+        font-weight: 800;
+        margin-bottom: 20px;
+    }
+
+    .influencer-list {
+        .influencer-card {
+            width: 240px;
+            height: 80px;
+            background: #FFFFFF;
+            box-shadow: 1px 1px 8px rgba(13, 5, 60, 0.2);
+            border-radius: 12px;
+            display: inline-block;
+            vertical-align: top;
+            margin-right: 15px;
+            margin-bottom: 15px;
+        }
+    }
+}

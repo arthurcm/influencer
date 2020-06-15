@@ -212,6 +212,21 @@ export class CampaignService {
         );
     }
 
+    async getInfluencerProfile(uid) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/common/influencer_profile/uid/${uid}`;
+        return this.http.get<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     shareContent(toEmail: string, fromEmail: string, url: string) {
         const request = {
             to_email: toEmail,
@@ -300,7 +315,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `https://api-nodejs-4lladlc2eq-uc.a.run.app/get_threads/media_object_path/${encodeURIComponent(path)}`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/get_threads/media_object_path/${encodeURIComponent(path)}`;
         return this.http.get<Thread[]>(reqeustUrl, httpOptions).pipe(
             catchError(this.handleError)
         );
@@ -319,7 +334,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = 'https://api-nodejs-4lladlc2eq-uc.a.run.app/create_feedback_thread';
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/create_feedback_thread`;
         return this.http.post<any>(reqeustUrl, request, httpOptions).pipe(
             catchError(this.handleError)
         );
@@ -338,7 +353,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = 'https://api-nodejs-4lladlc2eq-uc.a.run.app/reply_feedback_thread';
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/reply_feedback_thread`;
         return this.http.post<any>(reqeustUrl, request, httpOptions).pipe(
             catchError(this.handleError)
         );
@@ -351,7 +366,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `https://api-general-4lladlc2eq-uc.a.run.app/delete_thread/media_object_path/${path}/thread_id/${threadId}`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/delete_thread/media_object_path/${path}/thread_id/${threadId}`;
         return this.http.delete<any>(reqeustUrl, httpOptions);
     }
 }

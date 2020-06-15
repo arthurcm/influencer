@@ -26,7 +26,15 @@
     .preview {
         display: inline-block;
         vertical-align: top;
-        padding: 30px;
+        margin: 30px;
+        background-color: lightgray;
+        width: 60px;
+        height: 60px;
+        border-radius: 30px;
+        .material-icons {
+            padding: 15px;
+            font-size: 30px;
+        }
     }
 
     .name {

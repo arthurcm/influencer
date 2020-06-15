@@ -1,44 +1,81 @@
 <div class="concept-content">
     <div class="left">
-        <div class="image-title">Uploaded Images</div>
-        <mat-card class="input-card" *ngIf="images">
-            <mat-card-header>
-                Caption
-            </mat-card-header>
-            <mat-card-content>
-                {{images.caption}}
-            </mat-card-content>
-        </mat-card>
+        <div class="version-select">
+            <ng-select 
+                class="influencer-ng-select" 
+                [clearable]="false" 
+                bindLabel="version_name"
+                bindValue="history_id"
+                [items]="historyList"
+                [(ngModel)]="historyId"
+                (change)="selectVersion($event)"
+            >
+                <ng-template ng-option-tmp ng-label-tmp let-item="item">
+                    Version {{ item.version_name }}
+                </ng-template>
+            </ng-select>
+        </div>
+
+        <div class="concept-container" *ngIf="campaign">
+            <div class="concept-title">
+                Concept Proposal
+            </div>
+            <div class="concept-detail">
+                {{campaign.content_concept ? campaign.content_concept : 'Concept Proposal Content'}}
+            </div>
+            <div class="concept-title">
+                {{campaign.title ? campaign.title : 'Campaign Title'}}
+            </div>
+            <div class="concept-detail">
+                {{campaign.description ? campaign.description: 'Descriptioon'}}
+            </div>
+            <div class="tags">
+                <span class="small-tag"> Tag </span>
+            </div>
+        </div>
     
         <div class="image-content" *ngIf="images">
-            <mat-card class="image-card" *ngFor="let image of images.images">
-                <img mat-card-image src="{{image.url}}">
-                <mat-card-content>
-                  Some detections
-                </mat-card-content>
-            </mat-card>
+            <ngu-carousel #carouselLarge
+                [inputs]="carouselTileLarge"
+                [dataSource]="carouselTileItems"
+                >
+                <ngu-tile class="large-image-container"  *nguCarouselDef="let image of carouselTileItems">
+                    <img class="large-image" src="{{image.url}}">
+                </ngu-tile>
+                <button NguCarouselPrev class='leftRs'>
+                    <span class="material-icons"> chevron_left </span>
+                </button>
+                <button NguCarouselNext class='rightRs'>
+                    <span class="material-icons"> chevron_right </span>
+                </button>
+            </ngu-carousel>
+            <div class="small-carousel">
+                <ngu-carousel #carouselSmall
+                    [inputs]="carouselTileSmall"
+                    [dataSource]="carouselTileItems"
+                    >
+                    <ngu-tile *nguCarouselDef="let image of carouselTileItems">
+                        <img class="small-image" src="{{image.url}}">
+                    </ngu-tile>
+                    <button NguCarouselPrev class='leftRsSm'>
+                        <span class="material-icons"> chevron_left </span>
+                    </button>
+                    <button NguCarouselNext class='rightRsSm'>
+                        <span class="material-icons"> chevron_right </span>
+                    </button>
+                </ngu-carousel>
+            </div>
         </div>
     
-        <div>
-            <mat-card class="input-card">
-                <mat-card-header>
-                    Feedback
-                </mat-card-header>
-                <mat-card-content>
-                    <mat-form-field class="full-text-area">
-                        <textarea #feedbackTextArea matInput [(ngModel)]="newFeedback" placeholder=""></textarea>
-                    </mat-form-field>
-                    <button mat-button (click)="provideFeedback()">Leave Feedback</button>
-                    <button mat-button (click)="approveImage()">Approve Concept</button>
-                </mat-card-content>
-            </mat-card>
+        <div class="approve-button">
+            <button mat-flat-button color="primary" class="large-round-button" (click)="approveImage()">Approve</button>
         </div>
     </div>
 
-
-    <div class="right" *ngIf="mediaPath">
-        <app-media-thread [mediaPath]="mediaPath"></app-media-thread>
+    <div class="right" *ngIf="selectedMedia">
+        <app-media-thread 
+            [selectedMedia]="selectedMedia"
+            [mediaList]="images.images"
+        ></app-media-thread>
     </div>
-
-    
 </div>
