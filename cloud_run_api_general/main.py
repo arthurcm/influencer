@@ -349,7 +349,7 @@ def create_entitlement():
 
 @app.route('/brand/revenue', methods=['GET'])
 def revenue():
-    shop = flask.request.args.get('shop')
+    shop = flask.session['uid'] #flask.request.args.get('shop')
     revenue_results = get_revenue_per_shop(shop)
     response = flask.jsonify(revenue_results)
     response.status_code = 200
@@ -377,7 +377,7 @@ def track_visits():
 
 @app.route('/brand/roi', methods=['GET'])
 def roi():
-    shop = flask.request.args.get('shop')
+    shop = flask.session['uid'] #flask.request.args.get('shop')
     revenue_results = get_revenue_per_shop(shop)
     shop_revenue = revenue_results.get('shop_revenue')
     try:

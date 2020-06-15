@@ -33,6 +33,10 @@ Then, build docker image locally inside /influencer/shopify folder (require dock
 docker build . --tag gcr.io/influencer-272204/shopify_app
 
 Local testing container:
+(Note: GOOGLE_APPLICATION_CREDENTIALS below is an local environmental variable to be set on the local testing machine,
+it is a path to the GCP service account json file. We currently host it on Github for dev purposes, but will remove and
+rotate then once we move to production. Example config below, replace [path/to] with your local path to the codebase:
+export GOOGLE_APPLICATION_CREDENTIALS="[path/to]/influencer/cloud_run_video_transcoding/service_account.json")
 PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/shopify_app
 
 After the above container is running, go to Shopify partners website, in the lifo app page,

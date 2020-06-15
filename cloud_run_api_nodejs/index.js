@@ -25,13 +25,13 @@ app.use((req, res, next) => {
 
     // idToken comes from the client
     if (!req.headers.authorization) {
+        console.warn(`request to ${req.path} did not provide authorizaton header`);
         return res.status(401).json({ error: 'No credentials sent!' });
     }
     const idToken = req.headers.authorization;
     return admin.auth().verifyIdToken(idToken)
         .then(decodedToken => {
             const uid = decodedToken.uid;
-            console.debug('received idToken', idToken);
             console.debug('received decoded token', decodedToken);
             // the following "additional claim" field "store_account" is set in shopify/sever.js to
             // sign up store accounts
@@ -43,10 +43,12 @@ app.use((req, res, next) => {
                 return decodedToken;
             }
             else if(req.path.startsWith('/brand') && !decodedToken.store_account){
+                console.warn(`request to ${req.path} was rejected`);
                 return res.status(403).json({ error: 'Not authorized'});
 
                 // other campaign related end points (except for /share) are not accessible to store accounts.
             }else if (!req.path.startsWith('/brand') && decodedToken.store_account){
+                console.warn(`request to ${req.path} was rejected`);
                 return res.status(403).json({ error: 'Not authorized'});
             }
             res.locals.uid = uid;
@@ -85,9 +87,10 @@ app.post('/create_campaign', (req, res, next) => {
 app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
-    console.debug('Receiving campaign id', campaign_id);
+    console.debug('Receiving campaign id for get_campaign', campaign_id);
     if(!campaign_id){
-        res.status(400).send('Have to have a valid campaign_id');
+        console.warn(`request to ${req.path} did not provide campaign_id`);
+        res.status(422).send('Have to have a valid campaign_id');
     }
     return campaign.getCampaign(req.params, uid, res)
         .then(result => {
@@ -138,7 +141,7 @@ app.post('/payment_info', (req, res, next) => {
 
 
 app.put('/update_campaign/campaign_id/:campaign_id', (req, res, next) => {
-    console.log('/update_campaign received a request', req.body);
+    console.debug('/update_campaign received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
@@ -158,7 +161,6 @@ app.delete('/delete_campaign/campaign_id/:campaign_id', (req, res, next) => {
     console.debug('Receiving campaign id', req.params.campaign_id);
     return campaign.deleteCampaign(req.params, uid)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -169,19 +171,21 @@ app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, 
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
     const uid = res.locals.uid;
-    console.log('Receiving campaign id', campaign_id, 'and history id', history_id);
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
-        res.status(400).send('Require a valid campaign_id');
+        console.warn(`request to ${req.path} did not provide campaign_id`);
+        res.status(422).send('Require a valid campaign_id');
     }
     if(!history_id){
-        res.status(400).send('Require a valid history_id');
+        console.warn(`request to ${req.path} did not provide history_id`);
+        res.status(422).send('Require a valid history_id');
     }
     if(!req.body || !req.body.feed_back){
-        res.status(400).send('Require a none empty feed back');
+        console.warn(`request to ${req.path} did not provide none empty feedback`);
+        res.status(422).send('Require a none empty feedback');
     }
     return campaign.feedback(req.body, uid, campaign_id, history_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -191,16 +195,17 @@ app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, 
 app.put('/share/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
-    console.log('Receiving campaign id', campaign_id, 'and history id', history_id);
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
-        res.status(400).send('Require a valid campaign_id');
+        console.warn(`request to ${req.path} did not provide campaign_id`);
+        res.status(422).send('Require a valid campaign_id');
     }
     if(!history_id){
-        res.status(400).send('Require a valid history_id');
+        console.warn(`request to ${req.path} did not provide history_id`);
+        res.status(422).send('Require a valid history_id');
     }
     return campaign.feedback(req.body, 'no_uid', campaign_id, history_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -212,16 +217,15 @@ app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (r
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
     const uid = res.locals.uid;
-    console.log('Receiving campaign id', campaign_id, 'and history id', history_id);
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
-        res.status(400).send('Require a valid campaign_id');
+        res.status(422).send('Require a valid campaign_id');
     }
     if(!history_id){
-        res.status(400).send('Require a valid history_id');
+        res.status(422).send('Require a valid history_id');
     }
     return campaign.finalizeCampaign(uid, campaign_id, history_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -232,7 +236,7 @@ app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (r
 app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
-    console.log('Receiving campaign id', campaign_id, 'and history id', history_id);
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
         res.status(400).send('Require a valid campaign_id');
     }
@@ -241,7 +245,6 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
     }
     return campaign.finalizeCampaign('no_uid', campaign_id, history_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -253,7 +256,7 @@ app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id',
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
     const uid = res.locals.uid;
-    console.log('Receiving campaign id', campaign_id, 'and history id', history_id);
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
         res.status(400).send('Require a valid campaign_id');
     }
@@ -262,7 +265,6 @@ app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id',
     }
     return campaign.finalizeVideoDraft(uid, campaign_id, history_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -273,16 +275,17 @@ app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id',
 app.put('/share/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
-    console.log('Receiving campaign id', campaign_id, 'and history id', history_id);
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
-        res.status(400).send('Require a valid campaign_id');
+        console.warn('/share/finalize_media_draft received invalid campaign_id')
+        res.status(422).send('Require a valid campaign_id');
     }
     if(!history_id){
-        res.status(400).send('Require a valid history_id');
+        console.warn('/share/finalize_media_draft received invalid history_id')
+        res.status(422).send('Require a valid history_id');
     }
     return campaign.finalizeVideoDraft('no_uid', campaign_id, history_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -291,14 +294,13 @@ app.put('/share/finalize_media_draft/campaign_id/:campaign_id/history_id/:histor
 
 
 app.post('/create_feedback_thread', (req, res, next)=>{
-    console.log('/create_feedback_thread received a request', req.body);
+    console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
     const uid = res.locals.uid;
     let name = res.locals.name;
     if(!name){
         name = 'Anonymous';
     }
-    console.log('incoming uid is ', res.locals.uid);
     const results = campaign.createFeedbackThread(data, uid, name);
     const thread_id = results.thread_id;
     const feedback_id = results.feedback_id;
@@ -319,7 +321,7 @@ app.post('/create_feedback_thread', (req, res, next)=>{
 
 
 app.post('/share/create_feedback_thread', (req, res, next)=>{
-    console.log('/share/create_feedback_thread received a request', req.body);
+    console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
     const uid = res.locals.uid;
     let name = res.locals.name;
@@ -346,27 +348,25 @@ app.post('/share/create_feedback_thread', (req, res, next)=>{
 
 app.get('/get_threads/media_object_path/:media_object_path', async (req, res, next) => {
     const uid = res.locals.uid;
-    console.log('receiving', req.params.media_object_path);
+    console.debug(`${req.path} received  ${req.params.media_object_path}`);
     return campaign.getAllThreads(req.params, uid)
         .then(result => {
-            console.log('Transaction completed.');
             return Promise.all(result).then(values => {
                 res.status(200).send(values);
                 return result;
             });
         })
         .catch(err => {
-            res.status(500).send({status:'get get_threads failure'});
+            res.status(500).send({status:'get_threads failure'});
             next(err);
         });
 });
 
 
 app.get('/share/get_threads/media_object_path/:media_object_path', async (req, res, next) => {
-    console.log('receiving', req.params.media_object_path);
+    console.debug(`${req.path} received  ${req.params.media_object_path}`);
     return campaign.getAllThreads(req.params, 'no_uid')
         .then(result => {
-            console.log('Transaction completed.');
             return Promise.all(result).then(values => {
                 res.status(200).send(values);
                 return result;
@@ -380,14 +380,13 @@ app.get('/share/get_threads/media_object_path/:media_object_path', async (req, r
 
 
 app.post('/reply_feedback_thread', (req, res, next)=>{
-    console.log('/reply_feedback_thread received a request', req.body);
+    console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
     const uid = res.locals.uid;
     let name = res.locals.name;
     if(!name){
         name = 'Anonymous';
     }
-    console.log('incoming uid is ', res.locals.uid);
     return campaign.replyToFeedbackThread(data, uid, name)
         .then(result => {
             res.status(200).send({status : 'OK'});
@@ -397,14 +396,13 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
 });
 
 app.post('/share/reply_feedback_thread', (req, res, next)=>{
-    console.log('/share/reply_feedback_thread received a request', req.body);
+    console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
     const uid = res.locals.uid;
     let name = res.locals.name;
     if(!name){
         name = 'Anonymous';
     }
-    console.log('incoming uid is ', res.locals.uid);
     return campaign.replyToFeedbackThread(data, uid, name)
         .then(result => {
             res.status(200).send({status : 'OK'});
@@ -415,10 +413,9 @@ app.post('/share/reply_feedback_thread', (req, res, next)=>{
 
 app.delete('/delete_thread/media_object_path/:media_object_path/thread_id/:thread_id', (req, res, next) => {
     const uid = res.locals.uid;
-    console.log('Receiving thread_id', req.params.thread_id);
+    console.debug(`${req.path} received  ${req.params.media_object_path} and ${req.params.thread_id}`);
     return campaign.deleteThread(req.params, uid)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -427,10 +424,9 @@ app.delete('/delete_thread/media_object_path/:media_object_path/thread_id/:threa
 
 
 app.delete('/share/delete_thread/media_object_path/:media_object_path/thread_id/:thread_id', (req, res, next) => {
-    console.log('Receiving thread_id', req.params.thread_id);
+    console.debug(`${req.path} received  ${req.params.media_object_path} and ${req.params.thread_id}`);
     return campaign.deleteThread(req.params, 'no_uid')
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -442,16 +438,17 @@ app.put('/resolve_thread/media_object_path/:media_object_path/thread_id/:thread_
     const media_object_path = req.params.media_object_path;
     const thread_id = req.params.thread_id;
     const uid = res.locals.uid;
-    console.log('Receiving media_object_path', media_object_path, 'and thread_id', thread_id);
+    console.debug(`${req.path} received  ${req.params.media_object_path} and ${req.params.thread_id}`);
     if(!thread_id){
-        res.status(400).send('Require a valid thread_id');
+        console.warn(`${req.path} invalid thread_id received for uid ${uid}`)
+        res.status(422).send('Require a valid thread_id');
     }
     if(!media_object_path){
-        res.status(400).send('Require a valid media_object_path');
+        console.warn(`${req.path} invalid media_object_path received for uid ${uid}`)
+        res.status(422).send('Require a valid media_object_path');
     }
     return campaign.resolveThread(media_object_path, thread_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -463,16 +460,17 @@ app.put('/share/resolve_thread/media_object_path/:media_object_path/thread_id/:t
     const media_object_path = req.params.media_object_path;
     const thread_id = req.params.thread_id;
     const uid = res.locals.uid;
-    console.log('Receiving media_object_path', media_object_path, 'and thread_id', thread_id);
+    console.debug(`${req.path} received  ${req.params.media_object_path} and ${req.params.thread_id}`);
     if(!thread_id){
-        res.status(400).send('Require a valid thread_id');
+        console.warn(`${req.path} invalid thread_id received for uid ${uid}`)
+        res.status(422).send('Require a valid thread_id');
     }
     if(!media_object_path){
-        res.status(400).send('Require a valid media_object_path');
+        console.warn(`${req.path} invalid media_object_path received for uid ${uid}`)
+        res.status(422).send('Require a valid media_object_path');
     }
     return campaign.resolveThread(media_object_path, thread_id)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -500,8 +498,9 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
     const brand_campaign_id = req.params.brand_campaign_id;
     const uid = res.locals.uid;
     const idToken = req.headers.authorization;
-    console.log('Receiving brand_campaign_id', brand_campaign_id, 'and uid', uid);
+    console.debug(`${req.path} received brand_campaign_id ${brand_campaign_id} and uid ${req.params.thread_id}`);
     if(!brand_campaign_id){
+        console.warn(`${req.path} invalid brand_campaign_id received for uid ${uid}`)
         res.status(422).send({status: 'Require a valid brand_campaign_id'});
     }
     return campaign.signupToBrandCampaign(brand_campaign_id, uid, idToken, next)
@@ -527,7 +526,7 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
         })
         .catch(error => {
             if (!res.headersSent) {
-                res.status(500).send({status:'sign up failure'});
+                res.status(500).send({status: 'sign up failure'});
             }
             next(error);
         });
@@ -535,16 +534,15 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
 
 
 app.post('/brand/campaign', (req, res, next) => {
-    console.log('/create_brand_campaign received a request', req.body);
+    console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
     const uid = res.locals.uid;
-    console.log('incoming uid is ', res.locals.uid);
     const from_shopify = res.locals.from_shopify;
-    console.log('incoming uid is ', res.locals.uid);
     if (from_shopify){
         data.website = uid;
     }
     if (!isValidDomain(data.website) && !validUrl.isUri(data.website)){
+        console.warn(`${req.path} Illegal website format received ${data.website} for Shopify? ${from_shopify}, with request ${data}`)
         res.status(422).send({status: 'Illegal website format'});
     }
     const results = campaign.createBrandCampaign(data, uid);
@@ -574,7 +572,7 @@ app.get('/brand/influencers', (req, res, next) => {
     const uid = res.locals.uid;
     return campaign.totalInfCount(uid)
         .then(inf_ids => {
-            console.debug('collaborating influencers', inf_ids);
+            console.debug(`Found collaborating influencers ${inf_ids}`);
             res.status(200).send({
                 influencer_ids : inf_ids,
                 influencer_counts : inf_ids.length,
@@ -587,10 +585,9 @@ app.get('/brand/influencers', (req, res, next) => {
 
 app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
-    console.log('Receiving campaign id', req.params.brand_campaign_id);
+    console.debug('/brand/campaign received campaign id', req.params.brand_campaign_id);
     return campaign.deleteBrandCampaign(req.params, uid)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -600,10 +597,9 @@ app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, ne
 
 app.put('/brand/end_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
-    console.log('Receiving campaign id', req.params.brand_campaign_id);
+    console.debug('/brand/end_campaign received campaign id', req.params.brand_campaign_id);
     return campaign.endBrandCampaign(req.params, uid)
         .then(result => {
-            console.log('Transaction completed.');
             res.status(200).send({status : 'OK'});
             return result;
         })
@@ -671,6 +667,6 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-    console.log('Nodejs API server listening on port', port);
+    console.info('Nodejs API server listening on port', port);
 });
 

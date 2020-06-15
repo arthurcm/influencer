@@ -98,7 +98,7 @@ function getLatestCampaignPath(uid, campaign_id){
         })
         .then(campaigns => {
             const campaign_data = campaigns[0];
-            return `${uid  }/${  campaign_id  }/${  campaign_data.history_id}`;
+            return `${uid}/${campaign_id}/${campaign_data.history_id}`;
         });
 }
 
@@ -540,7 +540,7 @@ async function listBrandCampaignsInf(uid, idToken, next){
         // this is a hack to avoid empty list error by the .where() clause below.
         shop_list.push('TestStoreLfioDefault');
     }
-    return db.collection('brand_campaigns').where('brand', 'in', shop_list).get()
+    return db.collection('brand_campaigns').where('brand_id', 'in', shop_list).get()
         .then(querySnapshot => {
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
