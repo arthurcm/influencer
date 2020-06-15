@@ -1,7 +1,6 @@
 <mat-sidenav-container class="nav-container">
     <mat-sidenav #sidenav mode="side" opened class="example-sidenav" [fixedInViewport]="true" [fixedTopGap]="0"
         [fixedBottomGap]="0">
-
         <div class="logo">
             <svg width="49" height="39" viewBox="0 0 49 39" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="15.9069" cy="18.0278" r="15.9069" fill="#0D053C" />
@@ -20,16 +19,14 @@
             </svg>
         </div>
         <div class="icon" (click)="navigate('home')">
-            <span class="material-icons"> home </span>
+            <mat-icon class="menu-icon" mat-list-icon> home </mat-icon>
         </div>
         <div class="icon" (click)="navigate('calendar')">
-            <span class="material-icons"> calendar_today </span>
+            <mat-icon class="menu-icon" mat-list-icon> calendar_today </mat-icon>
         </div>
         <div class="icon">
-            <span class="material-icons"> notifications_none </span>
+            <mat-icon class="menu-icon" mat-list-icon> notifications_none </mat-icon>
         </div>
-
-
     </mat-sidenav>
     <mat-sidenav-content>
         <router-outlet></router-outlet>

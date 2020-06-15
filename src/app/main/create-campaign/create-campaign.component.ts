@@ -162,7 +162,7 @@ export class CreateCampaignComponent implements OnInit {
         campaign.subscribe(result => {
             console.log(result);
             this.loadingService.hide();
-            this.router.navigate(['/app/home']);
+            this.router.navigate([`/app/campaign/${result.campaign_id}`]);
         });
     }
 

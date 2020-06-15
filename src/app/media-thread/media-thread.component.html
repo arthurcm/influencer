@@ -1,35 +1,57 @@
 <div class="title"> Comment </div>
 <div class="button-row">
-    <button mat-button class="add-comment-button" (click)="showAddNewThread()">
+    <button mat-button class="add-comment-button" (click)="showAddNewThread()"  *ngIf="!shouldShowAddNewThread">
         <span class="material-icons"> add </span>
         Add Comment
     </button>
-</div>
-
-<div *ngIf="shouldShowAddNewThread">
-    <mat-form-field class="full-text-area">
-        <textarea #feedbackTextArea matInput [(ngModel)]="newComment" placeholder=""></textarea>
-    </mat-form-field>
-    <button mat-button>Cancel</button>
-    <button mat-button (click)="createComment()">Submit</button>
-</div>
-<mat-divider></mat-divider>
-
-<div *ngFor="let thread of allThreads">
-    <div> {{thread.feedback_list[thread.feedback_list.length - 1].feedback_str}}</div>
-    
-    <button mat-flat-button (click)="showReplyThread(thread)">Reply</button>
-    <div *ngIf="thread.showEdit">
-        <mat-form-field class="full-text-area">
-            <textarea #feedbackTextArea matInput [(ngModel)]="newComment" placeholder=""></textarea>
+    <div *ngIf="shouldShowAddNewThread">
+        <mat-form-field class="box-text-area" floatLabel=never>
+            <textarea 
+                class="new-comment-textarea" 
+                #feedbackTextArea 
+                matInput 
+                [(ngModel)]="newComment" 
+                placeholder="Enter Your Comment Here"
+            ></textarea>
         </mat-form-field>
-        <button mat-button>Cancel</button>
-        <button mat-button (click)="replyThread(thread)">Submit</button>
-    </div>
+        <div class="add-button-container">
+            <button class="small-round-button add-button" mat-button (click)="cancelComment()">Cancel</button>
+            <button class="small-round-button add-button" mat-button (click)="createComment()">Submit</button>
+        </div>
+    </div>    
+</div>
 
-    <div *ngFor="let feedback of thread.feedback_list; trackBy: trackItem"> 
-        <div *ngIf="!feedback.original">
-            {{feedback.feedback_str}} ({{feedback.timestamp['_seconds']}})
+<div class="thread-item" *ngFor="let thread of allThreads">
+    <div class="thumbnail">
+        <img class="thumbnail-image" [src]="getImageUrl(thread.thread.media_object_path)">
+    </div>
+    <div class="main-content">
+        <div class="username">  {{thread.feedback_list[thread.feedback_list.length - 1].displayName ? thread.feedback_list[thread.feedback_list.length - 1].displayName : 'Anonymous'}} </div>
+        <div class="timestamp">  {{displayTime(thread.feedback_list[thread.feedback_list.length - 1].timestamp)}} </div>
+
+        <div class="content"> {{thread.feedback_list[thread.feedback_list.length - 1].feedback_str}}</div>
+        <div class="action-container">
+            <div class="like">
+                <span class="material-icons"> thumb_up </span> Like
+            </div>
+            <div class="reply" (click)="showReplyThread(thread)">Reply</div>
+        </div> 
+        <div *ngIf="thread.showEdit">
+            <mat-form-field class="box-text-area">
+                <textarea #feedbackTextArea matInput [(ngModel)]="thread['newComment']" placeholder=""></textarea>
+            </mat-form-field>
+            <div class="add-button-container">
+                <button class="small-round-button add-button" mat-button (click)="cancelReplyThread(thread)">Cancel</button>
+                <button class="small-round-button add-button" mat-button (click)="replyThread(thread)">Submit</button>
+            </div>
+        </div>
+        <div *ngFor="let feedback of thread.feedback_list; trackBy: trackItem"> 
+            <div class="reply-item" *ngIf="!feedback.original"> 
+                <div class="username">  {{feedback.displayName ? feedback.displayName : 'Annonymous'}} </div>
+                <div class="timestamp">  {{displayTime(feedback.timestamp)}} </div>
+
+                <div class="content"> {{feedback.feedback_str}}</div>
+            </div>
         </div>
     </div>
 

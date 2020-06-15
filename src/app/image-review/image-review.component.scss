@@ -1,4 +1,5 @@
 @import 'common';
+@import 'global';
 
 .left {
     display: inline-block;
@@ -12,22 +13,31 @@
     vertical-align: top;
 }
 
-.input-card {
+.version-select {
+    width: 200px;
+    float: right;
     margin: 20px;
-    padding: 0px;
+}
 
-    .mat-card-header {
-        padding: 15px;
-        background-color: $COLOR_SECONDARY;
-        ::ng-deep {
-            .mat-card-header-text {
-                margin: 0px;
-            }
-        }
+.concept-container {
+    padding: 20px 40px;
+    .concept-title {
+        font-size: 18px;
+        font-weight: 800;
+        margin-top: 20px;
+        margin-bottom: 10px;
     }
-    .mat-card-content {
-        padding: 10px;
+
+    .concept-detail {
+        font-size: 15px;
+        margin-bottom: 20px;
     }
+}
+
+.approve-button {
+    text-align: right;
+    margin-right: 40px;
+    margin-bottom: 40px;
 }
 
 .full-text-area {
@@ -51,4 +61,42 @@
 
 .image-content {
     margin: 10px;
+    padding: 10px;
+}
+
+.large-image-container {
+    ::ng-deep .tile { 
+        border-radius: 10px;
+        margin-left: 50px;
+        margin-right: 50px;
+        height: 500px;
+    }
+    .large-image {
+        display: block;
+        margin: auto;
+        max-height: 500px;
+        max-width: 100%;
+    }
+}
+
+.small-carousel {
+    ::ng-deep  .ngucarousel {
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+    ::ng-deep .tile { 
+        border-radius: 10px;
+        width: 300px;
+        height: 200px;
+    }
+    .small-image {
+        display: block;
+        margin: auto;
+        max-height: 200px;
+        max-width: 300px;
+    }
+}
+
+.small-image-container {
+    
 }

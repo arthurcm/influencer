@@ -3,10 +3,11 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { AngularFireFunctions } from '@angular/fire/functions';
-import { CampaignDetail, VideoMetaData, ImageContent } from 'src/types/campaign';
+import { CampaignDetail, VideoMetaData, ImageContent, UploadFile } from 'src/types/campaign';
 import { VideoPlayerComponent } from '../shared/video-player/video-player.component';
 import { LoadingSpinnerService } from '../services/loading-spinner.service';
 import { CampaignService } from '../services/campaign.service';
+import { NguCarouselConfig, NguCarousel, NguCarouselStore } from '@ngu/carousel';
 
 @Component({
     selector: 'app-image-review',
@@ -18,10 +19,39 @@ export class ImageReviewComponent implements OnInit {
     campaign: CampaignDetail;
     campaignId = '';
     historyId = '';
+    historyList: CampaignDetail[];
     newFeedback = '';
 
     images: ImageContent;
-    mediaPath = '';
+    selectedMedia: UploadFile;
+
+    public carouselTileItems: Array<any>;
+    public carouselTileLarge: NguCarouselConfig = {
+        grid: {xs: 1, sm: 1, md: 1, lg: 1, all: 0},
+        slide: 1,
+        speed: 400,
+        animation: 'lazy',
+        point: {
+            visible: true
+        },
+        load: 2,
+        touch: true,
+        easing: 'ease'
+    };
+    public carouselTileSmall: NguCarouselConfig = {
+        grid: {xs: 0, sm: 0, md: 0, lg: 0, all: 320},
+        slide: 2,
+        speed: 400,
+        animation: 'lazy',
+        point: {
+            visible: true
+        },
+        load: 2,
+        touch: true,
+        easing: 'ease'
+    };
+    @ViewChild('carouselLarge') carouselLarge: NguCarousel<any>;
+    @ViewChild('carouselSmall') carouselSmall: NguCarousel<any>;
 
     constructor(
         public auth: AngularFireAuth,
@@ -33,7 +63,16 @@ export class ImageReviewComponent implements OnInit {
         private campaignService: CampaignService,
     ) {
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('campaignId');
-        this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
+        // this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
+    }
+
+    resetFn() {
+        this.carouselLarge.reset(true);
+        this.carouselSmall.reset(true);
+    }
+    
+    moveToSlide() {
+        this.carouselLarge.moveTo(2, false);
     }
 
     async ngOnInit() {
@@ -42,26 +81,46 @@ export class ImageReviewComponent implements OnInit {
         const campaign = await this.campaignService.getCampaignById(this.campaignId);
         campaign.subscribe(result => {
             console.log(result);
-            result.history_list.forEach(campaign => {
-                if (campaign.history_id === this.historyId) {
-                    this.campaign = campaign;
-                }
-            });
-            this.images = JSON.parse(this.campaign.video);
-            this.images.images.forEach(image => {
-                this.campaignService.getImageMetaData(image.path).subscribe(detection => {
-                    console.log(detection);
-                });
-            });
-            if (this.images.images.length > 0) {
-                this.mediaPath = this.images.images[0].path;
+            for (let i = 0; i < result.history_list.length; i ++) {
+                const campaign = result.history_list[i];
+                campaign['version_name'] = (result.history_list.length - i);
             }
+            this.historyList = result.history_list;
+            this.selectVersion(result.history_list[0]);
             this.newFeedback = this.campaign.feed_back;
             console.log(this.campaign);
             this.loadingService.hide();
         });
     }
 
+    selectVersion(version) {
+        console.log(version);
+        this.historyId = version.history_id;
+        this.campaign = version;
+        this.loadVersionData();
+    }
+
+    loadVersionData() {
+        try {
+            this.images = JSON.parse(this.campaign.video);
+            this.carouselTileItems = this.images.images;
+            this.images.images.forEach(image => {
+                this.campaignService.getImageMetaData(image.path).subscribe(detection => {
+                    console.log(detection);
+                });
+            });
+            if (this.images.images.length > 0) {
+                this.selectedMedia = this.images.images[0];
+            }
+        } catch {
+            this.images = {
+                images: [],
+                caption: '',
+            };
+            this.carouselTileItems = [];
+        }
+        
+    }
 
     async provideFeedback() {
         console.log(this.campaign);

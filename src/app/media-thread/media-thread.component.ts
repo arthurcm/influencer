@@ -2,6 +2,10 @@ import { Component, OnInit, Input } from '@angular/core';
 import { CampaignService } from '../services/campaign.service';
 import { Thread, ThreadStatus, Timestamp, Feedback } from 'src/types/thread';
 
+
+import * as moment from 'moment';
+import { UploadFile } from 'src/types/campaign';
+
 @Component({
     selector: 'app-media-thread',
     templateUrl: './media-thread.component.html',
@@ -9,7 +13,8 @@ import { Thread, ThreadStatus, Timestamp, Feedback } from 'src/types/thread';
 })
 export class MediaThreadComponent implements OnInit {
 
-    @Input() mediaPath;
+    @Input() mediaList: UploadFile[];
+    @Input() selectedMedia: UploadFile;
 
     allThreads: Thread[];
     shouldShowAddNewThread = false;
@@ -20,13 +25,7 @@ export class MediaThreadComponent implements OnInit {
     ) { }
 
     async ngOnInit() {
-
-        // const createThread = await this.campaignService.createThread(this.videoPath, 'start a new thread');
-        // createThread.subscribe(thread => {
-        //     console.log(thread);
-        // });
-
-        const getThread = await this.campaignService.getThread(this.mediaPath);
+        const getThread = await this.campaignService.getThread(this.selectedMedia.path);
         getThread.subscribe(thread => {
             console.log(thread);
             thread.forEach(t => {
@@ -40,16 +39,31 @@ export class MediaThreadComponent implements OnInit {
         });
     }
 
+    cancelComment() {
+        this.newComment = '';
+        this.shouldShowAddNewThread = false;
+    }
+
+    getImageUrl(path) {
+        let url = '';
+        this.mediaList.forEach(media => {
+            if (media.path === path) {
+                url = media.url;
+            }
+        });
+        return url;
+    }
+
     async createComment() {
-        const createThread = await this.campaignService.createThread(this.mediaPath, this.newComment);
+        const createThread = await this.campaignService.createThread(this.selectedMedia.path, this.newComment);
         createThread.subscribe(thread => {
             const timestamp: Timestamp = {
-                _seconds: new Date().getTime(),
+                _seconds: new Date().getTime() / 1000,
                 _nanoseconds: 0,
             };
             const threadStatus: ThreadStatus = {
                 deleted: false,
-                media_object_path: this.mediaPath,
+                media_object_path: this.selectedMedia.path,
                 resolved: false,
                 timestamp,
             };
@@ -58,7 +72,7 @@ export class MediaThreadComponent implements OnInit {
                 dislike: 0,
                 extra_data: {},
                 feedback_str: this.newComment,
-                media_object_path: this.mediaPath,
+                media_object_path: this.selectedMedia.path,
                 image_bounding_box: {},
                 timestamp,
                 video_offset: 0,
@@ -66,35 +80,39 @@ export class MediaThreadComponent implements OnInit {
             };
             const newThread: Thread = {
                 feedback_list: [feedback],
-                thread_id: '',
+                thread_id: thread.thread_id,
                 thread: threadStatus,
             };
             this.newComment = '';
             this.allThreads.splice(0, 0, newThread);
+            this.newComment = '';
+            this.shouldShowAddNewThread = false;
             console.log(thread);
         });
     }
 
     async replyThread(thread: Thread) {
-        const replyThread = await this.campaignService.replyThread(this.mediaPath, this.newComment, thread.thread_id);
+        const replyThread = await this.campaignService.replyThread(this.selectedMedia.path, thread['newComment'], thread.thread_id);
         replyThread.subscribe(response => {
             const timestamp: Timestamp = {
-                _seconds: new Date().getTime(),
+                _seconds: new Date().getTime() / 1000,
                 _nanoseconds: 0,
             };
             const feedback: Feedback = {
                 like: 0,
                 dislike: 0,
                 extra_data: {},
-                feedback_str: this.newComment,
-                media_object_path: this.mediaPath,
+                feedback_str: thread['newComment'],
+                media_object_path: this.selectedMedia.path,
                 image_bounding_box: {},
                 timestamp,
                 video_offset: 0,
             };
             thread.feedback_list.splice(0, 0, feedback);
             thread.feedback_list = [... thread.feedback_list];
-            this.newComment = '';
+            
+            thread['showEdit'] = false;
+            thread['newComment'] = '';
             console.log(thread.feedback_list);
         });
     }
@@ -114,7 +132,17 @@ export class MediaThreadComponent implements OnInit {
         thread['showEdit'] = true;
     }
 
+    cancelReplyThread(thread) {
+        thread['showEdit'] = false;
+        thread['newComment'] = '';
+    }
+
     trackItem(index: number, item: Feedback) {
         return JSON.stringify(item);
+    }
+
+    displayTime(timestamp: Timestamp) {
+        const endTime = moment(timestamp._seconds * 1000).format('MMMM Do YYYY HH:mm');
+        return endTime;
     }
 }

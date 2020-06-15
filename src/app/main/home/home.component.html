@@ -2,25 +2,29 @@
 
 </div>
 <div class="container">
-
     <div class="header">
-        LIFO DASHBOARD
+        My Lifoboard
     </div>
 
     <div class="welcome-message" *ngIf="auth.user | async as user;">
         <div>Hello {{ user.displayName }}!</div>
     </div>
 
-    <div class="filter-section">
-        <div class="filter-status">
-            
+    <div>
+        <div class="filter-section">
+            <div class="filter-status">
+                
+            </div>
+            <div class="filter-search">
+                <!-- <mat-form-field floatLabel="never" class="large-input-box">
+                    <input matInput placeholder="Email/Username">
+                </mat-form-field> -->
+            </div>
         </div>
-        <div class="filter-search">
-            <!-- <mat-form-field floatLabel="never" class="large-input-box">
-                <input matInput placeholder="Email/Username">
-            </mat-form-field> -->
-        </div>
+        <button class="large-round-button create-button" mat-flat-button color="secondary" (click)="createCampaign()">Create Campaign</button>
+
     </div>
+    
     <mat-divider></mat-divider>
     
     <div *ngIf="!isBrandView">
@@ -29,17 +33,17 @@
         </div>
 
         <div class="campaign-item" *ngFor="let element of promotionCampaigns">
-          <app-campaign-card 
-              [campaign]="element"
-              [promotionCampaign]="true"
-              (onDeleteCampaign)="deleteCampaign($event)"
-              (onSignupCampaign)="signupCampaign($event)"
-          ></app-campaign-card>
+            <app-campaign-card 
+                [campaign]="element"
+                [promotionCampaign]="true"
+                (onDeleteCampaign)="deleteCampaign($event)"
+                (onSignupCampaign)="signupCampaign($event)"
+            ></app-campaign-card>
         </div>
 
         <div class="home-subtitle">
             Active Campaign:
-            <button class="create-button" mat-flat-button color="primary" (click)="createCampaign()">Create Campaign</button>
+           
         </div>
 
         <div class="campaign-item" *ngFor="let element of campaigns">

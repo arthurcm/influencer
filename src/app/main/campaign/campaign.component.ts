@@ -1,9 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFireFunctions } from '@angular/fire/functions';
 import { AngularFirestore } from '@angular/fire/firestore';
-import { CampaignDetail } from 'src/types/campaign';
+import { CampaignDetail, ImageContent, UploadFile } from 'src/types/campaign';
 import { Route } from '@angular/compiler/src/core';
 import { AngularFireStorage } from '@angular/fire/storage';
 import * as moment from 'moment';
@@ -13,6 +13,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { UploadVideoDialogComponent } from './upload-video-dialog/upload-video-dialog.component';
 import { UploadImageDialogComponent } from './upload-image-dialog/upload-image-dialog.component';
 import { SendMessageDialogComponent } from './send-message-dialog/send-message-dialog.component';
+import { NguCarouselConfig, NguCarousel } from '@ngu/carousel';
 
 @Component({
     selector: 'app-campaign',
@@ -23,6 +24,7 @@ export class CampaignComponent implements OnInit {
     campaignId = '';
     campaign: CampaignDetail;
     campaignHistory: CampaignDetail[];
+    historyId = '';
 
     itemsCollection;
     items;
@@ -30,9 +32,53 @@ export class CampaignComponent implements OnInit {
     conceptCampaignList: CampaignDetail[];
     videoCampaignList: CampaignDetail[];
     newContentConcept = '';
+    newTitle = '';
+    newDescription = '';
     uploadPath = '';
 
     campaignType = '';
+    selectedTab = 'overview';
+
+    defaultImage: UploadFile = {
+        path: 'new',
+        url: 'new',
+    };
+    images: ImageContent;
+    imageSlides: UploadFile[];
+    selectedMedia: UploadFile;
+
+    public carouselTileItems: Array<UploadFile> = [
+        {
+            'url': 'new',
+            'path': 'new',
+        }
+    ];
+    public carouselTileLarge: NguCarouselConfig = {
+        grid: {xs: 1, sm: 1, md: 1, lg: 1, all: 0},
+        slide: 1,
+        speed: 400,
+        animation: 'lazy',
+        point: {
+            visible: true
+        },
+        load: 2,
+        touch: true,
+        easing: 'ease'
+    };
+    public carouselTileSmall: NguCarouselConfig = {
+        grid: {xs: 0, sm: 0, md: 0, lg: 0, all: 320},
+        slide: 2,
+        speed: 400,
+        animation: 'lazy',
+        point: {
+            visible: true
+        },
+        load: 2,
+        touch: true,
+        easing: 'ease'
+    };
+    @ViewChild('carouselLarge') carouselLarge: NguCarousel<any>;
+    @ViewChild('carouselSmall') carouselSmall: NguCarousel<any>;
 
     constructor(
         public auth: AngularFireAuth,
@@ -61,30 +107,42 @@ export class CampaignComponent implements OnInit {
         const campaign = await this.campaignService.getCampaignById(this.campaignId);
         campaign.subscribe(result => {
             console.log(result);
+
             this.campaignHistory = result.history_list;
-            this.campaign = this.campaignHistory[0];
             // with concept
             const conceptCampaignList = [];
             const videoCampaignList = [];
-            this.campaignHistory.forEach(campaign => {
+            for (let i = 0; i < this.campaignHistory.length; i ++) {
+                const campaign = this.campaignHistory[i];
+                campaign['version_name'] = this.campaignHistory.length - i;
+                const extraInfo = campaign['extra_info'];
+                if ( typeof extraInfo === 'string') {
+                    campaign.extra_info  = JSON.parse(extraInfo);
+                }
                 if (campaign.content_concept) {
                     if (result.finalized_campaign_data.final_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
                     conceptCampaignList.push(campaign);
-                } else if (campaign.video) {
+                } 
+                if (campaign.video) {
                     if (result.finalized_campaign_data.final_video_draft_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
-                    if (this.campaign.extra_info['type'] === 'image') {
+                    if (campaign.extra_info['type'] === 'image') {
                         campaign.images = JSON.parse(campaign.video);
+                        console.log('heeer');
                     }
                     videoCampaignList.push(campaign);
                 }
+            };
 
-            });
             this.conceptCampaignList = conceptCampaignList;
             this.videoCampaignList = videoCampaignList;
+
+            
+            this.campaign = this.campaignHistory[0];
+            this.selectVersion(this.campaign);
 
             this.loadingService.hide();
 
@@ -103,11 +161,23 @@ export class CampaignComponent implements OnInit {
 
     }
 
+    selectVersion(campaign: CampaignDetail) {
+        this.historyId = campaign.history_id;
+        this.newContentConcept = campaign.content_concept;
+        this.newTitle = campaign.title;
+        this.newDescription = campaign.description;
+        this.images = JSON.parse(JSON.stringify(campaign.images));
+        this.imageSlides = [this.defaultImage, ...this.images.images];
+        this.selectedMedia = this.images.images[0];
+        console.log(this.images);
+    }
+
     async AddNewConcept() {
         const newCampaign = JSON.parse(JSON.stringify(this.campaign));
         newCampaign.content_concept = this.newContentConcept;
         newCampaign.feed_back = '';
         newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
+
         // this.campaign.campaignId = this.campaign.campaign_id;
         this.loadingService.show();
         console.log(newCampaign);
@@ -115,6 +185,35 @@ export class CampaignComponent implements OnInit {
         campaign.subscribe(result => {
             console.log(result);
             this.conceptCampaignList.splice(0, 0, newCampaign);
+            this.loadingService.hide();
+        });
+    }
+
+    async updateCampaignVersion() {
+        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        if (this.newContentConcept) {
+            newCampaign.content_concept = this.newContentConcept;
+        }
+        if (this.newTitle) {
+            newCampaign.title = this.newTitle;
+        }
+        if (this.newTitle) {
+            newCampaign.description = this.newDescription;
+        }
+        newCampaign.feed_back = '';
+        newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
+        newCampaign.video = JSON.stringify(this.images);
+
+
+        this.loadingService.show();
+        console.log(newCampaign);
+        const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
+        campaign.subscribe(result => {
+            console.log(result);
+            newCampaign.history_id = result['history_id'];
+            newCampaign['version_name'] = this.campaignHistory.length + 1;
+            this.campaignHistory = [newCampaign, ...this.campaignHistory];
+            this.historyId = result['history_id'];
             this.loadingService.hide();
         });
     }
@@ -156,7 +255,6 @@ export class CampaignComponent implements OnInit {
     }
 
     shareConcept(campaign) {
-
         const dialogRef = this.dialog.open(SendMessageDialogComponent, {
             width: '600px',
             data: {
@@ -231,21 +329,23 @@ export class CampaignComponent implements OnInit {
         });
     }
 
-    async uploadImageSuccess(images) {
-        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
-        newCampaign.content_concept = '';
-        newCampaign.feed_back = '';
-        newCampaign.video = JSON.stringify(images);
-        newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
-        this.loadingService.show();
-        // this.campaign.campaignId = this.campaign.campaign_id;
-        console.log(newCampaign);
-        const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
-        campaign.subscribe(result => {
-            console.log(result);
-            this.videoCampaignList.splice(0, 0, newCampaign);
-            this.loadingService.hide();
-        });
+    async uploadImageSuccess(images: ImageContent) {
+        this.images = images;
+        this.imageSlides = [this.defaultImage, ...this.images.images];
+        // const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        // newCampaign.content_concept = '';
+        // newCampaign.feed_back = '';
+        // newCampaign.video = JSON.stringify(images);
+        // newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
+        // this.loadingService.show();
+        // // this.campaign.campaignId = this.campaign.campaign_id;
+        // console.log(newCampaign);
+        // const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
+        // campaign.subscribe(result => {
+        //     console.log(result);
+        //     this.videoCampaignList.splice(0, 0, newCampaign);
+        //     this.loadingService.hide();
+        // });
     }
 
     uploadImages() {
@@ -291,6 +391,11 @@ export class CampaignComponent implements OnInit {
             this.router.navigate(['/app/home']);
         });
 
+    }
+
+    deleteImage(index) {
+        this.images.images.splice(index - 1, 1);
+        this.imageSlides.splice(index, 1);
     }
 
     displayTime(end_time) {

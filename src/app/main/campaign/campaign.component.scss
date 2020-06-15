@@ -1,4 +1,5 @@
 @import 'common';
+@import 'global';
 
 .campaign-title {
     margin:15px 20px;
@@ -28,6 +29,8 @@
     display: inline-block;
     vertical-align: top;
     color: white;
+    height: 100%;
+    position: fixed;
 
     .side-background {
         height: 100%;
@@ -42,14 +45,17 @@
     .overview-tab {
         margin-top: 200px;
         margin-left: 40px;
+        cursor: pointer;
     }
     .review-tab {
         margin-top: 50px;
         margin-left: 40px;
+        cursor: pointer;
     }
     .post-tab {
         margin-top: 50px;
         margin-left: 40px;
+        cursor: pointer;
     }
     .selected-tab {
         background: #0071FF;
@@ -66,6 +72,72 @@
     width: calc(100% - 220px);
     display: inline-block;
     vertical-align: top;
+    margin-left: 220px;
+    .version-select {
+        width: 300px;
+        float: right;
+        margin: 20px;
+
+        .campaign-version-select {
+            width: 250px;
+            display: inline-block;
+        }
+
+        .material-icons {
+            cursor: pointer;
+            margin: 5px 10px;
+            vertical-align: top;
+        }
+    }
+
+    .review-content {
+        width:  calc(100% - 400px);
+        display: inline-block;
+        vertical-align: top;
+
+        .review-bottom-buttons {
+            margin: 20px;
+            float: right;
+        }
+    }
+
+    .add-new-image {
+        width: 442px;
+        height: 64px;
+        background: #E5E5E5;
+        border-radius: 12px;
+        margin-left: 20px;
+        line-height: 24px;
+        text-align: center;
+        padding-top: 30px;
+        cursor: pointer;
+    }
+
+    .comment-panel {
+        width: 400px;
+        display: inline-block;
+        vertical-align: top;
+    }
+    
+    .bottom-buttons {
+        margin-left: 40px;
+    }
+
+    .concpet-container {
+        padding: 10px 20px;
+    }
+
+    .section-title {
+        font-weight: 800;
+    }
+
+    .caption-container {
+        padding: 10px 20px;
+    }
+
+    .post-container {
+        padding: 40px 0px;
+    }
 }
 
 .time-info {
@@ -129,7 +201,6 @@
     .is-final {
         background-color: green !important;
     }
-    
 
     .concept-box:hover, .feedback-box:hover{
         opacity: .9;
@@ -171,5 +242,75 @@
             max-width: 100px;
             max-height: 100px;
         }
+    }
+}
+
+
+.large-image-container {
+    ::ng-deep .tile { 
+        border-radius: 10px;
+        margin-left: 50px;
+        margin-right: 50px;
+        height: 500px;
+        display: flex;
+    }
+    .large-image {
+        display: block;
+        margin: auto;
+        max-height: 500px;
+        max-width: 100%;
+    }
+}
+
+.small-carousel {
+    ::ng-deep  .ngucarousel {
+        padding-left: 50px;
+        padding-right: 50px;
+    }
+    ::ng-deep .tile { 
+        border-radius: 10px;
+        width: 300px;
+        height: 200px;
+        position: relative;
+        display: flex;
+    }
+
+    .new-image-slide {
+        background-color: lightgrey;
+        width: 100%;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-evenly;
+        cursor: pointer;
+        .material-icons {
+            font-size: 40px;
+        }
+    }
+
+    .image-slide {
+        display: flex;
+    }
+
+    .delete-icon {
+        width: 30px;
+        height: 30px;
+        padding: 2px;
+        border-radius: 30px;
+        background-color: lightgray;
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        cursor: pointer;
+        .material-icons {
+            font-size: 20px;
+            margin: 5px;
+        }
+    }
+    .small-image {
+        display: block;
+        margin: auto;
+        max-height: 200px;
+        max-width: 300px;
     }
 }

@@ -13,6 +13,7 @@ export class CampaignCardComponent implements OnInit {
 
     @Input() campaign: CampaignDetail;
     @Input() promotionCampaign: boolean;
+    @Input() brandCampaign: boolean;
     @Output() onDeleteCampaign = new EventEmitter<CampaignDetail>();
     @Output() onSignupCampaign = new EventEmitter<CampaignDetail>();
 
@@ -30,7 +31,7 @@ export class CampaignCardComponent implements OnInit {
 
     daysLeft(end_time) {
         const daysLeft = moment(end_time).diff(moment(), 'days');
-        return `${daysLeft}`;
+        return Math.max(0, daysLeft);
     }
 
     viewCampaign() {

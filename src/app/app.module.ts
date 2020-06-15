@@ -37,7 +37,7 @@ import { NgxMatDatetimePickerModule, NgxMatTimepickerModule, NgxMatNativeDateMod
 import { NgxMatMomentModule } from '@angular-material-components/moment-adapter';
 
 import { FormsModule } from '@angular/forms';
-
+import { NguCarouselModule } from '@ngu/carousel';
 
 import { VgCoreModule } from 'ngx-videogular';
 import { VgControlsModule } from 'ngx-videogular';
@@ -77,6 +77,8 @@ import { adapterFactory } from 'angular-calendar/date-adapters/moment';
 import * as moment from 'moment';
 import { CampaignOverviewComponent } from './main/campaign-overview/campaign-overview.component';
 import { BrandCampaignComponent } from './main/brand-campaign/brand-campaign.component';
+import { SimpleCampaignOverviewComponent } from './main/simple-campaign-overview/simple-campaign-overview.component';
+import { BrandHomeComponent } from './main/brand-home/brand-home.component';
 
 export function momentAdapterFactory() {
     return adapterFactory(moment);
@@ -112,6 +114,8 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         EventCalendarComponent,
         CampaignOverviewComponent,
         BrandCampaignComponent,
+        SimpleCampaignOverviewComponent,
+        BrandHomeComponent,
     ],
     imports: [
         BrowserModule,
@@ -157,7 +161,8 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         NgxMatMomentModule,
         CalendarModule.forRoot({ provide: DateAdapter, useFactory: momentAdapterFactory }),
         PerfectScrollbarModule,
-        NgSelectModule
+        NgSelectModule,
+        NguCarouselModule,
     ],
     exports: [
         UploaderComponent,
