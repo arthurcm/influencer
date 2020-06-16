@@ -136,6 +136,7 @@ function getCampaign(data, uid, res) {
                 };
             }
         });
+
     return Promise.all([latest_history_ref, final_campaign_ref]);
 }
 
@@ -253,7 +254,7 @@ function deleteCampaign(data, uid){
 // each media object can have multiple threads of feedbacks
 // each thread can have a list of feedbacks
 // each feedback is an object defined by the function below.
-function createFeedbackObject(feedback_str, media_object_path, displayName='', like=0, dislike=0,
+function createFeedbackObject(feedback_str, media_object_path, displayName='', like= [], dislike= [],
                               video_offset=0, image_bounding_box={}, extra_data={}){
     const FieldValue = admin.firestore.FieldValue;
     return {
@@ -268,6 +269,7 @@ function createFeedbackObject(feedback_str, media_object_path, displayName='', l
         timestamp: FieldValue.serverTimestamp(),
     };
 }
+
 
 
 // for creating a new thread of feedbacks
@@ -303,8 +305,6 @@ function createFeedbackThread(data, uid, name){
         batch_promise: batch.commit(),
         thread_id: thread_ref.id,
         feedback_id: feedback_ref.id,
-        thread_path,
-        feedback_path,
     };
 }
 
@@ -326,6 +326,40 @@ async function getAllThreads(data, uid) {
             feedback_list,
         };
     });
+}
+
+function likeFeedback(data, like_id){
+    if (!data.feedback_id) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty feedback_str.');
+    }
+    if (!data.media_object_path) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none-empty media_object_path.');
+    }
+    if (!data.thread_id) {
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a legal thread_id.');
+    }
+    const media_object_ref = retrieveMediaObjRef(data.media_object_path);
+    return media_object_ref
+        .collection('feedback_threads').doc(data.thread_id)
+        .collection('feedback_list').doc(data.feedback_id).get()
+        .then(snapshot => {
+            let feedback_data = snapshot.data();
+            console.debug('Got feedback data', feedback_data);
+            let like_list = feedback_data.like;
+            if(!like_list || like_list===0){
+                like_list = [];
+            }
+            like_list.push(like_id);
+            like_list = [...new Set(like_list)];
+            return {
+                like: like_list,
+                like_count: like_list.length
+            };
+        });
+
 }
 
 function replyToFeedbackThread(data, uid, name){
@@ -516,10 +550,12 @@ async function get_entitled_shops(idToken, next){
 }
 
 function updateCampaignCommissionWithEntitlement(campaign_data, entitled_shops){
-    const shop_detail = entitled_shops[campaign_data.brand];
+    const shop_detail = entitled_shops[campaign_data.brand_id];
     if (shop_detail){
         if(shop_detail.commission && shop_detail.commission > 0){
-            campaign_data.commission = shop_detail.commission;
+            console.debug(`Updating commission with ${shop_detail.commission} for \
+            shop ${campaign_data.brand_id} with campaign id ${campaign_data.campaign_id}`);
+            campaign_data.commission_dollar = shop_detail.commission;
         }
         if(shop_detail.commission_percentage && shop_detail.commission_percentage > 0){
             campaign_data.commission_percentage = shop_detail.commission_percentage;
@@ -702,7 +738,7 @@ function totalInfCount(uid){
                     inf_ids = inf_ids.concat(campaign.collaborating_influencers);
                 }
             });
-            let results = [... new Set(inf_ids)];
+            const results = [... new Set(inf_ids)];
             return results;
         });
 }
@@ -777,11 +813,28 @@ function getInfluencerProfile(uid){
     return influencerRef.get();
 }
 
+function getAllMedia(uid, campaign_id, campaign_type){
+    let media_type;
+    if(campaign_type === 'video'){
+        media_type = 'videos';
+    }else{
+        media_type = 'images';
+    }
+    const media_ref = db.collection('campaigns').doc(campaign_id).collection(media_type).get();
+    return media_ref.then(snapshot => {
+        const results = [];
+        snapshot.docs.forEach(doc => {
+            results.push(doc.data());
+        });
+        return results;
+    });
+}
 
 module.exports = {
     getCampaign,
     getAllCampaign,
     getLatestCampaignPath,
+    getAllMedia,
     createCampaign,
     deleteCampaign,
     feedback,
@@ -791,6 +844,7 @@ module.exports = {
     finalizeVideoDraft,
     createFeedbackThread,
     replyToFeedbackThread,
+    likeFeedback,
     resolveThread,
     deleteThread,
     getAllThreads,

@@ -365,7 +365,7 @@ def web_entities_detection_gcf(data, context):
     # note: here we use the campaign history_id to distinct videos
     return (db.collection(u'campaigns').document(campaign_id)
             .collection(u'images').document(file_name)
-            .set({u'entity_detect_res': res}, merge=True))
+            .set({u'entity_detect_res': res, u'media_object_path': name}, merge=True))
 
 
 def nlp_text_sentiment_gcf(request):

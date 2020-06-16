@@ -39,6 +39,9 @@ app.use((req, res, next) => {
             // /common/* endpoints require auth, can be accessed by both store and inf
             if (req.path.startsWith('/common')){
                 res.locals.uid = uid;
+                res.locals.from_shopify = decodedToken.from_shopify;
+                res.locals.store_account = decodedToken.store_account;
+                res.locals.name = decodedToken.name;
                 next();
                 return decodedToken;
             }
@@ -112,6 +115,22 @@ app.get('/get_campaign', (req, res, next) => {
         .then(result => {
             res.status(200).send(result);
             return result;
+        })
+        .catch(next);
+});
+
+app.get('/media/campaign_type/:campaign_type/campaign_id/:campaign_id', (req, res, next) => {
+    const uid = res.locals.uid;
+    const campaign_id = req.params.campaign_id;
+    const campaign_type = req.params.campaign_type;
+    if(!campaign_type || !campaign_id || (campaign_type !== 'video' && campaign_type !== 'image')){
+        console.warn(`request to ${req.path} did not provide campaign_id or campaign_type`);
+        res.status(422).send('Have to have a valid campaign_id and campaign_type');
+    }
+    return campaign.getAllMedia(uid, campaign_id, campaign_type)
+        .then(results => {
+            res.status(200).send(results);
+            return results;
         })
         .catch(next);
 });
@@ -277,11 +296,11 @@ app.put('/share/finalize_media_draft/campaign_id/:campaign_id/history_id/:histor
     const history_id = req.params.history_id;
     console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
-        console.warn('/share/finalize_media_draft received invalid campaign_id')
+        console.warn('/share/finalize_media_draft received invalid campaign_id');
         res.status(422).send('Require a valid campaign_id');
     }
     if(!history_id){
-        console.warn('/share/finalize_media_draft received invalid history_id')
+        console.warn('/share/finalize_media_draft received invalid history_id');
         res.status(422).send('Require a valid history_id');
     }
     return campaign.finalizeVideoDraft('no_uid', campaign_id, history_id)
@@ -342,8 +361,7 @@ app.post('/share/create_feedback_thread', (req, res, next)=>{
             feedback_path,
         });
         return result;
-    })
-        .catch(next);
+    }).catch(next);
 });
 
 app.get('/get_threads/media_object_path/:media_object_path', async (req, res, next) => {
@@ -395,6 +413,28 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
         .catch(next);
 });
 
+
+app.put('/like_feedback', (req, res, next)=>{
+    console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    let uid = res.locals.uid;
+    let name = res.locals.name;
+    if(!name){
+        name = 'Anonymous';
+    }
+    if (!uid){
+        uid = 'no_uid';
+    }
+    const like_id = `${name}/${uid}`
+    return campaign.likeFeedback(data, like_id)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
 app.post('/share/reply_feedback_thread', (req, res, next)=>{
     console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
@@ -440,11 +480,11 @@ app.put('/resolve_thread/media_object_path/:media_object_path/thread_id/:thread_
     const uid = res.locals.uid;
     console.debug(`${req.path} received  ${req.params.media_object_path} and ${req.params.thread_id}`);
     if(!thread_id){
-        console.warn(`${req.path} invalid thread_id received for uid ${uid}`)
+        console.warn(`${req.path} invalid thread_id received for uid ${uid}`);
         res.status(422).send('Require a valid thread_id');
     }
     if(!media_object_path){
-        console.warn(`${req.path} invalid media_object_path received for uid ${uid}`)
+        console.warn(`${req.path} invalid media_object_path received for uid ${uid}`);
         res.status(422).send('Require a valid media_object_path');
     }
     return campaign.resolveThread(media_object_path, thread_id)
@@ -462,11 +502,11 @@ app.put('/share/resolve_thread/media_object_path/:media_object_path/thread_id/:t
     const uid = res.locals.uid;
     console.debug(`${req.path} received  ${req.params.media_object_path} and ${req.params.thread_id}`);
     if(!thread_id){
-        console.warn(`${req.path} invalid thread_id received for uid ${uid}`)
+        console.warn(`${req.path} invalid thread_id received for uid ${uid}`);
         res.status(422).send('Require a valid thread_id');
     }
     if(!media_object_path){
-        console.warn(`${req.path} invalid media_object_path received for uid ${uid}`)
+        console.warn(`${req.path} invalid media_object_path received for uid ${uid}`);
         res.status(422).send('Require a valid media_object_path');
     }
     return campaign.resolveThread(media_object_path, thread_id)
@@ -500,7 +540,7 @@ app.put('/sign_up_campaign/brand_campaign_id/:brand_campaign_id', (req, res, nex
     const idToken = req.headers.authorization;
     console.debug(`${req.path} received brand_campaign_id ${brand_campaign_id} and uid ${req.params.thread_id}`);
     if(!brand_campaign_id){
-        console.warn(`${req.path} invalid brand_campaign_id received for uid ${uid}`)
+        console.warn(`${req.path} invalid brand_campaign_id received for uid ${uid}`);
         res.status(422).send({status: 'Require a valid brand_campaign_id'});
     }
     return campaign.signupToBrandCampaign(brand_campaign_id, uid, idToken, next)
@@ -542,7 +582,7 @@ app.post('/brand/campaign', (req, res, next) => {
         data.website = uid;
     }
     if (!isValidDomain(data.website) && !validUrl.isUri(data.website)){
-        console.warn(`${req.path} Illegal website format received ${data.website} for Shopify? ${from_shopify}, with request ${data}`)
+        console.warn(`${req.path} Illegal website format received ${data.website} for Shopify? ${from_shopify}, with request ${data}`);
         res.status(422).send({status: 'Illegal website format'});
     }
     const results = campaign.createBrandCampaign(data, uid);
@@ -638,22 +678,12 @@ app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
     }
     return campaign.getInfluencerProfile(requested_uid)
         .then(results => {
+            console.debug('getting profile', results.data())
             res.status(200).send(results.data());
             return results;
         })
         .catch(next);
 });
-
-// app.get('/brand/view_content/uid/:uid/campaign_id/:campaign_id', (req, res, next) => {
-//     const requested_uid = req.params.uid;
-//     const campaign_id = req.params.campaign_id;
-//     return campaign.getLatestCampaignPath(requested_uid, campaign_id)
-//         .then(results => {
-//             res.status(200).send(results);
-//             return results;
-//         })
-//         .catch(next);
-// });
 
 
 app.use((err, req, res, next) => {

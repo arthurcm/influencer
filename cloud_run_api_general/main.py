@@ -169,8 +169,18 @@ def token_verification(id_token):
     return decoded_token
 
 
+def _build_cors_prelight_response():
+    response = flask.make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "*")
+    response.headers.add("Access-Control-Allow-Methods", "*")
+    return response
+
+
 @app.before_request
 def hook():
+    if request.method == "OPTIONS": # CORS preflight
+        return _build_cors_prelight_response()
     if request.path.startswith('/brand') or request.path.startswith('/tam') or request.path.startswith('/influencer'):
         if flask.session.get('uid'):
             logging.info('request has been verified')
@@ -358,7 +368,7 @@ def revenue():
 
 @app.route('/brand/track', methods=['GET'])
 def track_visits():
-    shop = flask.request.args.get('shop')
+    shop = flask.session['uid']
     if not shop:
         response = flask.jsonify({'Status': 'Failed'})
         response.status_code = 422
@@ -377,7 +387,7 @@ def track_visits():
 
 @app.route('/brand/roi', methods=['GET'])
 def roi():
-    shop = flask.session['uid'] #flask.request.args.get('shop')
+    shop = flask.session['uid']
     revenue_results = get_revenue_per_shop(shop)
     shop_revenue = revenue_results.get('shop_revenue')
     try:
