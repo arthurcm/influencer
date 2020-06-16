@@ -9,15 +9,22 @@
         <app-campaign-overview [campaign]="campaign"></app-campaign-overview>
     </div>
 
-    <div class="influencer-container" *ngIf="campaign && campaign.collaborating_influencers.length > 0">
+    <div class="influencer-container" *ngIf="campaign && campaign.collaborating_influencers && isBrandView">
         <div class="influencer-header">
             Influencer
         </div>
 
         <div class="influencer-list">
-            <div class="influencer-card" *ngFor="let influencer of campaign.collaborating_influencers">
-                {{ influencer }}
+            <div class="influencer-item" *ngFor="let influencer of campaign.collaborating_influencers">
+                <app-influencer-card 
+                    [uid]="influencer"
+                    [campaignData]="campaign"
+                ></app-influencer-card>
             </div>
         </div>
+    </div>
+
+    <div class="signup-button" *ngIf="campaign && !isBrandView">
+        <button mat-flat-button color="primary" class="large-round-button" (click)="signupCampaign()">Sign Up</button>
     </div>
 </div>

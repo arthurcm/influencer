@@ -41,6 +41,21 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/common/campaign/campaign_id/${campaignId}`;
+        return this.http.get<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
+    async getCampaignByIdInfluencer(campaignId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
         const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/get_campaign/campaign_id/${campaignId}`;
         return this.http.get<any>(reqeustUrl, httpOptions).pipe(
             catchError(this.handleError)
@@ -306,6 +321,21 @@ export class CampaignService {
             'Something bad happened; please try again later.');
     };
 
+    async getAllMediaForCampaign(type: string, campaignId: string) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/common/media/campaign_type/${type}/campaign_id/${campaignId}}`;
+        return this.http.get<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     async getThread(path: string) {
         const token = await (await this.auth.currentUser).getIdToken();
 
@@ -315,7 +345,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/get_threads/media_object_path/${encodeURIComponent(path)}`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/share/get_threads/media_object_path/${encodeURIComponent(path)}`;
         return this.http.get<Thread[]>(reqeustUrl, httpOptions).pipe(
             catchError(this.handleError)
         );
@@ -334,7 +364,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/create_feedback_thread`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/share/create_feedback_thread`;
         return this.http.post<any>(reqeustUrl, request, httpOptions).pipe(
             catchError(this.handleError)
         );
@@ -353,7 +383,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/reply_feedback_thread`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/share/reply_feedback_thread`;
         return this.http.post<any>(reqeustUrl, request, httpOptions).pipe(
             catchError(this.handleError)
         );
@@ -366,7 +396,7 @@ export class CampaignService {
                 'Content-Type':  'application/json',
             }),
         };
-        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/delete_thread/media_object_path/${path}/thread_id/${threadId}`;
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/share/delete_thread/media_object_path/${path}/thread_id/${threadId}`;
         return this.http.delete<any>(reqeustUrl, httpOptions);
     }
 }

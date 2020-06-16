@@ -273,6 +273,13 @@
         height: 200px;
         position: relative;
         display: flex;
+        border: 3px solid transparent;
+        cursor: pointer;
+    }
+    ::ng-deep .selected {
+        .tile {
+            border: 3px solid #07C0F2;
+        }
     }
 
     .new-image-slide {

@@ -18,16 +18,25 @@
                     fill="#84D925" />
             </svg>
         </div>
-        <div class="icon" (click)="navigate('home')">
+        <div class="icon" (click)="navigate('home')" *ngIf="!isBrandView">
+            <mat-icon class="menu-icon" mat-list-icon> home </mat-icon>
+        </div>
+        <div class="icon" (click)="navigate('brand-home')" *ngIf="isBrandView">
             <mat-icon class="menu-icon" mat-list-icon> home </mat-icon>
         </div>
         <div class="icon" (click)="navigate('calendar')">
             <mat-icon class="menu-icon" mat-list-icon> calendar_today </mat-icon>
         </div>
-        <div class="icon">
+        <!-- <div class="icon">
             <mat-icon class="menu-icon" mat-list-icon> notifications_none </mat-icon>
+        </div> -->
+
+
+        <div class="icon logout-icon" (click)="logout()">
+            <mat-icon class="menu-icon" mat-list-icon> exit_to_app </mat-icon>
         </div>
     </mat-sidenav>
+
     <mat-sidenav-content>
         <router-outlet></router-outlet>
     </mat-sidenav-content>

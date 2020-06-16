@@ -40,30 +40,8 @@ export class HomeComponent implements OnInit {
         const user =  await this.auth.currentUser;
         console.log(user);
 
-        this.auth.idTokenResult.subscribe(idToken => {
-            if (idToken.claims && idToken.claims.store_account === true) {
-                this.isBrandView = true;
-                this.loadBrandCampaign();
-            } else {
-                this.isBrandView = false;
-                this.loadInfluencerCampaign();
-            }
-        });
-    }
-
-    async loadBrandCampaign() {
-        const brand_campaign = await this.campaignService.getBrandCampaign();
-        brand_campaign.subscribe(result => {
-            console.log(result);
-            result.forEach(campaign => {
-                const extraInfo = campaign['extra_info'];
-                if ( typeof extraInfo === 'string') {
-                    campaign.extra_info  = JSON.parse(extraInfo);
-                }
-            });
-            this.brandCampaigns = result;
-            this.loadingService.hide();
-        });
+        this.isBrandView = false;
+        this.loadInfluencerCampaign();
     }
 
     async loadInfluencerCampaign() {
@@ -130,6 +108,8 @@ export class HomeComponent implements OnInit {
         const signupCampaign = await this.campaignService.signupCampaign(campaign);
         signupCampaign.subscribe(result => {
             console.log(result);
+            // campaign_id
+            this.loadInfluencerCampaign();
             this.loadingService.hide();
         });
     }
@@ -152,23 +132,6 @@ export class HomeComponent implements OnInit {
             this.loadingService.hide();
             console.log(this.campaigns);
         });
-        // const callable = this.fns.httpsCallable('deleteCampaign');
-        // console.log(campaign);
-        // callable({
-        //     campaign_id: campaign.campaign_data.campaign_id,
-        // }).subscribe(result => {
-        //     let index = -1;
-        //     for (let i = 0; i < this.campaigns.length; i ++) {
-        //         if (campaign.campaign_data.campaign_id === this.campaigns[i].campaign_data.campaign_id) {
-        //             index = i;
-        //             break;
-        //         }
-        //     }
-        //     this.campaigns.splice(index, 1);
-        //     this.campaignDataSource = new MatTableDataSource(this.campaigns);
-        //     this.loadingService.hide();
-        //     console.log(this.campaigns);
-        // });
     }
 
     sortData(sort) {

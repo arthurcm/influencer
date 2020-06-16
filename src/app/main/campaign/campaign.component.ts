@@ -46,6 +46,7 @@ export class CampaignComponent implements OnInit {
     images: ImageContent;
     imageSlides: UploadFile[];
     selectedMedia: UploadFile;
+    allMedia: UploadFile[];
 
     public carouselTileItems: Array<UploadFile> = [
         {
@@ -104,7 +105,7 @@ export class CampaignComponent implements OnInit {
     async ngOnInit() {
         this.loadingService.show();
 
-        const campaign = await this.campaignService.getCampaignById(this.campaignId);
+        const campaign = await this.campaignService.getCampaignByIdInfluencer(this.campaignId);
         campaign.subscribe(result => {
             console.log(result);
 
@@ -112,6 +113,7 @@ export class CampaignComponent implements OnInit {
             // with concept
             const conceptCampaignList = [];
             const videoCampaignList = [];
+            const allMedia = [];
             for (let i = 0; i < this.campaignHistory.length; i ++) {
                 const campaign = this.campaignHistory[i];
                 campaign['version_name'] = this.campaignHistory.length - i;
@@ -119,23 +121,34 @@ export class CampaignComponent implements OnInit {
                 if ( typeof extraInfo === 'string') {
                     campaign.extra_info  = JSON.parse(extraInfo);
                 }
-                if (campaign.content_concept) {
+                if (campaign.content_concept && result.finalized_campaign_data) {
                     if (result.finalized_campaign_data.final_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
                     conceptCampaignList.push(campaign);
                 } 
-                if (campaign.video) {
+                if (campaign.video && result.finalized_campaign_data) {
                     if (result.finalized_campaign_data.final_video_draft_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
                     if (campaign.extra_info['type'] === 'image') {
                         campaign.images = JSON.parse(campaign.video);
-                        console.log('heeer');
+                        
+                        try {
+                            const images = JSON.parse(campaign.video);
+                            images.images.forEach(image => {
+                                if (allMedia.map(file => file.path).indexOf(image.path) < 0) {
+                                    allMedia.push(image);
+                                }
+                            });
+                        } catch (e) {
+                            console.warn(e);
+                        }
                     }
                     videoCampaignList.push(campaign);
                 }
             };
+            this.allMedia = allMedia;
 
             this.conceptCampaignList = conceptCampaignList;
             this.videoCampaignList = videoCampaignList;
@@ -168,7 +181,7 @@ export class CampaignComponent implements OnInit {
         this.newDescription = campaign.description;
         try {
             this.images = JSON.parse(JSON.stringify(campaign.images));
-        }catch (e) {
+        } catch (e) {
             this.images = JSON.parse(JSON.stringify({images: [] }));
         }
 
@@ -335,22 +348,9 @@ export class CampaignComponent implements OnInit {
     }
 
     async uploadImageSuccess(images: ImageContent) {
-        this.images = images;
+        this.images.images = [...images.images, ...this.images.images];
         this.imageSlides = [this.defaultImage, ...this.images.images];
-        // const newCampaign = JSON.parse(JSON.stringify(this.campaign));
-        // newCampaign.content_concept = '';
-        // newCampaign.feed_back = '';
-        // newCampaign.video = JSON.stringify(images);
-        // newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
-        // this.loadingService.show();
-        // // this.campaign.campaignId = this.campaign.campaign_id;
-        // console.log(newCampaign);
-        // const campaign = await this.campaignService.updateCampaignById(newCampaign, this.campaignId);
-        // campaign.subscribe(result => {
-        //     console.log(result);
-        //     this.videoCampaignList.splice(0, 0, newCampaign);
-        //     this.loadingService.hide();
-        // });
+        this.allMedia = [...this.allMedia, ...images.images];
     }
 
     uploadImages() {
@@ -406,5 +406,24 @@ export class CampaignComponent implements OnInit {
     displayTime(end_time) {
         const endTime = moment(end_time).format('MMMM Do YYYY HH:mm');
         return endTime;
+    }
+
+    slideLargeImageLeft() {
+        const index = Math.max(0, this.carouselLarge.currentSlide - 1);
+        this.selectedMedia = this.images.images[index];
+    }
+
+    slideLargeImageRight() {
+        const index = Math.min(this.images.images.length - 1, this.carouselLarge.currentSlide + 1);
+        this.selectedMedia = this.images.images[index];
+    }
+
+    clickSmallImage(item) {
+        console.log(item);
+        if (item.path !== 'new') {
+            this.selectedMedia = item;
+            const index = this.images.images.map(file => file.path).indexOf(item.path);
+            this.carouselLarge.moveTo(index, false);
+        }
     }
 }

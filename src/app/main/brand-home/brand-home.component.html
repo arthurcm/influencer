@@ -12,35 +12,35 @@
 
     <div class="statistic-container">
         <div class="chart-container">
-
+            <app-brand-chart *ngIf="chartData" [chartData]="chartData"></app-brand-chart>
         </div>
         <div class="counter-container">
             <div class="counter-item">
                 <div class="counter-title">ROI</div>
-                <div class="counter">60%</div>
+                <div class="counter">{{ statistic['roi'] }}%</div>
             </div>
             <div class="counter-item">
                 <div class="counter-title">Revenue Generated</div>
-                <div class="counter">60%</div>
+                <div class="counter">$ {{ statistic['revenue'] }} </div>
             </div>
             <div class="counter-item">
                 <div class="counter-title">Traffic Gained</div>
-                <div class="counter">60%</div>
+                <div class="counter">{{ statistic['visit'] }}</div>
             </div>
             <div class="counter-item">
-                <div class="counter-title">New Customers Acquired</div>
-                <div class="counter">60%</div>
+                <div class="counter-title">Total Comission</div>
+                <div class="counter">$ {{ statistic['total_commision'] }}</div>
             </div>
-            <div class="counter-item">
+            <div class="counter-item last-item">
                 <div class="counter-title">Influencer Count</div>
-                <div class="counter">60%</div>
+                <div class="counter">{{ statistic['influencer_count'] }}</div>
             </div>
         </div>
     </div>
     <div class="campaign-container">
         <div class="home-subtitle" >
             Active Campaign:
-            <button class="create-button" mat-flat-button color="primary" (click)="createCampaign()">Create Campaign</button>
+            <button class="large-round-button create-button" mat-flat-button color="secondary" (click)="createCampaign()">Create Campaign</button>
         </div>
     
         <div class="campaign-item" *ngFor="let element of brandCampaigns">

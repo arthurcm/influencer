@@ -24,6 +24,7 @@ export class ImageReviewComponent implements OnInit {
 
     images: ImageContent;
     selectedMedia: UploadFile;
+    allMedia: UploadFile[];
 
     public carouselTileItems: Array<any>;
     public carouselTileLarge: NguCarouselConfig = {
@@ -81,16 +82,36 @@ export class ImageReviewComponent implements OnInit {
         const campaign = await this.campaignService.getCampaignById(this.campaignId);
         campaign.subscribe(result => {
             console.log(result);
+            const allMedia: UploadFile[] = [];
             for (let i = 0; i < result.history_list.length; i ++) {
                 const campaign = result.history_list[i];
                 campaign['version_name'] = (result.history_list.length - i);
+
+                try {
+                    const images = JSON.parse(campaign.video);
+                    images.images.forEach(image => {
+                        if (allMedia.map(file => file.path).indexOf(image.path) < 0) {
+                            allMedia.push(image);
+                        }
+                    });
+                } catch (e) {
+                    console.warn(e);
+                }
+                
             }
+            this.allMedia = allMedia;
             this.historyList = result.history_list;
             this.selectVersion(result.history_list[0]);
             this.newFeedback = this.campaign.feed_back;
             console.log(this.campaign);
             this.loadingService.hide();
         });
+
+        const media = await this.campaignService.getAllMediaForCampaign('image', this.campaignId);
+        media.subscribe(result => {
+            console.log(result);
+        });
+
     }
 
     selectVersion(version) {
@@ -164,5 +185,22 @@ export class ImageReviewComponent implements OnInit {
                 ]);
             });
         });
+    }
+
+    slideLargeImageLeft() {
+        const index = Math.max(0, this.carouselLarge.currentSlide - 1);
+        this.selectedMedia = this.carouselTileItems[index];
+    }
+
+    slideLargeImageRight() {
+        const index = Math.min(this.carouselTileItems.length - 1, this.carouselLarge.currentSlide + 1);
+        this.selectedMedia = this.carouselTileItems[index];
+    }
+
+    clickSmallImage(item) {
+        console.log(item);
+        this.selectedMedia = item;
+        const index = this.carouselTileItems.map(file => file.path).indexOf(item.path);
+        this.carouselLarge.moveTo(index, false);
     }
 }
