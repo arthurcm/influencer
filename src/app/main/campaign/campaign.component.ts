@@ -166,7 +166,12 @@ export class CampaignComponent implements OnInit {
         this.newContentConcept = campaign.content_concept;
         this.newTitle = campaign.title;
         this.newDescription = campaign.description;
-        this.images = JSON.parse(JSON.stringify(campaign.images));
+        try {
+            this.images = JSON.parse(JSON.stringify(campaign.images));
+        }catch (e) {
+            this.images = JSON.parse(JSON.stringify({images: [] }));
+        }
+
         this.imageSlides = [this.defaultImage, ...this.images.images];
         this.selectedMedia = this.images.images[0];
         console.log(this.images);
