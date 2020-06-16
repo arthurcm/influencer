@@ -5,6 +5,7 @@ import { Thread, ThreadStatus, Timestamp, Feedback } from 'src/types/thread';
 
 import * as moment from 'moment';
 import { UploadFile } from 'src/types/campaign';
+import { AngularFireAuth } from '@angular/fire/auth';
 
 @Component({
     selector: 'app-media-thread',
@@ -15,28 +16,41 @@ export class MediaThreadComponent implements OnInit {
 
     @Input() mediaList: UploadFile[];
     @Input() selectedMedia: UploadFile;
+    @Input() allMedia: UploadFile[];
 
-    allThreads: Thread[];
+    allThreads: Thread[] = [];
     shouldShowAddNewThread = false;
 
     newComment = '';
+    displayName = 'Anonymous';
     constructor(
         public campaignService: CampaignService,
+        public auth: AngularFireAuth,
     ) { }
 
     async ngOnInit() {
-        const getThread = await this.campaignService.getThread(this.selectedMedia.path);
-        getThread.subscribe(thread => {
-            console.log(thread);
-            thread.forEach(t => {
-                t['showEdit'] = false;
-                t.feedback_list = t.feedback_list.sort((f1, f2) => {
-                    return f2.timestamp['_seconds'] - f1.timestamp['_seconds'];
-                });
-                t.feedback_list[t.feedback_list.length - 1].original = true;
-            });
-            this.allThreads = thread;
+        // Get User Info
+        const user =  await this.auth.user;
+        user.subscribe(profile => {
+            console.log(profile);
+            this.displayName = profile.displayName;
         });
+
+        for (let i = 0; i < this.allMedia.length; i ++) {
+            const getThread = await this.campaignService.getThread(this.allMedia[i].path);
+            getThread.subscribe(thread => {
+                console.log(thread);
+                thread.forEach(t => {
+                    t['showEdit'] = false;
+                    t.feedback_list = t.feedback_list.sort((f1, f2) => {
+                        return f2.timestamp['_seconds'] - f1.timestamp['_seconds'];
+                    });
+                    t.feedback_list[t.feedback_list.length - 1].original = true;
+                });
+                this.allThreads = this.allThreads.concat(thread);
+            });
+        };
+
     }
 
     cancelComment() {
@@ -46,7 +60,7 @@ export class MediaThreadComponent implements OnInit {
 
     getImageUrl(path) {
         let url = '';
-        this.mediaList.forEach(media => {
+        this.allMedia.forEach(media => {
             if (media.path === path) {
                 url = media.url;
             }
@@ -77,6 +91,7 @@ export class MediaThreadComponent implements OnInit {
                 timestamp,
                 video_offset: 0,
                 original: true,
+                displayName: this.displayName,
             };
             const newThread: Thread = {
                 feedback_list: [feedback],
@@ -107,6 +122,7 @@ export class MediaThreadComponent implements OnInit {
                 image_bounding_box: {},
                 timestamp,
                 video_offset: 0,
+                displayName: this.displayName,
             };
             thread.feedback_list.splice(0, 0, feedback);
             thread.feedback_list = [... thread.feedback_list];

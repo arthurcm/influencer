@@ -39,6 +39,7 @@ export interface CampaignDetail {
     description?: string;
     tags?: string[];
     collaborating_influencers?: string[];
+    inf_campaign_dict?: {};
 }
 
 export interface CampaignExtraInfo {

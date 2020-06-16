@@ -90,7 +90,7 @@
             height: 500px;
 
             .counter-item {
-                height: 60px;
+                height: 59px;
                 padding: 20px;
                 border-bottom: 1px solid #E5E5E5;
 
@@ -102,6 +102,10 @@
                     font-size: 20px;
                     font-weight: 800;
                 }
+            }
+
+            .last-item {
+                border-bottom: none !important;
             }
         }
     }

@@ -1,0 +1,12 @@
+<div class="influencer-card">
+    <div *ngIf="influencer">
+        <div class="image-holder">
+            <img src="{{influencer.profile_picture}}">
+        </div>
+        <div class="user-profile">
+            <div class="user-name">{{influencer.name}}</div>
+            <div class="user-detail" [ngClass]="{ 'enable': hasDetail() }" (click)="goToReview()"> Vide Detail </div>
+        </div>
+    </div>
+
+</div>

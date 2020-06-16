@@ -1,4 +1,5 @@
 @import 'common';
+@import 'global';
 
 .header-background {
     height: 260px;
@@ -38,16 +39,12 @@
     }
 
     .influencer-list {
-        .influencer-card {
-            width: 240px;
-            height: 80px;
-            background: #FFFFFF;
-            box-shadow: 1px 1px 8px rgba(13, 5, 60, 0.2);
-            border-radius: 12px;
+        .influencer-item {
             display: inline-block;
-            vertical-align: top;
-            margin-right: 15px;
-            margin-bottom: 15px;
         }
     }
+}
+
+.signup-button {
+    margin: 20px 40px;
 }

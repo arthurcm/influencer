@@ -45,6 +45,8 @@ import { VgOverlayPlayModule } from 'ngx-videogular';
 import { VgBufferingModule } from 'ngx-videogular';
 import { VgStreamingModule } from 'ngx-videogular';
 
+import { ChartsModule } from 'ng2-charts';
+
 import { AngularFireAuthGuardModule } from '@angular/fire/auth-guard';
 import { MatNativeDateModule } from '@angular/material/core';
 import { AngularFireStorageModule, BUCKET } from '@angular/fire/storage';
@@ -79,6 +81,8 @@ import { CampaignOverviewComponent } from './main/campaign-overview/campaign-ove
 import { BrandCampaignComponent } from './main/brand-campaign/brand-campaign.component';
 import { SimpleCampaignOverviewComponent } from './main/simple-campaign-overview/simple-campaign-overview.component';
 import { BrandHomeComponent } from './main/brand-home/brand-home.component';
+import { InfluencerCardComponent } from './main/brand-campaign/influencer-card/influencer-card.component';
+import { BrandChartComponent } from './main/brand-home/brand-chart/brand-chart.component';
 
 export function momentAdapterFactory() {
     return adapterFactory(moment);
@@ -116,6 +120,8 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         BrandCampaignComponent,
         SimpleCampaignOverviewComponent,
         BrandHomeComponent,
+        InfluencerCardComponent,
+        BrandChartComponent,
     ],
     imports: [
         BrowserModule,
@@ -163,6 +169,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         PerfectScrollbarModule,
         NgSelectModule,
         NguCarouselModule,
+        ChartsModule,
     ],
     exports: [
         UploaderComponent,

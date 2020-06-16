@@ -5,6 +5,9 @@ import { Router } from '@angular/router';
 import { LoadingSpinnerService } from 'src/app/services/loading-spinner.service';
 import { CampaignService } from 'src/app/services/campaign.service';
 import { BrandService } from 'src/app/services/brand.service';
+import { forkJoin } from 'rxjs';
+
+import * as moment from 'moment';
 
 @Component({
     selector: 'app-brand-home',
@@ -14,6 +17,15 @@ import { BrandService } from 'src/app/services/brand.service';
 export class BrandHomeComponent implements OnInit {
 
     brandCampaigns: CampaignDetail[];
+
+    statistic = {
+        roi: 0,
+        revenue: 0,
+        total_commision: 0,
+        visit: 0,
+        influencer_count: 0,
+    }
+    chartData: any;
 
     constructor(
         public auth: AngularFireAuth,
@@ -47,17 +59,40 @@ export class BrandHomeComponent implements OnInit {
 
     async loadBrandStats() {
         const roi = await this.brandService.getBrandROI();
-        roi.subscribe(result => {
-            console.log(result);
-        });
         const track = await this.brandService.getBrandTrack();
-        track.subscribe(result => {
-            console.log(result);
-        });
         const influencer = await this.brandService.getBrandInfluencer();
-        influencer.subscribe(result => {
-            console.log(result);
-        });
+
+        forkJoin([
+            roi,
+            track,
+            influencer,
+        ]).subscribe(data => {
+            console.log(data);
+            const roiData = data[0];
+            const trackData = data[1];
+            const influencerData = data[2];
+            this.statistic['roi'] = roiData['ROI'];
+            this.statistic['total_commision'] = roiData['total_commission'];
+            this.statistic['revenue'] = roiData['revenue']['shop_revenue'];
+            this.statistic['influencer_count'] = influencerData['influencer_counts'];
+            this.statistic['visit'] = trackData['visit_counts'];
+
+            //daily_visit: {2020-06-09: 3, 2020-06-15: 4}
+            const visitTimeseries = trackData['daily_visit'];
+            const revenueTs = roiData['revenue']['revenue_ts'];
+            const revenueTimeseries = {};
+            revenueTs.forEach(point => {
+                // daily_revenue: 146 order_date: "Mon, 15 Jun 2020 00:00:00 GMT"
+                const date = moment(point['order_date']).format('YYYY-MM-DD')
+                console.log(date);
+                revenueTimeseries[date] = point['daily_revenue'];
+            })
+
+            this.chartData = {
+                revenue: revenueTimeseries,
+                visit: visitTimeseries,
+            }
+        })
     }
 
     async deleteCampaign(campaign: CampaignDetail) {
@@ -79,9 +114,7 @@ export class BrandHomeComponent implements OnInit {
         });
     }
 
-
     createCampaign() {
         this.router.navigate(['/app/create-campaign']);
     }
-
 }

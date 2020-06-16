@@ -42,10 +42,10 @@
                 <ngu-tile class="large-image-container"  *nguCarouselDef="let image of carouselTileItems">
                     <img class="large-image" src="{{image.url}}">
                 </ngu-tile>
-                <button NguCarouselPrev class='leftRs'>
+                <button NguCarouselPrev class='leftRs' (click)="slideLargeImageLeft()">
                     <span class="material-icons"> chevron_left </span>
                 </button>
-                <button NguCarouselNext class='rightRs'>
+                <button NguCarouselNext class='rightRs' (click)="slideLargeImageRight()">
                     <span class="material-icons"> chevron_right </span>
                 </button>
             </ngu-carousel>
@@ -54,7 +54,8 @@
                     [inputs]="carouselTileSmall"
                     [dataSource]="carouselTileItems"
                     >
-                    <ngu-tile *nguCarouselDef="let image of carouselTileItems">
+                    <ngu-tile *nguCarouselDef="let image of carouselTileItems" (click)="clickSmallImage(image)" 
+                        [ngClass]="{'selected': selectedMedia.path === image.path}">
                         <img class="small-image" src="{{image.url}}">
                     </ngu-tile>
                     <button NguCarouselPrev class='leftRsSm'>
@@ -67,7 +68,7 @@
             </div>
         </div>
     
-        <div class="approve-button">
+        <div class="approve-button" *ngIf="campaign">
             <button mat-flat-button color="primary" class="large-round-button" (click)="approveImage()">Approve</button>
         </div>
     </div>
@@ -76,6 +77,7 @@
         <app-media-thread 
             [selectedMedia]="selectedMedia"
             [mediaList]="images.images"
+            [allMedia]="allMedia"
         ></app-media-thread>
     </div>
 </div>

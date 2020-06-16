@@ -15,6 +15,7 @@ export interface Feedback {
     timestamp: Timestamp;
     video_offset: number;
     original?: boolean;
+    displayName?: string;
 }
 
 export interface Thread {
