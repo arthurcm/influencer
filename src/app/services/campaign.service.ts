@@ -122,6 +122,21 @@ export class CampaignService {
         );
     }
 
+    async deleteBrandCampaignById(campaignId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                                         Authorization: `${token}`,
+                                         'Content-Type':  'application/json',
+                                     }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/brand/campaign/brand_campaign_id/${campaignId}`;
+        return this.http.delete<any>(reqeustUrl, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     async completeCampaign(campaign) {
         const token = await (await this.auth.currentUser).getIdToken();
 

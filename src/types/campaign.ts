@@ -28,7 +28,7 @@ export interface CampaignDetail {
     influencer_id?: string;
     campaign_name: string;
     contacts: string;
-    commision_dollar?: number;
+    commission_dollar?: number;
     commission_percent?: number;
     milestones?: string[];
     donts?: string[];

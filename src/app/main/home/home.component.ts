@@ -23,7 +23,7 @@ export class HomeComponent implements OnInit {
 
     @ViewChild(MatSort, {static: true}) sort: MatSort;
 
-    displayedColumns = ['type', 'campaign_name', 'end_time', 'post_time', 'brand', 'commision_dollar', 'link'];
+    displayedColumns = ['type', 'campaign_name', 'end_time', 'post_time', 'brand', 'commission_dollar', 'link'];
 
     constructor(
         public auth: AngularFireAuth,
@@ -148,7 +148,7 @@ export class HomeComponent implements OnInit {
                 (a, b) => {
                     const isAsc = sort.direction === 'asc';
                     switch (sort.active) {
-                    case 'commision_dollar': return compare(a.campaign_data.commision_dollar, b.campaign_data.commision_dollar, isAsc);
+                    case 'commission_dollar': return compare(a.campaign_data.commission_dollar, b.campaign_data.commission_dollar, isAsc);
                     case 'campaign_name': return compare(a.campaign_data.campaign_name, b.campaign_data.campaign_name, isAsc);
                     case 'brand': return compare(a.campaign_data.brand, b.campaign_data.brand, isAsc);
                     case 'end_time': return compare(a.campaign_data.end_time, b.campaign_data.end_time, isAsc);

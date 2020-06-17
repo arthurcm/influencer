@@ -98,12 +98,12 @@ export class BrandHomeComponent implements OnInit {
     async deleteCampaign(campaign: CampaignDetail) {
         this.loadingService.show();
         console.log(campaign);
-        const deleteCampaign = await this.campaignService.deleteCampaignById(campaign.campaign_id);
+        const deleteCampaign = await this.campaignService.deleteBrandCampaignById(campaign.brand_campaign_id);
 
         deleteCampaign.subscribe(result => {
             let index = -1;
             for (let i = 0; i < this.brandCampaigns.length; i ++) {
-                if (campaign.campaign_id === this.brandCampaigns[i].campaign_id) {
+                if (campaign.brand_campaign_id === this.brandCampaigns[i].brand_campaign_id) {
                     index = i;
                     break;
                 }

@@ -128,7 +128,7 @@ function createCamapignData(campaign_id, data, uid, time_stamp, history_id){
             campaign_id,
             brand: String(data.brand),
             campaign_name: String(data.campaign_name),
-            commision_dollar: Number(data.commision_dollar),
+            commission_dollar: Number(data.commission_dollar),
             contacts: String(data.contacts),
             content_concept: String(data.content_concept),
             end_time: Number(data.end_time),

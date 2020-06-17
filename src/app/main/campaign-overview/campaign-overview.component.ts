@@ -28,14 +28,14 @@ export class CampaignOverviewComponent implements OnInit {
         if (extra_info && extra_info['commissionType']) {
             const type: CommissionType = extra_info['commissionType'];
             if (type === CommissionType.ONE_TIME_PAY) {
-                return `$ ${campaign.commision_dollar}`;
+                return `$ ${campaign.commission_dollar}`;
             } else if (type === CommissionType.PER_SALES) {
                 return `${campaign.commission_percent} %`;
             } else {
-                return `$ ${campaign.commision_dollar} + ${campaign.commission_percent} %`;
+                return `$ ${campaign.commission_dollar} + ${campaign.commission_percent} %`;
             }
         }
-        return `$ ${campaign.commision_dollar}`
+        return `$ ${campaign.commission_dollar}`
     }
 
 }

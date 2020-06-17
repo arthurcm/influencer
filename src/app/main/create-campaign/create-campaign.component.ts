@@ -22,7 +22,7 @@ export class CreateCampaignComponent implements OnInit {
     campaignData: CampaignDetail = {
         brand: '',
         campaign_name: '',
-        commision_dollar: 0,
+        commission_dollar: 0,
         commission_percent: 0,
         contacts: '',
         content_concept: '',
@@ -115,7 +115,7 @@ export class CreateCampaignComponent implements OnInit {
     }
 
     commissionDollarChange(value) {
-        this.campaignData.commision_dollar = value;
+        this.campaignData.commission_dollar = value;
     }
 
     commissionPercentChange(value) {
@@ -125,7 +125,7 @@ export class CreateCampaignComponent implements OnInit {
     commissionTypeChange() {
         this.commissionDollar = 0;
         this.commissionPercent = 0;
-        this.campaignData.commision_dollar = 0;
+        this.campaignData.commission_dollar = 0;
         this.campaignData.commission_percent = 0;
     }
 
@@ -212,7 +212,7 @@ export class CreateCampaignComponent implements OnInit {
         campaign.subscribe(result => {
             console.log(result);
             this.loadingService.hide();
-            this.router.navigate(['/app/home']);
+            this.router.navigate(['/app/brand-home']);
         });
     }
 
