@@ -5,17 +5,17 @@
         <div 
             class="overview-tab"
             [ngClass]="{'selected-tab': selectedTab === 'overview'}"
-            (click)="selectedTab = 'overview'"
+            (click)="switchTab('overview')"
         > Overview </div>
         <div 
             class="review-tab"
             [ngClass]="{'selected-tab': selectedTab === 'review'}"
-            (click)="selectedTab = 'review'"
+            (click)="switchTab('review')"
         > Content Review </div>
         <div 
             class="post-tab"
             [ngClass]="{'selected-tab': selectedTab === 'post'}"
-            (click)="selectedTab = 'post'"
+            (click)="switchTab('post')"
         > Post </div>
     </div>
     <div class="right-panel">
@@ -42,7 +42,12 @@
                             Version {{ item.version_name }}
                         </ng-template>
                     </ng-select>
-                    <span class="material-icons"> open_in_new </span>
+                    <span 
+                        class="material-icons" 
+                        *ngIf="campaign.short_share_url" 
+                        (click)="copyUrl()"
+                        [matTooltip]="'Copy review url to clipboard'"
+                    > open_in_new </span>
                 </div>
                 <div class="simple-overview-container">
                     <app-simple-campaign-overview [campaign]="campaign"></app-simple-campaign-overview>
@@ -116,7 +121,7 @@
                 </div>
     
                 <div class="review-bottom-buttons"> 
-                    <button mat-flat-button color="primary" class="large-round-button" (click)="updateCampaignVersion()"> Save </button>
+                    <button mat-flat-button color="primary" class="large-round-button" (click)="updateCampaignVersion()"> Save Content </button>
                 </div>    
             </div>
 

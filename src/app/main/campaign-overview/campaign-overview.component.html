@@ -18,17 +18,26 @@
                     </div>
                 </div>
                 <div class="space"></div>
-                <div class="overview-title">Millstones</div>
+                <div class="overview-title">Don'ts</div>
                 <div class="overview-content">
                     <div  *ngFor="let item of campaign.milestones">
                         <mat-checkbox> {{ item }}</mat-checkbox>
                     </div>
                 </div>
                 <div class="space"></div>
-                <div class="overview-title">Contatcs</div>
-                <div class="overview-content">
-                    <div class="contract-list-item" *ngFor="let contract of campaign.extra_info['contracts']; index as i"> 
-                        {{ contract }} 
+                <div *ngIf="campaign.extra_info['contracts'] && campaign.extra_info['contracts'].length > 0">
+                    <div class="overview-title">Contract</div>
+                    <div class="overview-content">
+                        <div class="contract-list-item" *ngFor="let contract of campaign.extra_info['contracts']; index as i"> 
+                            {{ contract }} 
+                        </div>
+                    </div>
+                </div>
+                <div class="space"></div>
+                <div *ngIf="campaign.short_tracking_url">
+                    <div class="overview-title">Tracking URL</div>
+                    <div class="overview-content">
+                        {{ campaign.short_tracking_url }}
                     </div>
                 </div>
             </td>

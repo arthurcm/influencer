@@ -169,7 +169,7 @@
     </div>
 
     <div class="list-input">
-        <div class="item-title">Milestones</div>
+        <div class="item-title">Don'ts</div>
         <div class="list-item" *ngFor="let milestone of campaignData.milestones; index as i">
             <mat-checkbox> {{ milestone }}</mat-checkbox>
             <span class="material-icons remove-icon" (click)="removeFromList(campaignData.milestones, i)"> remove_circle_outline </span>

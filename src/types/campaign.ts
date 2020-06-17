@@ -31,6 +31,7 @@ export interface CampaignDetail {
     commision_dollar?: number;
     commission_percent?: number;
     milestones?: string[];
+    donts?: string[];
     requirements?: string[];
     shipping_address?: string;
     tracking_number?: string;
@@ -41,6 +42,10 @@ export interface CampaignDetail {
     tags?: string[];
     collaborating_influencers?: string[];
     inf_campaign_dict?: {};
+    share_url?: string;
+    short_share_url?: string;
+    tracking_url?: string;
+    short_tracking_url?: string;
 }
 
 export interface CampaignExtraInfo {
