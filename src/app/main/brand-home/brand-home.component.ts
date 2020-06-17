@@ -21,7 +21,7 @@ export class BrandHomeComponent implements OnInit {
     statistic = {
         roi: 0,
         revenue: 0,
-        total_commision: 0,
+        total_commission: 0,
         visit: 0,
         influencer_count: 0,
     }
@@ -72,7 +72,7 @@ export class BrandHomeComponent implements OnInit {
             const trackData = data[1];
             const influencerData = data[2];
             this.statistic['roi'] = roiData['ROI'];
-            this.statistic['total_commision'] = roiData['total_commission'];
+            this.statistic['total_commission'] = roiData['total_commission'];
             this.statistic['revenue'] = roiData['revenue']['shop_revenue'];
             this.statistic['influencer_count'] = influencerData['influencer_counts'];
             this.statistic['visit'] = trackData['visit_counts'];

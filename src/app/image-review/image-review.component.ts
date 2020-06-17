@@ -133,7 +133,8 @@ export class ImageReviewComponent implements OnInit {
             if (this.images.images.length > 0) {
                 this.selectedMedia = this.images.images[0];
             }
-        } catch {
+        } catch (e) {
+            console.log(e);
             this.images = {
                 images: [],
                 caption: '',

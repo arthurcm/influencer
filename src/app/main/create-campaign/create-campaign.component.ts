@@ -22,7 +22,8 @@ export class CreateCampaignComponent implements OnInit {
     campaignData: CampaignDetail = {
         brand: '',
         campaign_name: '',
-        commision_dollar: -1,
+        commision_dollar: 0,
+        commission_percent: 0,
         contacts: '',
         content_concept: '',
         end_time: 1,
@@ -43,9 +44,10 @@ export class CreateCampaignComponent implements OnInit {
     };
 
     campaignName = '';
-    campaignType = 'video';
+    campaignType = 'image';
     brand = '';
-    commision = -1;
+    commissionDollar = 0;
+    commissionPercent = 0;
     contactName = '';
     contactEmail = '';
     endDate = new Date();
@@ -112,9 +114,31 @@ export class CreateCampaignComponent implements OnInit {
         this.campaignData.brand = value;
     }
 
-    commisionChange(value) {
+    commissionDollarChange(value) {
         this.campaignData.commision_dollar = value;
     }
+
+    commissionPercentChange(value) {
+        this.campaignData.commission_percent = value;
+    }
+
+    commissionTypeChange() {
+        this.commissionDollar = 0;
+        this.commissionPercent = 0;
+        this.campaignData.commision_dollar = 0;
+        this.campaignData.commission_percent = 0;
+    }
+
+    showCommissionDollar() {
+        return this.commissionType.value === CommissionType.FIX_PAY_PLUS_PER_SALES ||
+            this.commissionType.value === CommissionType.ONE_TIME_PAY;
+    }
+
+    showCommissionPercent() {
+        return this.commissionType.value === CommissionType.FIX_PAY_PLUS_PER_SALES ||
+            this.commissionType.value === CommissionType.PER_SALES;
+    }
+
     contactNameChange(value) {
         // Alex Subramanyan <asub@yelp.com>
         this.campaignData.contacts = `${this.contactName} <${this.contactEmail}>`;

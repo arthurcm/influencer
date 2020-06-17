@@ -28,7 +28,8 @@ export interface CampaignDetail {
     influencer_id?: string;
     campaign_name: string;
     contacts: string;
-    commision_dollar: number;
+    commision_dollar?: number;
+    commission_percent?: number;
     milestones?: string[];
     requirements?: string[];
     shipping_address?: string;
@@ -72,5 +73,5 @@ export interface ImageContent {
 export enum CommissionType {
     PER_SALES = 'Per Sales Commission',
     ONE_TIME_PAY = 'One Time Payment',
-    FIX_PAY_PLUS_PER_SALES = 'Fixed Pay + Per Sales Commision',
+    FIX_PAY_PLUS_PER_SALES = 'Fixed Pay + Per Sales Commission',
 }
