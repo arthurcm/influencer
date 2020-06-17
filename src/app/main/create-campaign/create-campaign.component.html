@@ -7,19 +7,19 @@
                 matInput placeholder="" 
                 [(ngModel)]="campaignName" 
                 (ngModelChange)="campaignNameChange($event)"
-                autocomplete="false"
+                autocomplete="off"
             >
         </mat-form-field>
         <span 
-            [ngClass]="{'disable-type': campaignType==='image'}"
-            class="material-icons" 
-            (click)="campaignType='video'"
-        > videocam  </span>
-        <span 
             [ngClass]="{'disable-type': campaignType==='video'}"
-            class="material-icons" 
+            class="material-icons campaign-type-selector" 
             (click)="campaignType='image'"
         > image  </span>
+        <span 
+            [ngClass]="{'disable-type': campaignType==='image'}"
+            class="material-icons campaign-type-selector" 
+            (click)="campaignType='video'"
+        > videocam  </span>
     </div>
 
     <div>
@@ -50,21 +50,33 @@
         <div class="half">
             <div class="item-title">Commission Type:</div>
             <mat-form-field class="example-half-width">
-                <mat-select [formControl]="commissionType">
+                <mat-select [formControl]="commissionType" (onChange)="commissionTypeChange()">
                     <mat-option *ngFor="let p of commissionTypeList" [value]="p">{{p}}</mat-option>
                 </mat-select>
             </mat-form-field>
         </div>
         
-        <div class="half">
+        <div class="extend-half">
             <div class="item-title">Commission:</div>
-            <mat-form-field class="example-half-width">
+            <mat-form-field class="example-half-width" *ngIf="showCommissionDollar()">
+                <span matPrefix>$ &nbsp;</span>
                 <input 
                     matInput 
                     type="number" 
                     placeholder="" 
-                    [(ngModel)]="commision" 
-                    (ngModelChange)="commisionChange($event)"
+                    [(ngModel)]="commissionDollar" 
+                    (ngModelChange)="commissionDollarChange($event)"
+                    autocomplete="off"
+                >
+            </mat-form-field>
+            <mat-form-field class="example-half-width" *ngIf="showCommissionPercent()">
+                <span matSuffix>&nbsp; %</span>
+                <input 
+                    matInput 
+                    type="number" 
+                    placeholder="" 
+                    [(ngModel)]="commissionPercent" 
+                    (ngModelChange)="commissionPercentChange($event)"
                     autocomplete="off"
                 >
             </mat-form-field>
@@ -133,9 +145,9 @@
 
     <div class="list-input">
         <div class="item-title">Requirements</div>
-        <div *ngFor="let requirement of campaignData.requirements; index as i">
+        <div class="list-item" *ngFor="let requirement of campaignData.requirements; index as i">
             <mat-checkbox> {{ requirement }}</mat-checkbox> 
-            <span class="material-icons remove-icon" (click)="removeFromList(campaignData.requirements, i)"> close </span>
+            <span class="material-icons remove-icon" (click)="removeFromList(campaignData.requirements, i)"> remove_circle_outline </span>
         </div>
         <mat-form-field class="example-full-width">
             <input 
@@ -146,16 +158,21 @@
                 autocomplete="off"
             >
         </mat-form-field>
-        <span class="material-icons add-icon" (click)="addRequirement()">
-            playlist_add
-        </span>
+        <button 
+            mat-button
+            (click)="addRequirement()"
+            [disabled]="!newRequirement">
+            <span class="material-icons add-icon" >
+                playlist_add
+            </span>
+        </button>
     </div>
 
     <div class="list-input">
         <div class="item-title">Milestones</div>
-        <div *ngFor="let milestone of campaignData.milestones; index as i">
+        <div class="list-item" *ngFor="let milestone of campaignData.milestones; index as i">
             <mat-checkbox> {{ milestone }}</mat-checkbox>
-            <span class="material-icons remove-icon" (click)="removeFromList(campaignData.milestones, i)"> close </span>
+            <span class="material-icons remove-icon" (click)="removeFromList(campaignData.milestones, i)"> remove_circle_outline </span>
         </div>
         <mat-form-field class="example-full-width">
             <input 
@@ -166,9 +183,14 @@
                 autocomplete="off"
             >
         </mat-form-field>
-        <span class="material-icons add-icon" (click)="addMilestone()">
-            playlist_add
-        </span>
+        <button 
+            mat-button
+            (click)="addMilestone()"
+            [disabled]="!newMilestone">
+            <span class="material-icons add-icon" >
+                playlist_add
+            </span>
+        </button>
     </div>
 
     <div>

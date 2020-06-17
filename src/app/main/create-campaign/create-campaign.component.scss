@@ -13,6 +13,10 @@
         line-height: 22px;
     }
 
+    .campaign-type-selector {
+        cursor: pointer;
+    }
+
     .disable-type {
         color: lightgrey;
     }
@@ -34,6 +38,16 @@
         width: 200px;
         display: inline-block;
         margin-right: 20px;
+    }
+
+    .extend-half {
+        width: 440px;
+        display: inline-block;
+        margin-right: 20px;
+
+        .example-half-width {
+            margin-right: 20px;
+        }
     }
 
     .mat-radio-button {
@@ -64,6 +78,11 @@
             vertical-align: top;
             margin-left: 15px;
             cursor: pointer;
+        }
+
+        .list-item {
+            line-height: 20px;
+            margin: 10px;
         }
     }
 

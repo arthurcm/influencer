@@ -1,7 +1,12 @@
 @import 'common';
 
 .logo {
-    margin: 25px 10px 30px 10px;
+    margin: 15px 0px 20px 10px;
+
+    .logo-image {
+        height: 60px;
+        width: 60px;
+    }
 }
 
 .icon {
