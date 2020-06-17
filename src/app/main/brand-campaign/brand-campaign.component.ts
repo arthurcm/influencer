@@ -4,6 +4,7 @@ import { LoadingSpinnerService } from 'src/app/services/loading-spinner.service'
 import { ActivatedRoute, Router } from '@angular/router';
 import { CampaignDetail } from 'src/types/campaign';
 import { AngularFireAuth } from '@angular/fire/auth';
+import { NotificationService, AlertType } from 'src/app/services/notification.service';
 
 @Component({
     selector: 'app-brand-campaign',
@@ -22,6 +23,7 @@ export class BrandCampaignComponent implements OnInit {
         private activatedRoute: ActivatedRoute,
         private router: Router,
         private auth: AngularFireAuth,
+        private notification: NotificationService,
     ) {
 
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('id');
@@ -54,10 +56,25 @@ export class BrandCampaignComponent implements OnInit {
         this.loadingService.show();
         const signupCampaign = await this.campaignService.signupCampaign(this.campaign);
         signupCampaign.subscribe(result => {
-            console.log(result);
-            // campaign_id
             this.loadingService.hide();
-            this.router.navigate([`/app/campaign/${result.campaign_id}`]);
+            console.log(result);
+            if (result && result['campaign_id']) {
+                this.notification.addMessage({
+                    type: AlertType.Success,
+                    title: 'Signup Succeed',
+                    message: 'Your have signed up for this campaign.',
+                    duration: 3000,
+                });
+                // campaign_id
+                this.router.navigate([`/app/campaign/${result['campaign_id']}`]);
+            } else if (result['status'] && result['status'] === 'already signed up') {
+                this.notification.addMessage({
+                    type: AlertType.Warning,
+                    title: 'Signup Failed',
+                    message: 'Your have signed up for this campaign before.',
+                    duration: 3000,
+                });
+            }
         });
     }
 

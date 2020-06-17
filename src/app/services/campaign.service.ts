@@ -390,6 +390,22 @@ export class CampaignService {
 
     }
 
+    // Finalize Campaign
+    async finalizeCampaign(content, campaignId, historyId) {
+        const token = await (await this.auth.currentUser).getIdToken();
+
+        const httpOptions = {
+            headers: new HttpHeaders({
+                Authorization: `${token}`,
+                'Content-Type':  'application/json',
+            }),
+        };
+        const reqeustUrl = `${this.CAMPAIGN_SERVICE_URL}/share/finalize_campaign/campaign_id/${campaignId}/history_id/${historyId}`;
+        return this.http.put<any>(reqeustUrl, content, httpOptions).pipe(
+            catchError(this.handleError)
+        );
+    }
+
     deleteThread(path: string, threadId: string) {
         const httpOptions = {
             headers: new HttpHeaders({

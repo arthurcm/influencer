@@ -10,7 +10,7 @@
         <div class="icon" (click)="navigate('brand-home')" *ngIf="isBrandView">
             <mat-icon class="menu-icon" mat-list-icon> home </mat-icon>
         </div>
-        <div class="icon" (click)="navigate('calendar')">
+        <div class="icon disabled" [matTooltip]="'Coming Soon'">
             <mat-icon class="menu-icon" mat-list-icon> calendar_today </mat-icon>
         </div>
         <!-- <div class="icon">

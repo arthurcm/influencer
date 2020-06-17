@@ -5,8 +5,8 @@
                 <div class="overview-title">Campaign Name</div>
                 <div class="overview-content">{{campaign.campaign_name}}</div>
                 <div class="space"></div>
-                <div class="overview-title">Commision</div>
-                <div class="overview-content">$ {{campaign.commision_dollar}}</div>
+                <div class="overview-title">Commission</div>
+                <div class="overview-content">{{ displayCommission(campaign) }}</div>
                 <div class="space"></div>
                 <div class="overview-title">Review Deadline</div>
                 <div class="overview-content">{{ displayTime(campaign.end_time) }}</div>

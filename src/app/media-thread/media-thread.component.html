@@ -1,10 +1,13 @@
 <div class="title"> Comment </div>
 <div class="button-row">
-    <button mat-button class="add-comment-button" (click)="showAddNewThread()"  *ngIf="!shouldShowAddNewThread">
+    <div class="no-media-message" [hidden]="selectedMedia">
+        Please select image to comment.
+    </div>
+    <button mat-button class="add-comment-button" (click)="showAddNewThread()"  *ngIf="!shouldShowAddNewThread && selectedMedia">
         <span class="material-icons"> add </span>
         Add Comment
     </button>
-    <div *ngIf="shouldShowAddNewThread">
+    <div *ngIf="shouldShowAddNewThread && selectedMedia">
         <mat-form-field class="box-text-area" floatLabel=never>
             <textarea 
                 class="new-comment-textarea" 

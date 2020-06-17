@@ -4,20 +4,29 @@ import { BehaviorSubject } from 'rxjs';
 @Injectable()
 export class UserNameService {
 
-    private reserveSource = new BehaviorSubject<any[]>([]);
+    private idToken = new BehaviorSubject<any>([]);
 
-    constructor() {}
+    currentReserve = this.idToken.asObservable();
+  
+    constructor() { }
+  
+    changeReserve(idToken: any[]) {
+      this.idToken.next(idToken)
+    }
 
-    get reserveSource() {
-        this.auth.idTokenResult.subscribe(idToken => {
-            if (idToken.claims && idToken.claims.store_account === true) {
-                this.isBrandView = true;
-                this.loadBrandCampaign();
-            } else {
-                this.isBrandView = false;
-                this.loadInfluencerCampaign();
-            }
-        });
-        return this.reserveSource.asObservable();
-   }
+    get currentIdToken() {
+        return this.idToken.asObservable();
+    }
+
+//     get reserveSource() {
+//         this.auth.idTokenResult.subscribe(idToken => {
+//             if (idToken.claims && idToken.claims.store_account === true) {
+//                 this.isBrandView = true;
+//                 this.loadBrandCampaign();
+//             } else {
+//                 this.isBrandView = false;
+//                 this.loadInfluencerCampaign();
+//             }
+//         });
+//    }
 }

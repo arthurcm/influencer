@@ -8,6 +8,7 @@ import { VideoPlayerComponent } from '../shared/video-player/video-player.compon
 import { LoadingSpinnerService } from '../services/loading-spinner.service';
 import { CampaignService } from '../services/campaign.service';
 import { NguCarouselConfig, NguCarousel, NguCarouselStore } from '@ngu/carousel';
+import { NotificationService, AlertType } from '../services/notification.service';
 
 @Component({
     selector: 'app-image-review',
@@ -62,6 +63,7 @@ export class ImageReviewComponent implements OnInit {
         private activatedRoute: ActivatedRoute,
         public loadingService: LoadingSpinnerService,
         private campaignService: CampaignService,
+        private notification: NotificationService,
     ) {
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('campaignId');
         // this.historyId = this.activatedRoute.snapshot.paramMap.get('historyId');
@@ -169,22 +171,27 @@ export class ImageReviewComponent implements OnInit {
             history_id: this.historyId,
             feed_back: this.newFeedback,
         };
-        const feedback = await this.campaignService.provideFeedback(data, this.campaignId, this.historyId);
+        const feedback = await this.campaignService.finalizeCampaign(data, this.campaignId, this.historyId);
         feedback.subscribe(result => {
             console.log(result);
-            const callable2 = this.fns.httpsCallable('finalizeVideoDraft');
-            callable2(
-                {
-                    campaign_id: this.campaignId,
-                    history_id: this.historyId,
-                }
-            ).subscribe(result2 => {
-                console.log(result2);
-                this.loadingService.hide();
-                this.router.navigate([
-                    `/campaign/${this.campaign.campaign_id}`,
-                ]);
-            });
+
+            this.loadingService.hide();
+            if (result['status'] && result['status'] === 'OK') {
+                this.notification.addMessage({
+                    type: AlertType.Success,
+                    title: 'Content Approved',
+                    message: 'Your have approved content by influencer.',
+                    duration: 3000,
+                });
+            } else {
+                this.notification.addMessage({
+                    type: AlertType.Error,
+                    title: 'Error',
+                    message: 'Error during campaign approval. Please try again.',
+                    duration: 3000,
+                });
+            }
+
         });
     }
 

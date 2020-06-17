@@ -32,6 +32,7 @@ import { PerfectScrollbarModule } from 'ngx-perfect-scrollbar';
 import { PERFECT_SCROLLBAR_CONFIG } from 'ngx-perfect-scrollbar';
 import { PerfectScrollbarConfigInterface } from 'ngx-perfect-scrollbar';
 import { NgSelectModule } from '@ng-select/ng-select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { NgxMatDatetimePickerModule, NgxMatTimepickerModule, NgxMatNativeDateModule } from '@angular-material-components/datetime-picker';
 import { NgxMatMomentModule } from '@angular-material-components/moment-adapter';
@@ -83,6 +84,7 @@ import { SimpleCampaignOverviewComponent } from './main/simple-campaign-overview
 import { BrandHomeComponent } from './main/brand-home/brand-home.component';
 import { InfluencerCardComponent } from './main/brand-campaign/influencer-card/influencer-card.component';
 import { BrandChartComponent } from './main/brand-home/brand-chart/brand-chart.component';
+import { NotificationComponent } from './shared/notification/notification.component';
 
 export function momentAdapterFactory() {
     return adapterFactory(moment);
@@ -122,6 +124,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         BrandHomeComponent,
         InfluencerCardComponent,
         BrandChartComponent,
+        NotificationComponent,
     ],
     imports: [
         BrowserModule,
@@ -155,6 +158,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         MatDialogModule,
         MatRadioModule,
         MatSidenavModule,
+        MatTooltipModule,
         VgCoreModule,
         VgControlsModule,
         VgOverlayPlayModule,
@@ -181,6 +185,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         UploadImageDialogComponent,
         SendMessageDialogComponent,
         UploadContractDialogComponent,
+        NotificationComponent,
     ],
     providers: [
         MatDatepickerModule,
