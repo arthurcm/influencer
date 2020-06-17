@@ -102,6 +102,22 @@ function getLatestCampaignPath(uid, campaign_id){
         });
 }
 
+
+// Get campaign meta information when been called.
+function getCampaignHistories(campaign_id) {
+    console.info('Querying campaign', campaign_id);
+    return db.collection('campaigns').doc(campaign_id)
+        .collection('campaignHistory').orderBy('time_stamp', 'desc').get()
+        .then(querySnapshot => {
+            let histories = []
+            querySnapshot.docs.forEach(doc => {
+                histories.push(doc.data());
+            });
+            return histories;
+        });
+}
+
+
 // Get campaign meta information when been called.
 function getCampaign(data, uid, res) {
     const markers = [];
@@ -637,12 +653,14 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken, next) {
             const uniq_inf = [...new Set(collaborating_influencers)];
             // brand_campaign_data.collaborating_influencers = uniq;
 
-            const tracking_url = await get_referral_url(idToken, brand_campaign_data, next);
-            console.log('Obtained tracking url', tracking_url);
             const entitled_shops = await get_entitled_shops(idToken, next);
             console.log('Obtained entitled shops', entitled_shops);
             brand_campaign_data = updateCampaignCommissionWithEntitlement(brand_campaign_data, entitled_shops);
             const results = createCampaign(brand_campaign_data, uid,  false);
+
+            const tracking_url = await get_referral_url(idToken, results.campaign_data, next);
+            console.log('Obtained tracking url', tracking_url);
+
             const batch = results.batch_promise;
 
             // unique influencers are only updated to brand side campaign and not influencer side.
@@ -813,7 +831,7 @@ function getInfluencerProfile(uid){
     return influencerRef.get();
 }
 
-function getAllMedia(uid, campaign_id, campaign_type){
+function getAllMedia(campaign_id, campaign_type){
     let media_type;
     if(campaign_type === 'video'){
         media_type = 'videos';
@@ -834,6 +852,7 @@ module.exports = {
     getCampaign,
     getAllCampaign,
     getLatestCampaignPath,
+    getCampaignHistories,
     getAllMedia,
     createCampaign,
     deleteCampaign,

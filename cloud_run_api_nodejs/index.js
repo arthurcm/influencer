@@ -18,10 +18,10 @@ admin.initializeApp({
 // middleware for token verification
 app.use((req, res, next) => {
 
-    // all /share/* endpoints require no authorization
-    if (req.path.startsWith('/share')){
-        return next();
-    }
+    // // all /share/* endpoints require no authorization
+    // if (req.path.startsWith('/share')){
+    //     return next();
+    // }
 
     // idToken comes from the client
     if (!req.headers.authorization) {
@@ -37,7 +37,7 @@ app.use((req, res, next) => {
             // sign up store accounts
             // /brand/* end points can only be accessed by store accounts
             // /common/* endpoints require auth, can be accessed by both store and inf
-            if (req.path.startsWith('/common')){
+            if (req.path.startsWith('/common') || req.path.startsWith('/share')){
                 res.locals.uid = uid;
                 res.locals.from_shopify = decodedToken.from_shopify;
                 res.locals.store_account = decodedToken.store_account;
@@ -109,6 +109,25 @@ app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
         .catch(next);
 });
 
+app.get('/common/campaign/campaign_id/:campaign_id', (req, res, next) => {
+    const uid = res.locals.uid;
+    const campaign_id = req.params.campaign_id;
+    console.debug('Receiving campaign id for /common/campaign/', campaign_id);
+    if(!campaign_id){
+        console.warn(`request to ${req.path} did not provide campaign_id`);
+        res.status(422).send('Have to have a valid campaign_id');
+    }
+    return campaign.getCampaignHistories(campaign_id)
+        .then(history_list => {
+            console.debug('get campaign histories', history_list);
+            res.status(200).send({
+                history_list,
+            });
+            return history_list;
+        })
+        .catch(next);
+});
+
 app.get('/get_campaign', (req, res, next) => {
     const uid = res.locals.uid;
     return campaign.getAllCampaign(uid)
@@ -120,14 +139,30 @@ app.get('/get_campaign', (req, res, next) => {
 });
 
 app.get('/media/campaign_type/:campaign_type/campaign_id/:campaign_id', (req, res, next) => {
-    const uid = res.locals.uid;
+    // const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
     const campaign_type = req.params.campaign_type;
     if(!campaign_type || !campaign_id || (campaign_type !== 'video' && campaign_type !== 'image')){
         console.warn(`request to ${req.path} did not provide campaign_id or campaign_type`);
         res.status(422).send('Have to have a valid campaign_id and campaign_type');
     }
-    return campaign.getAllMedia(uid, campaign_id, campaign_type)
+    return campaign.getAllMedia(campaign_id, campaign_type)
+        .then(results => {
+            res.status(200).send(results);
+            return results;
+        })
+        .catch(next);
+});
+
+app.get('/common/media/campaign_type/:campaign_type/campaign_id/:campaign_id', (req, res, next) => {
+    // const uid = res.locals.uid;
+    const campaign_id = req.params.campaign_id;
+    const campaign_type = req.params.campaign_type;
+    if(!campaign_type || !campaign_id || (campaign_type !== 'video' && campaign_type !== 'image')){
+        console.warn(`request to ${req.path} did not provide inf_id or campaign_id or campaign_type`);
+        res.status(422).send('Have to have a valid inf_id or campaign_id and campaign_type');
+    }
+    return campaign.getAllMedia(campaign_id, campaign_type)
         .then(results => {
             res.status(200).send(results);
             return results;
@@ -203,6 +238,9 @@ app.put('/feedback/campaign_id/:campaign_id/history_id/:history_id', (req, res, 
         console.warn(`request to ${req.path} did not provide none empty feedback`);
         res.status(422).send('Require a none empty feedback');
     }
+    if (res.headersSent){
+        return next();
+    }
     return campaign.feedback(req.body, uid, campaign_id, history_id)
         .then(result => {
             res.status(200).send({status : 'OK'});
@@ -222,6 +260,9 @@ app.put('/share/feedback/campaign_id/:campaign_id/history_id/:history_id', (req,
     if(!history_id){
         console.warn(`request to ${req.path} did not provide history_id`);
         res.status(422).send('Require a valid history_id');
+    }
+    if (res.headersSent){
+        return next();
     }
     return campaign.feedback(req.body, 'no_uid', campaign_id, history_id)
         .then(result => {
@@ -243,6 +284,9 @@ app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (r
     if(!history_id){
         res.status(422).send('Require a valid history_id');
     }
+    if (res.headersSent){
+        return next();
+    }
     return campaign.finalizeCampaign(uid, campaign_id, history_id)
         .then(result => {
             res.status(200).send({status : 'OK'});
@@ -257,10 +301,13 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
     const history_id = req.params.history_id;
     console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
     if(!campaign_id){
-        res.status(400).send('Require a valid campaign_id');
+        res.status(422).send('Require a valid campaign_id');
     }
     if(!history_id){
-        res.status(400).send('Require a valid history_id');
+        res.status(422).send('Require a valid history_id');
+    }
+    if (res.headersSent){
+        return next();
     }
     return campaign.finalizeCampaign('no_uid', campaign_id, history_id)
         .then(result => {
@@ -414,6 +461,22 @@ app.post('/reply_feedback_thread', (req, res, next)=>{
 });
 
 
+app.post('/share/reply_feedback_thread', (req, res, next)=>{
+    console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    const uid = res.locals.uid;
+    let name = res.locals.name;
+    if(!name){
+        name = 'Anonymous';
+    }
+    return campaign.replyToFeedbackThread(data, uid, name)
+        .then(result => {
+            res.status(200).send({status : 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
 app.put('/like_feedback', (req, res, next)=>{
     console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
@@ -429,23 +492,6 @@ app.put('/like_feedback', (req, res, next)=>{
     return campaign.likeFeedback(data, like_id)
         .then(result => {
             res.status(200).send(result);
-            return result;
-        })
-        .catch(next);
-});
-
-
-app.post('/share/reply_feedback_thread', (req, res, next)=>{
-    console.debug(`${req.path} received  ${req.body}`);
-    const data = req.body;
-    const uid = res.locals.uid;
-    let name = res.locals.name;
-    if(!name){
-        name = 'Anonymous';
-    }
-    return campaign.replyToFeedbackThread(data, uid, name)
-        .then(result => {
-            res.status(200).send({status : 'OK'});
             return result;
         })
         .catch(next);

@@ -9,7 +9,10 @@ def percentage_commission_per_row(row):
     subtotal_price = float(row[0])
     uid = row[1]
     campaign_id = row[2]
-    commission_percentage = float(row[5])
+    if not row[5]:
+        commission_percentage = 0
+    else:
+        commission_percentage = float(row[5])
     if not commission_percentage or commission_percentage <= 0:
         return campaign_id, uid, 0
     elif commission_percentage > 1:
@@ -52,7 +55,10 @@ def fixed_commission_per_shop(sql_data):
     per_campaign_fixed_commission = {}
     total_fixed_commission = 0
     for row in sql_data:
-        fixed_comm = float(row[0])
+        if not row[0]:
+            fixed_comm = 0
+        else:
+            fixed_comm = float(row[0])
         campaign_id = row[2]
         total_fixed_commission += fixed_comm
         per_campaign_fixed_commission[campaign_id] = fixed_comm

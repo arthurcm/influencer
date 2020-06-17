@@ -244,6 +244,7 @@ def create_lifo_tracker_id():
 
     lifo_tracker_id = create_tracker_id(uid)
     campaign_data = flask.request.json
+    logging.debug(f'{request.path} receiving campaign data {campaign_data}')
     try:
         if from_shopify:
             domain_or_url = campaign_data.get('brand_id')
@@ -255,7 +256,7 @@ def create_lifo_tracker_id():
             response.status_code = 422
             return response
         tracking_url = f'{shop_url}/?lftracker={lifo_tracker_id}'
-        commission = campaign_data.get('commission')
+        commission = campaign_data.get('commission_dollar')
         commission_type = campaign_data.get('commission_type')
         commission_percentage = campaign_data.get('commission_percentage')
         brand_campaign_id = campaign_data.get('brand_campaign_id')
@@ -409,12 +410,19 @@ def roi():
             'per_campaign_percentage_commission': {}
         }
     try:
+        # final_results['per_campaign_total']
+        # final_results['per_campaign_fixed']
+        # final_results['per_campaign_percentage']
         final_results = combine_final_commissions(fixed_commission, percentage_commission)
         total_commission = final_results.get('total_commission')
-        ROI = (shop_revenue - total_commission) / total_commission
-        final_results['ROI'] = ROI
+        if total_commission == 0:
+            ROI = 0
+        else:
+            ROI = (shop_revenue - total_commission) / total_commission
+        final_results['ROI'] = float("{:.2f}".format(ROI))
+        final_results['revenue'] = revenue_results
     except Exception as e:
-        logging.error(f'Getting percentage_commission error: {e}')
+        logging.error(f'Getting final results error: {e}')
         final_results = {
             'ROI': 0,
             'total_commission': 0,
