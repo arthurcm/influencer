@@ -157,6 +157,68 @@ def orders_paid():
     return response
 
 
+@app.route("/customers_redact", methods=["POST"])
+def customers_redact():
+    """
+    This is the public endpoint (no auth) for shopify customers/redact webhook.
+    """
+    data = flask.request.json
+    logging.info(f'Receiving customers_redact request {data}')
+
+    try:
+        shop_domain = data.get('shop_domain')
+        customer_id = data.get('customer').get('id')
+        res = sql_handler.del_customer_info(shop_domain, customer_id)
+        if res.status_code == 200:
+            logging.info('Customer data deleted from cloud SQL')
+    except Exception as e:
+        logging.error(f'Customer data deleted events error: {e}')
+    response = flask.jsonify('OK')
+    response.status_code = 200
+    return response
+
+
+@app.route("/shop_redact", methods=["POST"])
+def shop_redact():
+    """
+    This is the public endpoint (no auth) for shopify shop/redact webhook.
+    """
+    data = flask.request.json
+    logging.info(f'Receiving shop_redact request {data}')
+
+    try:
+        shop_domain = data.get('shop_domain')   
+        res = sql_handler.del_shop_info(shop_domain)
+        if res.status_code == 200:
+            logging.info('Shop data deleted from cloud SQL')
+    except Exception as e:
+        logging.error(f'Shop data deleted events error: {e}')
+    response = flask.jsonify('OK')
+    response.status_code = 200
+    return response
+
+
+@app.route("/customers_data_request", methods=["POST"])
+def customers_data_request():
+    """
+    This is the public endpoint (no auth) for shopify customers/data_request webhook.
+    """
+    data = flask.request.json
+    logging.info(f'Receiving customers_data_request request {data}')
+
+    try:
+        shop_domain = data.get('shop_domain')
+        customer_id = data.get('customer').get('id')
+        res = sql_handler.get_customer_data(shop_domain, customer_id)
+        if res.status_code == 200:
+            logging.info('Customer data queried from cloud SQL')
+    except Exception as e:
+        logging.error(f'Customer data queried error: {e}')
+    response = flask.jsonify(res)
+    response.status_code = 200
+    return response   
+
+
 def token_verification(id_token):
     try:
         decoded_token = auth.verify_id_token(id_token)

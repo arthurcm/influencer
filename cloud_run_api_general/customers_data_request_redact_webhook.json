@@ -1,0 +1,10 @@
+{
+    "shop_id": 954889,
+    "shop_domain": "mc-test-gdpr-store.myshopify.com",
+    "customer": {
+      "id": 3687664025761,
+      "email": "john@email.com",
+      "phone":  "555-625-1199"
+    },
+    "orders_requested": [299938, 280263, 220458]
+}

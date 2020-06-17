@@ -50,6 +50,8 @@ const router = new Router();
 server.keys = [SHOPIFY_API_SECRET_KEY];
 const nonce = crypto.randomBytes(16).toString('base64');
 
+const LFIO_API_HOST='https://api.lifo.ai';
+
 server
     .use(session({ sameSite: 'none', secure: true }, server))
     .use(cors({credentials:true}))
@@ -70,6 +72,37 @@ server
 
                 // We will stay free until we are ready to charge customers.
                 await getSubscriptionUrl(ctx, accessToken, shop);
+
+                fetch(`https://${shop}/admin/api/2020-04/graphql.json`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Shopify-Access-Token": accessToken,
+                    },
+                    body: JSON.stringify({
+                        query: `mutation scriptTagCreate($input: ScriptTagInput!) {
+                                  scriptTagCreate(input: $input) {
+                                    scriptTag {
+                                      id
+                                    }
+                                    userErrors {
+                                      field
+                                      message
+                                    }
+                                  }
+                                }`,
+                            variables: {
+                                "input": {
+                                    "displayScope": "ALL",
+                                    "src": "https://script.lifo.ai/app.js"
+                                }
+                            },
+                        }
+                    ),
+                })
+                    .then(response => response.json())
+                    .then(data => console.log('Sending app.js response', data));
+
                 const order = await registerWebhook({
                     address: `${HOST}/webhooks/orders/paid`,
                     topic: 'ORDERS_PAID',
@@ -78,10 +111,10 @@ server
                     apiVersion: ApiVersion.October19,
                 });
                 if (order.success) {
-                    console.log('Successfully registered webhook!');
+                    console.log('Successfully registered order webhook!');
                 } else {
-                    console.log('Failed to register webhook', order.result);
-                }
+                    console.log('Failed to register order webhook', order.result);
+                }        
             }}),
         );
 
@@ -89,7 +122,7 @@ const webhook = receiveWebhook({secret: SHOPIFY_API_SECRET_KEY});
 
 router.post('/webhooks/orders/paid', webhook, (ctx) => {
     console.log('received webhook: ', ctx.state.webhook);
-    fetch(`https://api.lifo.ai/orders_paid`, {
+    fetch(`${LFIO_API_HOST}/orders_paid`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -100,6 +133,54 @@ router.post('/webhooks/orders/paid', webhook, (ctx) => {
     .then(data => console.log(data));
 });
 
+router.post('/webhooks/customers/redact', webhook, (ctx) => {
+    console.log('received webhook: ', ctx.state.webhook);
+    ctx.res.status(202);
+    ctx.res.body = 'received';
+    fetch(`${LFIO_API_HOST}/customers_redact`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(ctx.state.webhook),
+    })
+    .then(response => response.json())
+    .then(data => console.log(data));
+});
+
+router.post('/webhooks/shop/redact', webhook, (ctx) => {
+    console.log('received webhook: ', ctx.state.webhook);
+    ctx.res.status(202);
+    ctx.res.body = 'received';
+    fetch(`${LFIO_API_HOST}/shop_redact`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(ctx.state.webhook),
+    })
+    .then(response => response.json())
+    .then(data => console.log(data));
+});
+
+router.post('/webhooks/customers/data_request', webhook, (ctx) => {
+    console.log('received webhook: ', ctx.state.webhook);
+    ctx.res.status(202);
+    ctx.res.body = 'received';
+    fetch(`${LFIO_API_HOST}}/customers_data_request`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(ctx.state.webhook),
+    })
+    .then(response => response.json())
+    .then(data => console.log(data));
+});
+
+server.on('error', err => {
+    console.log('server error', err);
+});
 
 server.use(graphQLProxy({version: ApiVersion.April20}));
 router.get('*', verifyRequest(), async (ctx, next) => {
