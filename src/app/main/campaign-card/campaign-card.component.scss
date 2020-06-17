@@ -40,7 +40,8 @@
     .name {
         display: inline-block;
         vertical-align: top;
-        padding: 30px;
+        padding: 20px;
+        width: calc(100% - 800px);
         .end-time {
         }
     }
@@ -55,7 +56,6 @@
     }
 
     .content { 
-
         font-weight: 300;
         font-size: 14px;
         line-height: 17px;
@@ -64,7 +64,8 @@
     .brand {
         display: inline-block;
         vertical-align: top;
-        padding: 30px;
+        padding: 20px;
+        width: 150px;
         .brand-name {
 
         }
@@ -81,7 +82,8 @@
     .commission {
         display: inline-block;
         vertical-align: top;
-        padding: 30px;
+        padding: 20px;
+        width: 120px;
     }
 
     .icon {

@@ -15,6 +15,7 @@ import { UploadImageDialogComponent } from './upload-image-dialog/upload-image-d
 import { SendMessageDialogComponent } from './send-message-dialog/send-message-dialog.component';
 import { NguCarouselConfig, NguCarousel } from '@ngu/carousel';
 import { NotificationService, AlertType } from 'src/app/services/notification.service';
+import { Clipboard } from '@angular/cdk/clipboard';
 
 @Component({
     selector: 'app-campaign',
@@ -93,14 +94,16 @@ export class CampaignComponent implements OnInit {
         public campaignService: CampaignService,
         public dialog: MatDialog,
         private notification: NotificationService,
+        private clipboard: Clipboard,
     ) {
-    // this.itemsCollection = afs.collection<object>('campaigns');
-    // this.items = this.itemsCollection.valueChanges();
-    // this.items.subscribe(result => {
-    //   console.log(result);
-    // })
-
         this.campaignId = this.activatedRoute.snapshot.paramMap.get('id');
+
+        const step = this.activatedRoute.snapshot.queryParamMap.get('step');
+        if (step === 'review') {
+            this.selectedTab = 'review';
+        } else if (step === 'post') {
+            this.selectedTab = 'post';
+        }
         // this.transcodeVideo('video/HK0fpmQI7WOGUDwdmVpPffis7hY2/dK5e3YW4qfTQgBfUOkqX/1586836863114');
     }
 
@@ -211,7 +214,7 @@ export class CampaignComponent implements OnInit {
     }
 
     async updateCampaignVersion() {
-        const newCampaign = JSON.parse(JSON.stringify(this.campaign));
+        const newCampaign: CampaignDetail = JSON.parse(JSON.stringify(this.campaign));
         if (this.newContentConcept) {
             newCampaign.content_concept = this.newContentConcept;
         }
@@ -225,6 +228,9 @@ export class CampaignComponent implements OnInit {
         newCampaign.extra_info = JSON.stringify(newCampaign.extra_info);
         newCampaign.video = JSON.stringify(this.images);
 
+        if (!newCampaign.short_share_url) {
+            newCampaign.share_url = `${window.location.protocol}//${window.location.hostname}/image-review/${newCampaign.campaign_id}`;
+        }
 
         this.loadingService.show();
         console.log(newCampaign);
@@ -350,9 +356,9 @@ export class CampaignComponent implements OnInit {
         campaign.subscribe(result => {
             console.log(result);
             this.videoCampaignList.splice(0, 0, newCampaign);
-            this.campaignService.transcodeVideo(video['path']).subscribe(reuslt => {
-                console.log(result);
-            });
+            // this.campaignService.transcodeVideo(video['path']).subscribe(reuslt => {
+            //     console.log(result);
+            // });
             this.loadingService.hide();
         });
     }
@@ -447,5 +453,20 @@ export class CampaignComponent implements OnInit {
             const index = this.images.images.map(file => file.path).indexOf(item.path);
             this.carouselLarge.moveTo(index, false);
         }
+    }
+
+    switchTab(tab) {
+        this.selectedTab = tab;
+        this.router.navigate([`/app/campaign/${this.campaignId}`], {
+            queryParams:
+                {
+                    step: tab
+                }
+            }
+        );
+    }
+
+    copyUrl() {
+        this.clipboard.copy(this.campaign.short_share_url);
     }
 }

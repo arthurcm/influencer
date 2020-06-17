@@ -127,11 +127,11 @@ export class ImageReviewComponent implements OnInit {
         try {
             this.images = JSON.parse(this.campaign.video);
             this.carouselTileItems = this.images.images;
-            this.images.images.forEach(image => {
-                this.campaignService.getImageMetaData(image.path).subscribe(detection => {
-                    console.log(detection);
-                });
-            });
+            // this.images.images.forEach(image => {
+            //     this.campaignService.getImageMetaData(image.path).subscribe(detection => {
+            //         console.log(detection);
+            //     });
+            // });
             if (this.images.images.length > 0) {
                 this.selectedMedia = this.images.images[0];
             }
