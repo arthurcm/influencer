@@ -29,7 +29,7 @@ def percentage_commission_per_shop(sqldata):
         per_campaign_percentage_commission : {campaign_id: per_campaign_percentage_commission}
     }
     """
-    percentage_commission = {'total_percentage_commission': 0}
+    percentage_commission = {'total_percentage_commission': 0, 'per_campaign_percentage_commission': {}}
     if not sqldata or len(sqldata) == 0:
         return percentage_commission
     per_campaign_commission = {}
@@ -76,13 +76,15 @@ def combine_final_commissions(fixed_commission, percentage_commission):
     final_results['total_commission'] = fixed_commission.get('total_fixed_commission') \
                                         + percentage_commission.get('total_percentage_commission')
     per_campaign = {}
-    for campaign_id, fixed_comm in fixed_commission['per_campaign_fixed_commission'].items():
-        per_campaign[campaign_id] = fixed_comm
-    for campaign_id, per_comm in percentage_commission['per_campaign_percentage_commission'].items():
-        if campaign_id not in per_campaign.keys():
-            per_campaign[campaign_id] = per_comm
-        else:
-            per_campaign[campaign_id] = per_campaign[campaign_id] + per_comm
+    if 'per_campaign_fixed_commission' in percentage_commission:
+        for campaign_id, fixed_comm in fixed_commission['per_campaign_fixed_commission'].items():
+            per_campaign[campaign_id] = fixed_comm
+    if 'per_campaign_percentage_commission' in percentage_commission:
+        for campaign_id, per_comm in percentage_commission['per_campaign_percentage_commission'].items():
+            if campaign_id not in per_campaign.keys():
+                per_campaign[campaign_id] = per_comm
+            else:
+                per_campaign[campaign_id] = per_campaign[campaign_id] + per_comm
     final_results['per_campaign_total'] = per_campaign
     final_results['per_campaign_fixed'] = fixed_commission
     final_results['per_campaign_percentage'] = percentage_commission

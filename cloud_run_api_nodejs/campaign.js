@@ -162,6 +162,7 @@ function updateCampaignData(uid, campaign_id, data, history_id){
     data.time_stamp = FieldValue.serverTimestamp();
     data.campaign_id = campaign_id;
     data.history_id = history_id;
+    data.share_url = `https://login.lifo.ai/app/image-review/${campaign_id}`;
     return data;
 }
 
@@ -483,24 +484,7 @@ function writeFinalCampaign_callback(campaignData, uid, campaign_id, history_id)
     const batch = db.batch();
     batch.set(campaignRef, {final_campaign: campaignData,
         final_history_id: history_id}, {merge: true});
-    const influencerCamRef = db.collection('influencers')
-        .doc(uid).collection('campaigns')
-        .doc(campaign_id);
-    batch.set(influencerCamRef, {
-        campaign_data: campaignData,
-        final_history_id: history_id,
-    }, {
-        merge: true,
-    });
-    return batch.commit()
-        .then(res => {
-            console.log('Transaction completed.');
-            return res;
-        })
-        .catch(err => {
-            console.log('Transaction failed', err);
-            throw err;
-        });
+    return batch.commit();
 }
 
 

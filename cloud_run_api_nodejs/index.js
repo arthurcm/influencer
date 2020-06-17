@@ -273,29 +273,6 @@ app.put('/share/feedback/campaign_id/:campaign_id/history_id/:history_id', (req,
 });
 
 
-app.put('/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
-    const campaign_id = req.params.campaign_id;
-    const history_id = req.params.history_id;
-    const uid = res.locals.uid;
-    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
-    if(!campaign_id){
-        res.status(422).send('Require a valid campaign_id');
-    }
-    if(!history_id){
-        res.status(422).send('Require a valid history_id');
-    }
-    if (res.headersSent){
-        return next();
-    }
-    return campaign.finalizeCampaign(uid, campaign_id, history_id)
-        .then(result => {
-            res.status(200).send({status : 'OK'});
-            return result;
-        })
-        .catch(next);
-});
-
-
 app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
     const history_id = req.params.history_id;
@@ -310,47 +287,6 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
         return next();
     }
     return campaign.finalizeCampaign('no_uid', campaign_id, history_id)
-        .then(result => {
-            res.status(200).send({status : 'OK'});
-            return result;
-        })
-        .catch(next);
-});
-
-
-app.put('/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
-    const campaign_id = req.params.campaign_id;
-    const history_id = req.params.history_id;
-    const uid = res.locals.uid;
-    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
-    if(!campaign_id){
-        res.status(400).send('Require a valid campaign_id');
-    }
-    if(!history_id){
-        res.status(400).send('Require a valid history_id');
-    }
-    return campaign.finalizeVideoDraft(uid, campaign_id, history_id)
-        .then(result => {
-            res.status(200).send({status : 'OK'});
-            return result;
-        })
-        .catch(next);
-});
-
-
-app.put('/share/finalize_media_draft/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
-    const campaign_id = req.params.campaign_id;
-    const history_id = req.params.history_id;
-    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
-    if(!campaign_id){
-        console.warn('/share/finalize_media_draft received invalid campaign_id');
-        res.status(422).send('Require a valid campaign_id');
-    }
-    if(!history_id){
-        console.warn('/share/finalize_media_draft received invalid history_id');
-        res.status(422).send('Require a valid history_id');
-    }
-    return campaign.finalizeVideoDraft('no_uid', campaign_id, history_id)
         .then(result => {
             res.status(200).send({status : 'OK'});
             return result;

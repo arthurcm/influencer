@@ -303,6 +303,7 @@ def get_revenue_per_shop(shop):
         results = sql_handler.get_total_revenue_per_shop(shop)
         if not results:
             revenue_results['shop_revenue'] = 0
+            revenue_results['revenue_ts'] = []
         else:
             revenue_results['shop_revenue'] = float(results[0][0])
             try:
@@ -321,11 +322,12 @@ def get_revenue_per_shop(shop):
             except Exception as e:
                 logging.error(f'Getting revenue ts error: {e}')
                 revenue_results['shop_revenue'] = 0
-                revenue_results['revenue_ts'] = {}
+                revenue_results['revenue_ts'] = []
     except Exception as e:
         logging.error(f'Getting revenue error: {e}')
         revenue_results['shop_revenue'] = 0
-        revenue_results['revenue_ts'] = {}
+        revenue_results['revenue_ts'] = []
+    logging.info(f'Revenue results are {revenue_results}')
     return revenue_results
 
 
@@ -409,6 +411,8 @@ def roi():
             'total_percentage_commission': 0,
             'per_campaign_percentage_commission': {}
         }
+    logging.info(f'Fixed commission results: {fixed_commission}')
+    logging.info(f'Percentage commission results: {percentage_commission}')
     try:
         # final_results['per_campaign_total']
         # final_results['per_campaign_fixed']
@@ -418,7 +422,7 @@ def roi():
         if total_commission == 0:
             ROI = 0
         else:
-            ROI = (shop_revenue - total_commission) / total_commission
+            ROI = max((shop_revenue - total_commission) / total_commission, 0)
         final_results['ROI'] = float("{:.2f}".format(ROI))
         final_results['revenue'] = revenue_results
     except Exception as e:

@@ -9,7 +9,7 @@ class TestCampaignPerf(unittest.TestCase):
         subtotal_price, uid, campaign_id, commission, commission_type, commission_percentage, order_complete.shop
         """
         rows = [
-            [123123132, '123', 'campaign1', 10, 'commission', 0, 'Lifo shop'],
+            [123123132, '123', 'campaign1', 10, 'commission', None, 'Lifo shop'],
             [100, '123', 'campaign2', None, 'commission', 12, 'Lifo shop'],
             [10, '456', 'campaign1', 20, 'commission', 10, 'Lifo shop'],
         ]
