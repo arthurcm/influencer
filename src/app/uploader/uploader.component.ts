@@ -11,6 +11,7 @@ export class UploaderComponent {
     @Output() onUploadSuccess = new EventEmitter<any>();
     @Input() campaign: CampaignDetail;
     @Input() uploadPath: string;
+    @Input() formatList: string[] = ['image/*'];
 
     isHovering: boolean;
     files: File[] = [];

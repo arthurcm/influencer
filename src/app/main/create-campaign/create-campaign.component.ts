@@ -170,7 +170,10 @@ export class CreateCampaignComponent implements OnInit {
     }
 
     async createCampaign() {
+
         console.log(this.campaignData);
+
+        this.extraInfo.commissionType = this.commissionType.value;
         this.extraInfo.contracts = this.uploadedContract;
         this.extraInfo.type = this.campaignType;
         this.extraInfo.platform = this.platform.value;
@@ -191,7 +194,6 @@ export class CreateCampaignComponent implements OnInit {
     }
 
     async createBrandCampaign() {
-        console.log(this.campaignData);
 
         this.extraInfo.commissionType = this.commissionType.value;
         this.extraInfo.contracts = this.uploadedContract;

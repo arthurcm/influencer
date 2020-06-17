@@ -2,7 +2,10 @@
 
 <mat-dialog-content class="mat-typography">
     <div>
-        <app-uploader [uploadPath]="uploadPath"  (onUploadSuccess)="uploadSuccess($event)"></app-uploader>
+        <app-uploader 
+            [uploadPath]="uploadPath"  
+            (onUploadSuccess)="uploadSuccess($event)"
+            [formatList]="['.pdf', '.doc', '.docx']"></app-uploader>
     </div>
     <mat-divider></mat-divider>
     <div class="field-title">

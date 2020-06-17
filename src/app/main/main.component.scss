@@ -18,6 +18,11 @@
     }
 }
 
+.disabled {
+    cursor: no-drop;
+    color: grey;
+}
+
 .logout-icon {
     position: absolute;
     bottom: 10px;

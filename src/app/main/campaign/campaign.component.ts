@@ -14,6 +14,7 @@ import { UploadVideoDialogComponent } from './upload-video-dialog/upload-video-d
 import { UploadImageDialogComponent } from './upload-image-dialog/upload-image-dialog.component';
 import { SendMessageDialogComponent } from './send-message-dialog/send-message-dialog.component';
 import { NguCarouselConfig, NguCarousel } from '@ngu/carousel';
+import { NotificationService, AlertType } from 'src/app/services/notification.service';
 
 @Component({
     selector: 'app-campaign',
@@ -91,6 +92,7 @@ export class CampaignComponent implements OnInit {
         public loadingService: LoadingSpinnerService,
         public campaignService: CampaignService,
         public dialog: MatDialog,
+        private notification: NotificationService,
     ) {
     // this.itemsCollection = afs.collection<object>('campaigns');
     // this.items = this.itemsCollection.valueChanges();
@@ -108,7 +110,6 @@ export class CampaignComponent implements OnInit {
         const campaign = await this.campaignService.getCampaignByIdInfluencer(this.campaignId);
         campaign.subscribe(result => {
             console.log(result);
-
             this.campaignHistory = result.history_list;
             // with concept
             const conceptCampaignList = [];
@@ -121,16 +122,14 @@ export class CampaignComponent implements OnInit {
                 if ( typeof extraInfo === 'string') {
                     campaign.extra_info  = JSON.parse(extraInfo);
                 }
-                if (campaign.content_concept && result.finalized_campaign_data) {
+                // check campaign status
+                if (result.finalized_campaign_data) {
                     if (result.finalized_campaign_data.final_history_id === campaign.history_id) {
                         campaign['is_final'] = true;
                     }
                     conceptCampaignList.push(campaign);
                 } 
-                if (campaign.video && result.finalized_campaign_data) {
-                    if (result.finalized_campaign_data.final_video_draft_history_id === campaign.history_id) {
-                        campaign['is_final'] = true;
-                    }
+                if (campaign.video) {
                     if (campaign.extra_info['type'] === 'image') {
                         campaign.images = JSON.parse(campaign.video);
                         
@@ -186,7 +185,11 @@ export class CampaignComponent implements OnInit {
         }
 
         this.imageSlides = [this.defaultImage, ...this.images.images];
-        this.selectedMedia = this.images.images[0];
+        if (this.images.images.length > 0) {
+            this.selectedMedia = this.images.images[0];
+        } else {
+            this.selectedMedia = null;
+        }
         console.log(this.images);
     }
 
@@ -233,6 +236,13 @@ export class CampaignComponent implements OnInit {
             this.campaignHistory = [newCampaign, ...this.campaignHistory];
             this.historyId = result['history_id'];
             this.loadingService.hide();
+
+            this.notification.addMessage({
+                type: AlertType.Success,
+                title: 'Campaign Saved',
+                message: 'Your change has been saved!',
+                duration: 3000,
+            });
         });
     }
 
@@ -351,6 +361,11 @@ export class CampaignComponent implements OnInit {
         this.images.images = [...images.images, ...this.images.images];
         this.imageSlides = [this.defaultImage, ...this.images.images];
         this.allMedia = [...this.allMedia, ...images.images];
+        // If no image selected
+        if (!this.selectedMedia && this.images.images.length > 0) {
+            this.selectedMedia = this.images.images[0];
+        }
+        this.updateCampaignVersion();
     }
 
     uploadImages() {
@@ -401,6 +416,13 @@ export class CampaignComponent implements OnInit {
     deleteImage(index) {
         this.images.images.splice(index - 1, 1);
         this.imageSlides.splice(index, 1);
+        if (this.images.images.length > 0) {
+            this.selectedMedia = this.images.images[0];
+            this.carouselLarge.moveTo(0, false);
+        } else {
+            this.selectedMedia = null;
+        }
+        this.updateCampaignVersion();
     }
 
     displayTime(end_time) {
