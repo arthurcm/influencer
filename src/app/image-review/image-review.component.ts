@@ -179,8 +179,8 @@ export class ImageReviewComponent implements OnInit {
             if (result['status'] && result['status'] === 'OK') {
                 this.notification.addMessage({
                     type: AlertType.Success,
-                    title: 'Content Approved',
-                    message: 'Your have approved content by influencer.',
+                    title: 'Contents Approved',
+                    message: 'Your have approved the contents for posting.',
                     duration: 3000,
                 });
             } else {
