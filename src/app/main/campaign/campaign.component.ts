@@ -247,7 +247,7 @@ export class CampaignComponent implements OnInit {
                 type: AlertType.Success,
                 title: 'Campaign Saved',
                 message: 'Your change has been saved!',
-                duration: 30000,
+                duration: 3000,
             });
         });
     }
