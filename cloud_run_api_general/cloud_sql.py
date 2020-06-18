@@ -577,6 +577,28 @@ class Sqlhandler:
             self.logger.exception(e)
             return None
 
+    def get_revenue_ts_per_campaign(self, shop):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    SELECT SUM(subtotal_price) AS revenue, tracker_id.shop, order_date, campaign_id
+                    FROM order_complete join tracker_id
+                    on order_complete.shop = tracker_id.shop and order_complete.lifo_tracker_id = tracker_id.lifo_tracker_id
+                    WHERE tracker_id.shop = :shop
+                    Group By tracker_id.shop, order_date, campaign_id
+                    """
+                )
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get_revenue_ts_per_shop result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
     def get_all_data_per_shop_per_campaign(self, shop):
         try:
             with self.db.connect() as conn:

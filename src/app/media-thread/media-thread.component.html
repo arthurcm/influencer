@@ -1,7 +1,7 @@
 <div class="title"> Comment </div>
 <div class="button-row">
     <div class="no-media-message" [hidden]="selectedMedia">
-        Please select image to comment.
+        Please first select an image to comment.
     </div>
     <button mat-button class="add-comment-button" (click)="showAddNewThread()"  *ngIf="!shouldShowAddNewThread && selectedMedia">
         <span class="material-icons"> add </span>

@@ -114,3 +114,44 @@ def count_visits_daily(sqldata):
         visits['visit_counts'] = total_cnt
         visits['daily_visit'] = daily_visit
     return visits
+
+
+def calculate_shop_daily_revenue(sqldata):
+    """
+    :param sqldata: results from the following schema
+                    SELECT SUM(subtotal_price) AS revenue, tracker_id.shop, order_date, campaign_id
+    :return:
+    """
+    revenue_ts = []
+    if sqldata and len(sqldata) > 0:
+        for row in sqldata:
+            cur_ts = {
+                'daily_revenue': float(row[0]),
+                'order_date': row[2]
+            }
+            revenue_ts.append(cur_ts)
+    return revenue_ts
+
+
+def calculate_campaign_daily_revenue(sqldata):
+    """
+    :param sqldata: results from
+            SELECT SUM(subtotal_price) AS revenue, tracker_id.shop, order_date, campaign_id
+    :return:
+    """
+    campaign_revenue = {}
+    campaign_revenue_ts = {}
+    if sqldata and len(sqldata) > 0:
+        for row in sqldata:
+            campaign_daily_revenue = float(row[0])
+            order_date = row[2]
+            campaign_id = row[3]
+            # cur_ts = {
+            #     'campaign_daily_revenue': campaign_daily_revenue,
+            #     'order_date': order_date
+            # }
+            if campaign_id in campaign_revenue:
+                campaign_revenue[campaign_id] += campaign_daily_revenue
+            else:
+                campaign_revenue[campaign_id] = campaign_daily_revenue
+    return campaign_revenue

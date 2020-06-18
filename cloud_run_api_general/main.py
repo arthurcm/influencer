@@ -17,7 +17,7 @@ import logging
 from email_util import share_draft_email
 from cloud_sql import sql_handler
 from campaign_perf_utils import (fixed_commission_per_shop, percentage_commission_per_shop, combine_final_commissions,
-                                 count_visits_daily)
+                                 count_visits_daily, calculate_shop_daily_revenue, calculate_campaign_daily_revenue)
 
 # Instantiates a client
 client = google.cloud.logging.Client()
@@ -274,9 +274,9 @@ def hook():
         logging.debug(f'By passing auth for request {request.path}')
 
 
-def create_tracker_id(uid):
+def create_tracker_id(uid, brand_campaign_id):
     m = hashlib.sha256()
-    m.update(str(uid).encode('utf-8'))
+    m.update(str(uid + brand_campaign_id).encode('utf-8'))
     lifo_tracker_id = m.hexdigest()
     return lifo_tracker_id
 
@@ -304,9 +304,15 @@ def create_lifo_tracker_id():
     # a flag to differentiate Shopify accounts, which use store domain as uid
     from_shopify = flask.session['from_shopify']
 
-    lifo_tracker_id = create_tracker_id(uid)
     campaign_data = flask.request.json
     logging.debug(f'{request.path} receiving campaign data {campaign_data}')
+    if not campaign_data.get('brand_campaign_id'):
+        response = flask.jsonify({'Status': 'A valid brand_campaign_id is required'})
+        response.status_code = 422
+        return response
+
+    lifo_tracker_id = create_tracker_id(uid=uid,
+                                        brand_campaign_id=campaign_data.get('brand_campaign_id'))
     try:
         if from_shopify:
             domain_or_url = campaign_data.get('brand_id')
@@ -362,33 +368,23 @@ def entitlement():
 def get_revenue_per_shop(shop):
     revenue_results = {'shop': shop}
     try:
-        results = sql_handler.get_total_revenue_per_shop(shop)
-        if not results:
-            revenue_results['shop_revenue'] = 0
-            revenue_results['revenue_ts'] = []
-        else:
-            revenue_results['shop_revenue'] = float(results[0][0])
-            try:
-                ts_results = sql_handler.get_revenue_ts_per_shop(shop)
-                if not ts_results:
-                    revenue_results['revenue_ts'] = []
-                else:
-                    revenue_ts = []
-                    for row in ts_results:
-                        cur_ts = {
-                            'daily_revenue': float(row[0]),
-                            'order_date': row[2]
-                        }
-                        revenue_ts.append(cur_ts)
-                    revenue_results['revenue_ts'] = revenue_ts
-            except Exception as e:
-                logging.error(f'Getting revenue ts error: {e}')
-                revenue_results['shop_revenue'] = 0
-                revenue_results['revenue_ts'] = []
+        ts_results = sql_handler.get_revenue_ts_per_shop(shop)
+        revenue_ts = calculate_shop_daily_revenue(ts_results)
+    except Exception as e:
+        logging.error(f'Getting revenue daily ts error: {e}')
+        revenue_ts = []
+    try:
+        campaign_results = sql_handler.get_revenue_ts_per_campaign(shop)
+        campaign_revenue = calculate_campaign_daily_revenue(campaign_results)
     except Exception as e:
         logging.error(f'Getting revenue error: {e}')
-        revenue_results['shop_revenue'] = 0
-        revenue_results['revenue_ts'] = []
+        campaign_revenue = {}
+    total_revenue = 0
+    for rev in campaign_revenue.values():
+        total_revenue += rev
+    revenue_results['revenue_ts'] = revenue_ts
+    revenue_results['campaign_revenue'] = campaign_revenue
+    revenue_results['shop_revenue'] = total_revenue
     logging.info(f'Revenue results are {revenue_results}')
     return revenue_results
 
