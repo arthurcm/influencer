@@ -100,10 +100,6 @@ export class CreateCampaignComponent implements OnInit {
             //     contactEmail: user.email,
             // };
         });
-        const commission_type = await this.campaignService.getCommissionType();
-        commission_type.subscribe(types => {
-            console.log(types);
-        });
     }
 
     campaignNameChange(value) {

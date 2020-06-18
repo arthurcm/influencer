@@ -78,9 +78,11 @@ function getAllCampaign(uid) {
             const markers = [];
             querySnapshot.docs.forEach(doc => {
                 const doc_snap = doc.data();
-                markers.push(doc_snap);
+                if(!doc_snap.deleted){
+                    markers.push(doc_snap);
+                }
             });
-            console.debug('Found', markers.length, 'results');
+            console.debug('Found', markers.length, 'campaigns in /campaign GET');
             return markers;
         });
 }
