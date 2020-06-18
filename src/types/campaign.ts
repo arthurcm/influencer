@@ -46,6 +46,7 @@ export interface CampaignDetail {
     short_share_url?: string;
     tracking_url?: string;
     short_tracking_url?: string;
+    is_final?: boolean;
 }
 
 export interface CampaignExtraInfo {

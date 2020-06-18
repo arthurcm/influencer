@@ -128,7 +128,7 @@ export class CampaignComponent implements OnInit {
                 // check campaign status
                 if (result.finalized_campaign_data) {
                     if (result.finalized_campaign_data.final_history_id === campaign.history_id) {
-                        campaign['is_final'] = true;
+                        campaign.is_final = true;
                     }
                     conceptCampaignList.push(campaign);
                 } 

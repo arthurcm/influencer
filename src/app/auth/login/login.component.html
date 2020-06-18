@@ -2,11 +2,13 @@
 
 <div>
     <div class="left">
-
+        <div class="image-container">
+            <img class="panel-image" src="assets/images/login.png">
+        </div>
     </div>
     <div class="right">
-        <div class="login-box">
-            <div>Sign In</div>
+        <div class="login-box" *ngIf="completeLoading">
+            <div class="title">Sign In</div>
             <div>
                 <div>User Name</div>
                 <mat-form-field floatLabel="never" class="large-input-box">
@@ -19,15 +21,18 @@
                     <input matInput placeholder="Enter Your Password">
                 </mat-form-field>
             </div>
-            <div>
+            <br><br>
+            <!-- <div>
                 <div>Remember Me</div>
                 <div>Forgot Password?</div>
-            </div>
-            <div>
+            </div> -->
+            <div class="button-row">
                 <button mat-flat-button color="primary" class="large-round-button" (click)="login()">Sign In</button>
-                <div>Sign Up</div>
+                <button mat-button>Sign Up</button>
             </div>
-            <button mat-flat-button color="primary" (click)="login()">Login with Google</button>
+            <div class="social-login">
+                <button mat-flat-button color="primary" (click)="login()">Login with Google</button>
+            </div>
         </div>
     </div>
 </div>
