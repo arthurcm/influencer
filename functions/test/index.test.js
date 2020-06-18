@@ -18,7 +18,7 @@ const snap = test.firestore.makeDocumentSnapshot(
     {
         brand: 'awesome',
         campaign_name: 'my campaign',
-        commision_dollar: 1222,
+        commission_dollar: 1222,
         contacts: 'shuo@influencer.com',
         content_concept: 'final fantasy',
         end_time: 12312321321,
@@ -33,7 +33,7 @@ create_campaign_wrapped(
     {
         brand:'awesome',
         campaign_name:'my campaign',
-        commision_dollar:'1222',
+        commission_dollar:'1222',
         contacts:'shuo@influencer.com',
         content_concept:'final fantasy',
         end_time:'12312321321',

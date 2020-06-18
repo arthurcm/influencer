@@ -1,27 +1,31 @@
 # Influencer
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.3.19.
+This project is currently deployed completely on GCP. 
 
-## Development server
+The project extensively rely on the following product on GCP:
+Firebase, Cloud Run (both managed and on Anthos), Cloud functions,  Cloud SQL, GKE, CV API, Video Inteligence API
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+This frontend part was generated with [Angular CLI](https://github.com/angular/angular-cli) version 8.3.19.
+The backend services are all micro-services based architecture, where each service is a docker container hosted on 
+GCP cloud run, or a function hosted on Cloud functions. 
+The use cases are Cloud Run and cloud functions are different: Cloud run are more full fledged REST API style services,
+while functions are resource-light single functions. 
+The client-facing data structures are mostly hosted by Firebase, where large object media files are hosted on Firestore,
+both of whose backends are GCS object storage. 
+The analytics data are stored on Cloud SQL for ease of reporting etc.
+The ML related APIs (CV and video inteligence) are triggered by cloud functions to provide add-on analytics. 
 
-## Code scaffolding
+### UI Deployment
+##### Production hosting
+To update remote production hosting, under project root folder, /influencer, run the following:
+npm install & npm run build
+firebase deploy --only hosting:lifo
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+##### Local development
+To develop locally, under project root folder, /influencer, run the following:
+npm install & npm start
+This will launch a local server at localhost:4200
 
-## Build
+### Shopify APP
+The Shopify app is mainly composed of two modules: app server, and client side scripts
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
-
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).

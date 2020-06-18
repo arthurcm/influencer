@@ -554,7 +554,7 @@ function updateCampaignCommissionWithEntitlement(campaign_data, entitled_shops){
     if (shop_detail){
         if(shop_detail.commission && shop_detail.commission > 0){
             console.debug(`Updating commission with ${shop_detail.commission} for \
-            shop ${campaign_data.brand_id} with campaign id ${campaign_data.campaign_id}`);
+            shop ${campaign_data.brand_id} with campaign id`, campaign_data.brand_campaign_id);
             campaign_data.commission_dollar = shop_detail.commission;
         }
         if(shop_detail.commission_percentage && shop_detail.commission_percentage > 0){
@@ -581,8 +581,10 @@ async function listBrandCampaignsInf(uid, idToken, next){
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
                 let doc_snap = doc.data();
-                doc_snap = updateCampaignCommissionWithEntitlement(doc_snap, entitled_shops);
-                brand_campaigns.push(doc_snap);
+                if(!doc_snap.deleted){
+                    doc_snap = updateCampaignCommissionWithEntitlement(doc_snap, entitled_shops);
+                    brand_campaigns.push(doc_snap);
+                }
             });
             console.debug('Found', brand_campaigns.length, 'results for uid', uid);
             return brand_campaigns;
@@ -719,14 +721,18 @@ function createBrandCampaign(data, uid){
 // this is for brand to see their promotions
 function listBrandCampaignForBrand(uid){
     console.log('Get all brand campaign meta data that belong to current brand.');
-    return db.collection('brand_campaigns').where('brand_id', '==', uid).get()
+    return db.collection('brand_campaigns')
+        .where('brand_id', '==', uid)
+        .get()
         .then(querySnapshot => {
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
                 const doc_snap = doc.data();
-                brand_campaigns.push(doc_snap);
+                if (!doc_snap.deleted ){
+                    brand_campaigns.push(doc_snap);
+                }
             });
-            console.log('Found', brand_campaigns.length, 'results');
+            console.log(`Found ${brand_campaigns.length} brand campaigns for ${uid}`);
             return brand_campaigns;
         });
 }
