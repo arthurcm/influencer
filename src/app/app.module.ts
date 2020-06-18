@@ -86,6 +86,7 @@ import { BrandHomeComponent } from './main/brand-home/brand-home.component';
 import { InfluencerCardComponent } from './main/brand-campaign/influencer-card/influencer-card.component';
 import { BrandChartComponent } from './main/brand-home/brand-chart/brand-chart.component';
 import { NotificationComponent } from './shared/notification/notification.component';
+import { ConfirmDialogComponent } from './shared/confirm-dialog/confirm-dialog.component';
 
 export function momentAdapterFactory() {
     return adapterFactory(moment);
@@ -126,6 +127,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         InfluencerCardComponent,
         BrandChartComponent,
         NotificationComponent,
+        ConfirmDialogComponent,
     ],
     imports: [
         BrowserModule,
@@ -188,6 +190,7 @@ const DEFAULT_PERFECT_SCROLLBAR_CONFIG: PerfectScrollbarConfigInterface = {
         SendMessageDialogComponent,
         UploadContractDialogComponent,
         NotificationComponent,
+        ConfirmDialogComponent,
     ],
     providers: [
         MatDatepickerModule,

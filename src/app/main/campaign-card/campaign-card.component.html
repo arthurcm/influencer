@@ -21,14 +21,19 @@
     <div class="brand">
         <div class="title brand-name"> {{campaign.brand}} </div>
         <div class="current-step content">
-            <div class="review">Concept review</div>
-            <div class="post">Post</div>
+            <div class="review" *ngIf="!campaign.is_final">Concept Review</div>
+            <div class="post" *ngIf="campaign.is_final">Ready for Post</div>
         </div>
     </div>
 
-    <div class="commission">
+    <div class="commission" *ngIf="!isBrandView">
         <div class="title">Commission</div>
-        <div class="content commission">$ {{campaign.commission_dollar}} </div>
+        <div class="content">{{ displayCommision(campaign) }} </div>
+    </div>
+
+    <div class="commission" *ngIf="isBrandView">
+        <div class="title">Revenue</div>
+        <div class="content"> $ {{ computeRevenue(campaign) }} </div>
     </div>
 
     <div class="icon" (click)="viewBrandCampaign()" *ngIf="promotionCampaign || brandCampaign">

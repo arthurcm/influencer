@@ -2,6 +2,7 @@ import { Component, OnInit, Input } from '@angular/core';
 import { CampaignDetail, CampaignData, CommissionType } from 'src/types/campaign';
 
 import * as moment from 'moment';
+import { UtilsService } from 'src/app/services/util.service';
 
 @Component({
     selector: 'app-campaign-overview',
@@ -11,7 +12,9 @@ import * as moment from 'moment';
 export class CampaignOverviewComponent implements OnInit {
     @Input() campaign: CampaignDetail;
 
-    constructor() { }
+    constructor(
+        private utilService: UtilsService,
+    ) { }
 
     ngOnInit(): void {
     }
@@ -24,18 +27,7 @@ export class CampaignOverviewComponent implements OnInit {
 
 
     displayCommission(campaign: CampaignDetail) {
-        const extra_info = campaign.extra_info;
-        if (extra_info && extra_info['commissionType']) {
-            const type: CommissionType = extra_info['commissionType'];
-            if (type === CommissionType.ONE_TIME_PAY) {
-                return `$ ${campaign.commission_dollar}`;
-            } else if (type === CommissionType.PER_SALES) {
-                return `${campaign.commission_percent} %`;
-            } else {
-                return `$ ${campaign.commission_dollar} + ${campaign.commission_percent} %`;
-            }
-        }
-        return `$ ${campaign.commission_dollar}`
+        return this.utilService.displayCommission(campaign);
     }
 
 }

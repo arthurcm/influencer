@@ -27,6 +27,8 @@ export class BrandHomeComponent implements OnInit {
     }
     chartData: any;
 
+    campaignRevenue: any;
+
     constructor(
         public auth: AngularFireAuth,
         public router: Router,
@@ -77,6 +79,7 @@ export class BrandHomeComponent implements OnInit {
             this.statistic['influencer_count'] = influencerData['influencer_counts'];
             this.statistic['visit'] = trackData['visit_counts'];
 
+            this.campaignRevenue = roiData['revenue']['campaign_revenue'];
             //daily_visit: {2020-06-09: 3, 2020-06-15: 4}
             const visitTimeseries = trackData['daily_visit'];
             const revenueTs = roiData['revenue']['revenue_ts'];
