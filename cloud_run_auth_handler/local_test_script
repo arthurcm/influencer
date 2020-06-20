@@ -1,0 +1,13 @@
+build container:
+ gcloud builds submit --tag gcr.io/influencer-272204/auth_handler
+
+Local testing container:
+PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/auth_handler
+
+
+To deploy auth handler with service account access to secret manager:
+gcloud run deploy auth-handler --image gcr.io/influencer-272204/auth_handler --service-account=65044462485-compute@developer.gserviceaccount.com --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
+gcloud run services update auth-handler --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
+
+Manage/update client_secret in secret manager:
+gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"

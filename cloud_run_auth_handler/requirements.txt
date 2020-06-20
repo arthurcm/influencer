@@ -1,0 +1,16 @@
+oauth2client
+httplib2
+google-cloud-secret-manager
+google-api-python-client
+google-cloud-storage
+google-auth-oauthlib
+google-cloud-logging
+firebase_admin
+google-cloud-language
+google-cloud-vision
+google-cloud-videointelligence
+flask
+
+SQLAlchemy
+PyMySQL==0.9.3
+pg8000
