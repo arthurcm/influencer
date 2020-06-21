@@ -1,8 +1,8 @@
 {
     "shop_id": 954889,
-    "shop_domain": "snowdevil.myshopify.com",
+    "shop_domain": "test1",
     "customer": {
-      "id": 191167,
+      "id": 12345,
       "email": "john@email.com",
       "phone": "555-625-1199"
     },

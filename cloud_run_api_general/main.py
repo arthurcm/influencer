@@ -214,7 +214,7 @@ def customers_data_request():
             logging.info('Customer data queried from cloud SQL')
     except Exception as e:
         logging.error(f'Customer data queried error: {e}')
-    response = flask.jsonify(res)
+    response = flask.jsonify({'result': str(res.response)})
     response.status_code = 200
     return response   
 

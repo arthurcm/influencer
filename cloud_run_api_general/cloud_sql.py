@@ -263,7 +263,7 @@ class Sqlhandler:
             # # back into the pool at the end of statement (even if an error occurs)
             with self.db.connect() as conn:
                 
-                del_data = ({"shop": shop_domain, "customer_id": customer_id},
+                del_data = ({"shop": shop_domain, "customer_id": str(customer_id)},
                 )
                 order_complete_del_stmt = text("DELETE FROM order_complete WHERE shop = :shop AND customer_id = :customer_id")
                 orders_paid_del_stmt = text("DELETE FROM orders_paid WHERE shop = :shop AND customer_id = :customer_id")
@@ -325,20 +325,26 @@ class Sqlhandler:
             # # Using a with statement ensures that the connection is always released
             # # back into the pool at the end of statement (even if an error occurs)
             with self.db.connect() as conn:
+                logging.info(f'shop_domain is {shop_domain}, customer_id is {customer_id}')
                 stmt = text(
                     """SELECT order_data
-                    FROM order_complete 
-                    WHERE shop = :shop_domain AND customer_id = :customer_id""")
-                stmt = stmt.bindparams(shop_domain=shop_domain, customer_id=customer_id)
-                results = conn.execute(stmt, {"shop_domain": shop_domain, "customer_id": customer_id}).fetchall()
-                customer_data = results.fetechone()
+                    FROM orders_paid 
+                    WHERE shop = :shop AND customer_id = :customer_id""")
+                results = conn.execute(stmt, shop=shop_domain, customer_id=str(customer_id)).fetchall()
+                customer_data = str(results)
         except Exception as e:
             # If something goes wrong, handle the error in this section. This might
             # involve retrying or adjusting parameters depending on the situation.
             # [START_EXCLUDE]
             self.logger.exception(e)
-            return {}
-        return customer_data        
+            return Response(
+                status=500,
+                response=f"Unable to get customer data: {e}"
+            )
+        return Response(
+            status=200,
+            response=customer_data
+        )       
 
 
     def save_order_complete(self, data, subtotal_price):
