@@ -4,13 +4,14 @@ import os
 import flask
 import json
 import requests
+from flask import request
+from flask_cors import CORS
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 
 # Imports the Google Cloud client library
 import google.cloud.logging
-# Imports Python standard library logging
 import logging
 
 from cloud_sql import sql_handler
@@ -54,7 +55,15 @@ https://developers.google.com/api-client-library/python/guide/aaa_client_secrets
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
+import firebase_admin
+from firebase_admin import auth
+from firebase_admin import exceptions
+
+
+firebase_app = firebase_admin.initialize_app()
+
 app = flask.Flask(__name__)
+CORS(app)
 # Note: A secret key is included in the sample so that it works.
 # If you use this code in your application, replace this with a truly secret
 # key. See https://flask.palletsprojects.com/quickstart/#sessions.
@@ -66,77 +75,101 @@ def index():
   return print_index_table()
 
 
-@app.route('/test')
-def test_api_request():
-  if 'credentials' not in flask.session:
-    return flask.redirect('authorize')
+def token_verification(id_token):
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+    except ValueError or exceptions.InvalidArgumentError:
+        logging.error('id_token not string or empty or invalid')
+        return ''
+    except auth.RevokedIdTokenError:
+        logging.error('id_token has been revoked')
+        return ''
+    return decoded_token
 
-  # Load credentials from the session.
-  credentials = google.oauth2.credentials.Credentials(
-      **flask.session['credentials'])
-  #
-  # drive = googleapiclient.discovery.build(
-  #     API_SERVICE_NAME, API_VERSION, credentials=credentials)
 
-  logging.info(f"Returned credentials are {credentials}")
+def _build_cors_prelight_response():
+    response = flask.make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "*")
+    response.headers.add("Access-Control-Allow-Methods", "*")
+    return response
 
-  # Save credentials back to session in case access token was refreshed.
-  # ACTION ITEM: In a production app, you likely want to save these
-  #              credentials in a persistent database instead.
-  flask.session['credentials'] = credentials_to_dict(credentials)
 
-  return flask.jsonify(**flask.session['credentials'])
+@app.before_request
+def hook():
+    if request.method == "OPTIONS": # CORS preflight
+        return _build_cors_prelight_response()
+    if flask.session.get('uid'):
+        logging.info('request has been verified')
+        return
+    id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+    if not id_token:
+        logging.error('Valid id_token required')
+        response = flask.jsonify('Valid id_token required')
+        response.status_code = 401
+        return response
+    decoded_token = token_verification(id_token)
+    uid = decoded_token['uid']
+    if not uid:
+        logging.error('id_token verification failed')
+        response = flask.jsonify('id_token verification failed')
+        response.status_code = 401
+        return response
+    logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
+    flask.session['uid'] = uid
 
 
 @app.route('/authorize')
 def authorize():
-  # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
-  flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+    # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow steps.
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       CLIENT_SECRETS_FILE, scopes=SCOPES)
 
-  # The URI created here must exactly match one of the authorized redirect URIs
-  # for the OAuth 2.0 client, which you configured in the API Console. If this
-  # value doesn't match an authorized URI, you will get a 'redirect_uri_mismatch'
-  # error.
-  flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
-  logging.info(f'the redirect_uri is {flow.redirect_uri}')
+    # The URI created here must exactly match one of the authorized redirect URIs
+    # for the OAuth 2.0 client, which you configured in the API Console. If this
+    # value doesn't match an authorized URI, you will get a 'redirect_uri_mismatch'
+    # error.
+    flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
+    logging.info(f'the redirect_uri is {flow.redirect_uri}')
 
-  authorization_url, state = flow.authorization_url(
+    authorization_url, state = flow.authorization_url(
       # Enable offline access so that you can refresh an access token without
       # re-prompting the user for permission. Recommended for web server apps.
       access_type='offline',
       # Enable incremental authorization. Recommended as a best practice.
       include_granted_scopes='true')
 
-  # Store the state so the callback can verify the auth server response.
-  flask.session['state'] = state
-
-  return flask.redirect(authorization_url)
+    # Store the state so the callback can verify the auth server response.
+    flask.session['state'] = state
+    return flask.redirect(authorization_url)
 
 
 @app.route('/oauth2callback')
 def oauth2callback():
-  # Specify the state when creating the flow in the callback so that it can
-  # verified in the authorization server response.
-  state = flask.session['state']
+    # Specify the state when creating the flow in the callback so that it can
+    # verified in the authorization server response.
+    state = flask.session['state']
+    uid = flask.session['uid']
 
-  flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+    flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
       CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
-  flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
+    flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
 
-  # Use the authorization server's response to fetch the OAuth 2.0 tokens.
-  authorization_response = flask.request.url
-  flow.fetch_token(authorization_response=authorization_response)
+    # Use the authorization server's response to fetch the OAuth 2.0 tokens.
+    authorization_response = flask.request.url
+    flow.fetch_token(authorization_response=authorization_response)
 
-  # Store credentials in the session.
-  # ACTION ITEM: In a production app, you likely want to save these
-  #              credentials in a persistent database instead.
-  credentials = flow.credentials
-  credentials_dict = credentials_to_dict(credentials)
-  flask.session['credentials'] = credentials_dict
-  logging.info(f"Current credentials are {credentials_dict}")
-  sql_handler.save_token(credentials_dict)
-  return flask.redirect(flask.url_for('test_api_request'))
+    # Store credentials in the session.
+    # ACTION ITEM: In a production app, you likely want to save these
+    #              credentials in a persistent database instead.
+    credentials = flow.credentials
+    credentials_dict = credentials_to_dict(credentials)
+    flask.session['credentials'] = credentials_dict
+    logging.info(f"Current credentials are {credentials_dict}")
+    sql_handler.save_token(uid, credentials_dict)
+    response = flask.jsonify(credentials_dict)
+    response.status_code = 200
+    return response
 
 
 @app.route('/revoke')

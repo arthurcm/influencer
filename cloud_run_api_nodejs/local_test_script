@@ -15,7 +15,7 @@ curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" http://lo
 Test on cloud run:
 curl  -H "Content-Type: application/json" -H "Authorization:<idToken>"" -X PUT http://localhost:9090/finalize_media_draft/campaign_id/Hi4ZBC0bofNhjSc9uoUG/history_id/JgxTvni4tUKsM34oAU1W
 
-get test idToken:
+get test refresh token:
 curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
 
 curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"test@lifo.ai","password":"PASSWORD","returnSecureToken":true}'

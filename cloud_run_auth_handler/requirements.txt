@@ -10,6 +10,8 @@ google-cloud-language
 google-cloud-vision
 google-cloud-videointelligence
 flask
+flask_cors
+
 
 SQLAlchemy
 PyMySQL==0.9.3

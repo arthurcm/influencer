@@ -17,7 +17,7 @@ class Sqlhandler:
         self.table_field = ""
         self.table_field_value = ""
         self.db_name = "auth"
-        self.db_user = "gcf"
+        self.db_user = "authserver"
         self.db_password = "967Shoreline"
 
         # // If your database is MySQL, uncomment the following two lines:
@@ -83,25 +83,19 @@ class Sqlhandler:
         with self.db.connect() as conn:
             conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS authentication_test
+            CREATE TABLE IF NOT EXISTS authentication
             (uid text NOT NULL, token text, refresh_token text NOT NULL, token_uri text,
             client_id text, client_secret text, scopes json, 
             PRIMARY KEY ("uid"));
             """
             )
 
-    def save_token(self, token_json):
+    def save_token(self, uid, token_json):
         # Get the team and time the vote was cast.
         token = token_json['token']
         refresh_token = token_json['refresh_token']
         token_uri = token_json['token_uri']
         client_id = token_json['client_id']
-            # 'token': credentials.token,
-            # 'refresh_token': credentials.refresh_token,
-            # 'token_uri': credentials.token_uri,
-            # 'client_id': credentials.client_id,
-            # 'client_secret': credentials.client_secret,
-            # 'scopes': credentials.scopes}
         # Verify that the team is one of the allowed options
         if not refresh_token and not token:
             self.logger.warning(token_json)
@@ -112,8 +106,9 @@ class Sqlhandler:
 
         # [START cloud_sql_postgres_sqlalchemy_connection]
         # Preparing a statement before hand can help protect against injections.
-        stmt = sqlalchemy.text('insert into authentication (refresh_token, token) values (:refresh_token, :token)')
-        stmt = stmt.bindparams(refresh_token=refresh_token, token=token)
+        stmt = sqlalchemy.text(
+            """insert into authentication (uid, refresh_token, token) values (:uid :refresh_token, :token)""")
+        stmt = stmt.bindparams(uid=uid, refresh_token=refresh_token, token=token)
         try:
             # Using a with statement ensures that the connection is always released
             # back into the pool at the end of statement (even if an error occurs)

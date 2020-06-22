@@ -11,3 +11,18 @@ gcloud run services update auth-handler --add-cloudsql-instances influencer-2722
 
 Manage/update client_secret in secret manager:
 gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
+
+
+Test authorize on remote service: (replace <id_token> with a valid id_token)
+https://auth-handler-4lladlc2eq-uc.a.run.app/authorize?id_token=<id_token>
+
+
+get refreshed idToken:
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-NfSCj8Q0HxPuPncWv0G6W41cWLpJz_MOFZn4IRjM3JTSKduKuoZ7dz9jM1rIJcEFq1_OloUll_IPQH3k9PMMVl1HB0RQ-rQIOtO3JcAItz5-w4rtOuXZZTsi5oK8UXsRWcSGJLBrJPEifPL4066kQGNK2UQTUU6RbrktgZyxdjbLRLeMTcUEuldnKramto7xjfmR8VEFxku7Xq7_lKKnQacy6yMdg'
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-NeZC11685SZWAHLRA64Xuk6wVM7TyeLAh0bIbvlAyF_aXgYbUQ2xKPxIE_H-XvkfReWMMaLwXEnyYHyxdVK6kaUpsbkwm5_ap0ZQuk0nJYa_aX3wMxqIp3VnsaJRkaTtUwP3nrn853r0VkocvnTmqayfnmpcF1JR-iX604EvQ1ce4QVW76sXXIIIueafvwp0yrCNMmIUU2OJzmMzUuHGSOtDcfxBA'
+
+
+get test refresh token:
+curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
+
+curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"test@lifo.ai","password":"PASSWORD","returnSecureToken":true}'
