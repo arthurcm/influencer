@@ -1,0 +1,52 @@
+/*This file defines and provides API for query, modify and manipulate with scanner data*/
+syntax = "proto3";
+
+package data;
+
+enum ContractType {
+    CONTRACT_TYPE_DEFAULT = 0;
+    US_FIXED_COMMISSION = 1;
+}
+
+// The Contract message here represents the data structure that are used to "create"/"auto-fill" or manual-fill a Lifo
+// contract, which is used between brands and influencers.
+// The fields here have one-to-one strict mapping based on field name to a particular contract template's missing fields
+// as defined on HelloSign
+// Certain fields, e.g. Signature, sign date, are NOT implemented here as customers will always fill them in at sign
+// time.
+message Contract {
+    ContractType contract_type = 1; // this is used to get a particular contract template
+    Brand brand = 2;
+    Influencer influencer = 3;
+}
+
+
+message Brand {
+    string shop_name = 1;   // also referred to "Advertiser" in the agreement/contract. This is not shop domain, but the
+                            // name that the brand is recognized as, e.g. "Ovalware". For Shopify brands, this comes
+                            // Shopify data API
+    string shop_address = 2;// the address used to register on Shopify for Shopify brands; for offline stores, this can
+                            // be their physical addresses
+    string shop_email = 3; // The contact email for the brand. For Shopify brands, this comes from Shopify API.
+    string product_name_to_promote = 4; // This should be filled from campaign details page; in GA version, we should
+                                        // actually hook up with Shopify product API for Shopify brands so that customers
+                                        // can choose from their product when creating campaign.
+    string posting_details = 5; // This will be manually filled by AM. It is OK that we keep it this way when GA.
+    string campaign_start_date = 6; // This is simply a time string, presumably with format mm/dd/yyyy
+    string campaign_end_date = 7;   // This is simply a time string, presumably with format mm/dd/yyyy
+    float commission = 8;       // This is the one-time commission paid by brands to influencers
+    string payment_date = 9;   // This is filled by AM initially. An agreed date by which commission should be paid.
+    string product_for_evaluation = 10; // this is the product name to be sent for evaluation, if available.
+    string jurisdiction_state = 11;    // this is the state from the brand. From Shopify API
+    string jurisdiction_county = 12;  // this is the county of
+}
+
+message Influencer {
+    string influencer_name = 1;  // to be filled by AM or influencer themselves
+    string influencer_address = 2; // to be filled by AM or influencer themselves. Or from campaign details if
+                                   // products need to be shipped
+    string influencer_email = 3;  // available from 3rd party API
+    string social_media_platform = 4; // e.g. instagram. This is from Campaign details.
+    string account_id = 5; // This is from 3rd party API. Should be added to campaign details.
+    string posting_details = 6; // This is a placeholder. Will be filled by AM.
+}

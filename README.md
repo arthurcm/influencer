@@ -15,6 +15,29 @@ both of whose backends are GCS object storage.
 The analytics data are stored on Cloud SQL for ease of reporting etc.
 The ML related APIs (CV and video inteligence) are triggered by cloud functions to provide add-on analytics. 
 
+### To Build protobuf dependencies
+First make sure you have installed protoc according to the following tutorial/instructions:
+https://github.com/protocolbuffers/protobuf
+
+Basically we do NOT recommend you compile the binaries yourself, but instead, directly download a pre-compiled binary from:
+https://github.com/protocolbuffers/protobuf/releases
+Then, unzip the binary, copy the "protoc" binary to /usr/local/bin/protoc
+Finally, add the following line to your .bashrc or .zshrc
+alias protoc='/usr/local/bin/protoc'
+
+Source .bashrc or .zshrc by running:
+source .bashrc (or .zshrc)
+
+You can test the protoc by running:
+protoc
+
+Once this is done, you can build the protobuf dependencies by running make under repo root:
+cd /path/to/your/repo/influencer
+make
+
+This will create compiled protobuf code in each service directory.
+
+
 ### UI Deployment
 ##### Production hosting
 To update remote production hosting, under project root folder, /influencer, run the following:
