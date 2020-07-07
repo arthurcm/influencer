@@ -38,7 +38,8 @@ message Brand {
     string payment_date = 9;   // This is filled by AM initially. An agreed date by which commission should be paid.
     string product_for_evaluation = 10; // this is the product name to be sent for evaluation, if available.
     string jurisdiction_state = 11;    // this is the state from the brand. From Shopify API
-    string jurisdiction_county = 12;  // this is the county of
+    string jurisdiction_county = 12;  // this is the county of shop.
+    string contact_person_name = 13;
 }
 
 message Influencer {

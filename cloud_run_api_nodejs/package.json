@@ -22,7 +22,10 @@
     "isomorphic-fetch": "^2.2.1",
     "is-valid-domain": "^0.0.14",
     "valid-url": "^1.0.9",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "hellosign-sdk": "^1.5.0",
+    "google-protobuf": "^3.12.2",
+    "protobufjs": "^6.9.0"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^2.27.0",

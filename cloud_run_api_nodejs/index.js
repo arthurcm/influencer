@@ -15,6 +15,9 @@ admin.initializeApp({
     databaseURL: 'https://influencer-272204.firebaseio.com',
 });
 
+const campaign = require('./campaign');
+const contract_sign = require('./contract_sign');
+
 // middleware for token verification
 app.use((req, res, next) => {
 
@@ -68,7 +71,6 @@ app.use((req, res, next) => {
         });
 });
 
-const campaign = require('./campaign');
 
 app.post('/create_campaign', (req, res, next) => {
     console.debug('/create_campaign received a request', req.body);
@@ -663,6 +665,45 @@ app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
             console.debug('getting profile', results.data())
             res.status(200).send(results.data());
             return results;
+        })
+        .catch(next);
+});
+
+
+app.post('/signature_request/create_embedded_with_template', (req, res, next) => {
+    console.debug('/signature_request/create_embedded_with_template received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    return contract_sign.signatureRequest(data)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+// Currently the json body only requires a valid brand_campaign_id
+app.post('/unclaimed_draft/create_embedded_with_template', (req, res, next) => {
+    console.debug('/unclaimed_draft/create_embedded_with_template received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    return contract_sign.previewRequest(data)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.get('/brand/contracts/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    console.debug(`/brand/contracts/brand_campaign_id/:brand_campaign_id received brand_campaign_id ${brand_campaign_id}`);
+    return contract_sign.getAllContractsBrand(brand_campaign_id)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
         })
         .catch(next);
 });
