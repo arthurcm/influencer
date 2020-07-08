@@ -7,6 +7,8 @@ const path = require('path');
 const PERCENTAGE_RATE = 'commission_per_sales_campaign';
 const FIXED_RATE = 'one_time_commission_campaign';
 const GENERIC_INF_CREATED_CAMPAIGN = 'generic_campaign';
+const BRAND_CAMPAIGN_COLLECTIONS = 'brand_campaigns';
+const INFLUENCER_COLLECTIONS = 'influencers';
 
 
 function uriParse(media_name){
@@ -73,7 +75,7 @@ function retrieveMediaMetaRef(filePath, mediaType){
 
 function getAllCampaign(uid) {
     console.info('Get all campaign meta data that belong to current user.');
-    return db.collection('influencers').doc(uid).collection('campaigns').get()
+    return db.collection(INFLUENCER_COLLECTIONS).doc(uid).collection('campaigns').get()
         .then(querySnapshot => {
             const markers = [];
             querySnapshot.docs.forEach(doc => {
@@ -190,7 +192,7 @@ function createCampaign(data, uid, is_new_campaign=true){
         .collection('campaignHistory').doc(history_id);
     batch.set(campaignDocRef, data);
     const docref = db.collection('campaigns').doc(campaign_id);
-    const infCampaignRef = db.collection('influencers')
+    const infCampaignRef = db.collection(INFLUENCER_COLLECTIONS)
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     batch.set(infCampaignRef, {
@@ -218,7 +220,7 @@ function completeCampaign(campaign_id, uid){
     batch.set(campaignRef, {completed: true}, {merge: true});
 
     // get the updated campaign information, and add it to influencer's profile.
-    const influencerCamRef = db.collection('influencers')
+    const influencerCamRef = db.collection(INFLUENCER_COLLECTIONS)
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     batch.set(influencerCamRef, {completed: true}, {merge: true});
@@ -239,7 +241,7 @@ function updateCampaign(campaign_id, data, uid){
     batch.set(campaignHistoryRef, newCamp);
 
     // get the updated campaign information, and add it to influencer's profile.
-    const influencerCamRef = db.collection('influencers')
+    const influencerCamRef = db.collection()
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     batch.update(influencerCamRef, {campaign_data: newCamp});
@@ -261,7 +263,7 @@ function deleteCampaign(data, uid){
 
     const batch = db.batch();
     batch.delete(campaignRef);
-    const influencerCamRef = db.collection('influencers').doc(uid)
+    const influencerCamRef = db.collection(INFLUENCER_COLLECTIONS).doc(uid)
         .collection('campaigns').doc(campaign_id);
     batch.delete(influencerCamRef);
     return batch.commit();
@@ -452,7 +454,7 @@ function feedback(data, uid, campaign_id, history_id){
     const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc(history_id);
     batch.set(campaignHistoryRef, {feed_back: data.feed_back}, {merge: true});
 
-    const influencerCamRef = db.collection('influencers')
+    const influencerCamRef = db.collection(INFLUENCER_COLLECTIONS)
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     if (uid === 'no_uid'){
@@ -498,7 +500,7 @@ function writeFinalVideoDrfat_callback(campaignData, uid, campaign_id, history_i
         final_video_draft: campaignData,
         final_video_draft_history_id: history_id,
     }, {merge: true});
-    const influencerCamRef = db.collection('influencers')
+    const influencerCamRef = db.collection(INFLUENCER_COLLECTIONS)
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
     batch.set(influencerCamRef, {
@@ -578,7 +580,7 @@ async function listBrandCampaignsInf(uid, idToken, next){
         // this is a hack to avoid empty list error by the .where() clause below.
         shop_list.push('TestStoreLfioDefault');
     }
-    return db.collection('brand_campaigns').where('brand_id', 'in', shop_list).get()
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).where('brand_id', 'in', shop_list).get()
         .then(querySnapshot => {
             const brand_campaigns = [];
             querySnapshot.docs.forEach(doc => {
@@ -624,7 +626,7 @@ function signupToBrandCampaign(brand_campaign_id, uid, idToken, next) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
     }
-    const brand_campaigns_ref = db.collection('brand_campaigns').doc(brand_campaign_id);
+    const brand_campaigns_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
     let brand_campaign_data = null;
     return brand_campaigns_ref.get()
         .then(async (snapshot) => {
@@ -707,11 +709,11 @@ function createBrandCampaignData(brand_campaign_id, uid, data, is_new_camp=false
 function createBrandCampaign(data, uid){
     const batch = db.batch();
     const brandCampaignRef = db.collection('brands')
-        .doc(uid).collection('brand_campaigns')
+        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc();
     const brand_campaign_data = createBrandCampaignData(brandCampaignRef.id, uid, data, true);
     batch.set(brandCampaignRef, brand_campaign_data);
-    const allBrandCampaignRef = db.collection('brand_campaigns').doc(brandCampaignRef.id);
+    const allBrandCampaignRef = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brandCampaignRef.id);
     batch.set(allBrandCampaignRef, brand_campaign_data);
     return {
         campaign_id: brandCampaignRef.id,
@@ -723,7 +725,7 @@ function createBrandCampaign(data, uid){
 // this is for brand to see their promotions
 function listBrandCampaignForBrand(uid){
     console.log('Get all brand campaign meta data that belong to current brand.');
-    return db.collection('brand_campaigns')
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS)
         .where('brand_id', '==', uid)
         .get()
         .then(querySnapshot => {
@@ -755,7 +757,7 @@ function totalInfCount(uid){
 
 // this is for brand to see their promotions
 function getBrandCampaignForBrand(campaign_id){
-    return db.collection('brand_campaigns').doc(campaign_id).get()
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(campaign_id).get()
         .then(querySnapshot => {
             const brand_campaign = querySnapshot.data();
             console.log('Found', brand_campaign);
@@ -771,7 +773,7 @@ function updateBrandCampaign(data, uid, brand_campaign_id){
     }
 
     return db.collection('brands')
-        .doc(uid).collection('brand_campaigns')
+        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(brand_campaign_id)
         .update(data);
 }
@@ -785,10 +787,10 @@ function deleteBrandCampaign(data, uid){
     const batch = db.batch();
 
     const brand_campaign_ref = db.collection('brands')
-        .doc(uid).collection('brand_campaigns')
+        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(data.brand_campaign_id);
     batch.update(brand_campaign_ref, {deleted: true});
-    const camapign_ref = db.collection('brand_campaigns')
+    const camapign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(data.brand_campaign_id);
     batch.update(camapign_ref, {deleted: true});
     return batch.commit();
@@ -802,10 +804,10 @@ function endBrandCampaign(data, uid){
     const batch = db.batch();
 
     const brand_campaign_ref = db.collection('brands')
-        .doc(uid).collection('brand_campaigns')
+        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(data.brand_campaign_id);
     batch.update(brand_campaign_ref, {ended: true});
-    const camapign_ref = db.collection('brand_campaigns')
+    const camapign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(data.brand_campaign_id);
     batch.update(camapign_ref, {ended: true});
     return batch.commit();
@@ -814,12 +816,12 @@ function endBrandCampaign(data, uid){
 
 // takes in a new data object, update the influencer profile with it.
 function updateInfluencerProfile(uid, data){
-    const influencerRef = db.collection('influencers').doc(uid);
+    const influencerRef = db.collection(INFLUENCER_COLLECTIONS).doc(uid);
     return influencerRef.set(data, {merge: true});
 }
 
 function getInfluencerProfile(uid){
-    const influencerRef = db.collection('influencers').doc(uid);
+    const influencerRef = db.collection(INFLUENCER_COLLECTIONS).doc(uid);
     return influencerRef.get();
 }
 
@@ -839,6 +841,31 @@ function getAllMedia(campaign_id, campaign_type){
         return results;
     });
 }
+
+// TODO: Add more details including commission, Modash profile etc.
+function add_recommended_influencers(brand_campaign_id, data){
+    const batch = db.batch();
+    if(data.influencers){
+        let i = 0;
+        for (i = 0; i < data.influencers.length; i ++){
+            const influencer = data.influencers[i];
+            const cur_inf_email = influencer.email;
+            const platform = influencer.platform;
+            const account_id = influencer.account_id;
+            const influencer_ref= db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id)
+                .collection(INFLUENCER_COLLECTIONS).doc(cur_inf_email);
+            batch.set(influencer_ref, {
+                email: cur_inf_email,
+                account_id,
+                platform,
+                profile: influencer,
+            });
+        };
+    }else{
+        console.warn('Incoming data does not have influencer profiles');
+    };
+    return batch.commit();
+};
 
 module.exports = {
     getCampaign,
@@ -870,6 +897,7 @@ module.exports = {
     deleteBrandCampaign,
     endBrandCampaign,
     totalInfCount,
+    add_recommended_influencers,
     GENERIC_INF_CREATED_CAMPAIGN,
     FIXED_RATE,
     PERCENTAGE_RATE,

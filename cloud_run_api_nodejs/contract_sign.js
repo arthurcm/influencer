@@ -4,12 +4,15 @@ const HELLO_SIGN_CLIENT_ID = 'ed13bd512148181319db3152c8749516';
 const hellosign = require('hellosign-sdk')({ key: HELLO_SIGN_API_KEY });
 
 const protobuf = require('protobufjs');
+const functions = require('firebase-functions');
 
 const contract_pb = require('./proto_gen/contract_pb');
 // import {Contract, ContractType} from '/proto_gen/contract_pb';
 const campaign = require('./campaign');
 
 const CONTRACTS_COLLECTION_NAME = 'contracts';
+const INFLUENCER_ROLE = 'Influencer';
+const BRAND_ROLE = 'Brand';
 
 const admin = require('firebase-admin');
 const db = admin.firestore();
@@ -57,12 +60,12 @@ function prepareSignatureRequestData(data){
                     {
                         email_address: shop_email,
                         name: contact_name,
-                        role: 'Brand',
+                        role: BRAND_ROLE,
                     },
                     {
-                        email_address: 'arthur.meng@lifo.ai',
+                        email_address: 'test@lifo.ai',
                         name: 'Arthur Meng',
-                        role: 'Influencer',
+                        role: INFLUENCER_ROLE,
                     },
                 ],
                 custom_fields: [
@@ -73,20 +76,65 @@ function prepareSignatureRequestData(data){
         });
 };
 
-function saveResponsedata(signature_info, response, brand_campaign_id){
+function saveSignatureResponsedata(signature_info, response, brand_campaign_id){
     const signature_request_id = signature_info.signature_request_id;
+    const signatures = signature_info.signatures;
     const save_promise = db.collection(CONTRACTS_COLLECTION_NAME)
         .doc(signature_request_id)
         .set({
             signature_request_id,
             brand_campaign_id,
+            signatures,
             signature_response: response,
         });
     return {
         save_promise,
         signature_request_id,
-        signature_response: response,
+        signatures,
     };
+};
+
+function getSignatureID(email, brand_campaign_id, inf_email){
+    return db.collection(CONTRACTS_COLLECTION_NAME)
+        .where('brand_campaign_id', '==', brand_campaign_id)
+        .get()
+        .then(snapshot => {
+            let signature_id = null;
+            snapshot.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                const signatures = doc_snap.signatures;
+                let found_contract = false;
+
+                // if inf_email is not None, then we are finding the proper signature id for the brand-inf pair.
+                // so we will need to go through all contracts and find the correct contract first.
+                if(inf_email){
+                    for (let i=0;i < signatures.length; i++){
+                        const signature = signatures[i];
+                        console.debug('signer email', signature.signer_email_address);
+                        if(signature.signer_role ===INFLUENCER_ROLE && signature.signer_email_address === inf_email){
+                            console.info('Found the proper contract with influencer', inf_email);
+                            found_contract = true;
+                        }
+                    }
+                }
+                if(!found_contract){
+                    return;
+                }
+                for (let i=0;i < signatures.length; i++){
+                    const signature = signatures[i];
+                    console.debug('Current signature is', signature);
+                    if(signature.signer_email_address === email){
+                        console.debug('Found proper signer using email', email, 'with name', signature.signer_name);
+                        signature_id = signature.signature_id;
+                        break;
+                    }
+                }
+                if(!signature_id){
+                    console.warn('No signer was found to match the email', email);
+                }
+            });
+            return signature_id;
+        });
 };
 
 // TODO: add influencer details here.
@@ -101,7 +149,9 @@ function signatureRequest(data){
             return hellosign.signatureRequest.createEmbeddedWithTemplate(opts);
         })
         .then(response => {
-            return saveResponsedata(response, data.brand_campaign_id);
+            console.debug('signature response is', response);
+            const signature_info = response.signature_request;
+            return saveSignatureResponsedata(signature_info, response, data.brand_campaign_id);
         });
 };
 
@@ -118,7 +168,8 @@ function previewRequest(data){
         })
         .then(response => {
             console.debug('signature response is', response);
-            return saveResponsedata(response, data.brand_campaign_id);
+            const signature_info = response.unclaimed_draft;
+            return saveSignatureResponsedata(signature_info, response, data.brand_campaign_id);
         });
 };
 
@@ -137,8 +188,19 @@ function getAllContractsBrand(brand_campaign_id){
         });
 };
 
+function getEmbeddedSignUrl(email, brand_campaign_id, inf_email){
+    return getSignatureID(email, brand_campaign_id, inf_email)
+        .then(signature_id =>{
+            if(!signature_id){
+                return new functions.https.HttpsError('failed-precondition', 'signature not found.');
+            }
+            return hellosign.embedded.getSignUrl(signature_id);
+        });
+};
+
 module.exports = {
     signatureRequest,
     previewRequest,
     getAllContractsBrand,
+    getEmbeddedSignUrl,
 };

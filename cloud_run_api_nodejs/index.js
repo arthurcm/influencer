@@ -28,7 +28,7 @@ app.use((req, res, next) => {
 
     // idToken comes from the client
     if (!req.headers.authorization) {
-        console.warn(`request to ${req.path} did not provide authorizaton header`);
+        console.warn(`request to ${req.path} did not provide authorization header`);
         return res.status(401).json({ error: 'No credentials sent!' });
     }
     const idToken = req.headers.authorization;
@@ -40,15 +40,22 @@ app.use((req, res, next) => {
             // sign up store accounts
             // /brand/* end points can only be accessed by store accounts
             // /common/* endpoints require auth, can be accessed by both store and inf
-            if (req.path.startsWith('/common') || req.path.startsWith('/share')){
+            // /am/* endpoints require account manager accounts, and can ONLY be accessed by account managers.
+            if (req.path.startsWith('/am/') && !decodedToken.am_account){
+                console.warn(`request to ${req.path} was rejected`);
+                return res.status(403).json({ error: 'Not authorized'});
+            }
+            else if (req.path.startsWith('/common') || req.path.startsWith('/share')){
                 res.locals.uid = uid;
                 res.locals.from_shopify = decodedToken.from_shopify;
                 res.locals.store_account = decodedToken.store_account;
+                res.locals.account_manager = decodedToken.account_manager;
                 res.locals.name = decodedToken.name;
+                res.locals.email = decodedToken.email;
                 next();
                 return decodedToken;
             }
-            else if(req.path.startsWith('/brand') && !decodedToken.store_account){
+            else if(req.path.startsWith('/brand') && !decodedToken.store_account && !decodedToken.account_manager){
                 console.warn(`request to ${req.path} was rejected`);
                 return res.status(403).json({ error: 'Not authorized'});
 
@@ -60,6 +67,7 @@ app.use((req, res, next) => {
             res.locals.uid = uid;
             res.locals.from_shopify = decodedToken.from_shopify;
             res.locals.store_account = decodedToken.store_account;
+            res.locals.account_manager = decodedToken.account_manager;
             res.locals.name = decodedToken.name;
             next();
             return decodedToken;
@@ -684,11 +692,40 @@ app.post('/signature_request/create_embedded_with_template', (req, res, next) =>
 
 
 // Currently the json body only requires a valid brand_campaign_id
+// Note: don't use this one for now. (July 7th, 2020)
 app.post('/unclaimed_draft/create_embedded_with_template', (req, res, next) => {
     console.debug('/unclaimed_draft/create_embedded_with_template received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
     return contract_sign.previewRequest(data)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+// return the respective sign_url based on the current user
+app.get('/embedded/sign_url/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const email = res.locals.email;
+    console.debug(`/embedded/sign_url/brand_campaign_id received a brand_campaign_id ${brand_campaign_id}`);
+    return contract_sign.getEmbeddedSignUrl(email, brand_campaign_id, null)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+// return the respective sign_url based on the current user
+app.get('/brand/embedded/sign_url/brand_campaign_id/:brand_campaign_id/inf_email/:inf_email', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const inf_email = req.params.inf_email;
+    const email = res.locals.email;
+    console.debug(`/embedded/sign_url/ received a brand_campaign_id ${brand_campaign_id} with inf_email ${inf_email}`);
+    return contract_sign.getEmbeddedSignUrl(email, brand_campaign_id, inf_email)
         .then(result => {
             res.status(200).send(result);
             return result;
@@ -703,6 +740,18 @@ app.get('/brand/contracts/brand_campaign_id/:brand_campaign_id', (req, res, next
     return contract_sign.getAllContractsBrand(brand_campaign_id)
         .then(result => {
             res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req, res, next) =>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const data = req.body;
+    console.debug(`/am/recommend_influencers received brand_campaign_id ${brand_campaign_id} with json body ${data}`);
+    return campaign.add_recommended_influencers(brand_campaign_id, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
             return result;
         })
         .catch(next);
