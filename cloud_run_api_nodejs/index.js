@@ -8,7 +8,6 @@ require('isomorphic-fetch');
 const isValidDomain = require('is-valid-domain');
 const validUrl = require('valid-url');
 
-
 const admin = require('firebase-admin');
 admin.initializeApp({
     credential: admin.credential.applicationDefault(),
@@ -755,6 +754,18 @@ app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req,
             return result;
         })
         .catch(next);
+});
+
+
+app.get('/signature_request/files/signature_request_id/:signature_request_id', (req, res, next) => {
+    const signature_request_id = req.params.signature_request_id;
+    contract_sign.getSignedContract(signature_request_id);
+});
+
+
+// TODO: to be implemented
+app.put('signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
+    res.status(200).send({status: 'OK'});
 });
 
 

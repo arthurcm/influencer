@@ -103,11 +103,13 @@ function getSignatureID(email, brand_campaign_id, inf_email){
             snapshot.docs.forEach(doc => {
                 const doc_snap = doc.data();
                 const signatures = doc_snap.signatures;
-                let found_contract = false;
+
 
                 // if inf_email is not None, then we are finding the proper signature id for the brand-inf pair.
                 // so we will need to go through all contracts and find the correct contract first.
+                let found_contract = true;
                 if(inf_email){
+                    found_contract = false;
                     for (let i=0;i < signatures.length; i++){
                         const signature = signatures[i];
                         console.debug('signer email', signature.signer_email_address);
@@ -198,9 +200,23 @@ function getEmbeddedSignUrl(email, brand_campaign_id, inf_email){
         });
 };
 
+function getSignedContract(signature_request_id){
+    const fs = require('fs');
+    hellosign.signatureRequest.download(signature_request_id, { file_type: 'pdf' }, (err, res) => {
+        const file = fs.createWriteStream('contract.pdf');
+
+        res.pipe(file);
+
+        return file.on('finish', () => {
+            file.close();
+        });
+    });
+}
+
 module.exports = {
     signatureRequest,
     previewRequest,
     getAllContractsBrand,
     getEmbeddedSignUrl,
+    getSignedContract,
 };
