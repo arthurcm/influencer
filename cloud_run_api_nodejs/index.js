@@ -34,7 +34,7 @@ app.use((req, res, next) => {
     return admin.auth().verifyIdToken(idToken)
         .then(decodedToken => {
             const uid = decodedToken.uid;
-            console.debug('received decoded token', decodedToken);
+            console.info('received decoded token', decodedToken);
             // the following "additional claim" field "store_account" is set in shopify/sever.js to
             // sign up store accounts
             // /brand/* end points can only be accessed by store accounts
@@ -45,14 +45,7 @@ app.use((req, res, next) => {
                 return res.status(403).json({ error: 'Not authorized'});
             }
             else if (req.path.startsWith('/common') || req.path.startsWith('/share')){
-                res.locals.uid = uid;
-                res.locals.from_shopify = decodedToken.from_shopify;
-                res.locals.store_account = decodedToken.store_account;
-                res.locals.account_manager = decodedToken.account_manager;
-                res.locals.name = decodedToken.name;
-                res.locals.email = decodedToken.email;
-                next();
-                return decodedToken;
+                console.info('Received /common or /share endpoint request');
             }
             else if(req.path.startsWith('/brand') && !decodedToken.store_account && !decodedToken.account_manager){
                 console.warn(`request to ${req.path} was rejected`);
@@ -68,6 +61,7 @@ app.use((req, res, next) => {
             res.locals.store_account = decodedToken.store_account;
             res.locals.account_manager = decodedToken.account_manager;
             res.locals.name = decodedToken.name;
+            res.locals.email = decodedToken.email;
             next();
             return decodedToken;
         })
@@ -677,6 +671,7 @@ app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
 });
 
 
+// This is to create signature resquest, which returns signature related information.
 app.post('/signature_request/create_embedded_with_template', (req, res, next) => {
     console.debug('/signature_request/create_embedded_with_template received a request', req.body);
     const data = req.body;
@@ -690,19 +685,19 @@ app.post('/signature_request/create_embedded_with_template', (req, res, next) =>
 });
 
 
-// Currently the json body only requires a valid brand_campaign_id
-// Note: don't use this one for now. (July 7th, 2020)
-app.post('/unclaimed_draft/create_embedded_with_template', (req, res, next) => {
-    console.debug('/unclaimed_draft/create_embedded_with_template received a request', req.body);
-    const data = req.body;
-    const uid = res.locals.uid;
-    return contract_sign.previewRequest(data)
-        .then(result => {
-            res.status(200).send(result);
-            return result;
-        })
-        .catch(next);
-});
+// // Currently the json body only requires a valid brand_campaign_id
+// // Note: don't use this one for now. (July 7th, 2020)
+// app.post('/unclaimed_draft/create_embedded_with_template', (req, res, next) => {
+//     console.debug('/unclaimed_draft/create_embedded_with_template received a request', req.body);
+//     const data = req.body;
+//     const uid = res.locals.uid;
+//     return contract_sign.previewRequest(data)
+//         .then(result => {
+//             res.status(200).send(result);
+//             return result;
+//         })
+//         .catch(next);
+// });
 
 
 // return the respective sign_url based on the current user
@@ -732,7 +727,6 @@ app.get('/brand/embedded/sign_url/brand_campaign_id/:brand_campaign_id/inf_email
         .catch(next);
 });
 
-
 app.get('/brand/contracts/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     console.debug(`/brand/contracts/brand_campaign_id/:brand_campaign_id received brand_campaign_id ${brand_campaign_id}`);
@@ -760,12 +754,31 @@ app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req,
 app.get('/signature_request/files/signature_request_id/:signature_request_id', (req, res, next) => {
     const signature_request_id = req.params.signature_request_id;
     contract_sign.getSignedContract(signature_request_id);
+    res.status(200).send({status: 'OK'});
 });
 
 
-// TODO: to be implemented
-app.put('signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
-    res.status(200).send({status: 'OK'});
+app.put('/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const signature_id = req.params.signature_id;
+    console.debug(`Received ${brand_campaign_id} and ${signature_id}`);
+    contract_sign.signature_complete(brand_campaign_id, signature_id, false)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/brand/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const signature_id = req.params.signature_id;
+    contract_sign.signature_complete(brand_campaign_id, signature_id, true)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
 });
 
 
