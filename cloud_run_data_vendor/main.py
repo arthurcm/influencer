@@ -105,8 +105,7 @@ def hook():
         logging.debug(f'By passing auth for request {request.path}')
 
 
-# TODO: Add RBAC control!!!
-@app.route("/instagram/search", methods=["POST"])
+@app.route("/am/instagram/search", methods=["POST"])
 def instagram_search():
     """
         AM use. This is to search instagram account from Modash
@@ -133,8 +132,8 @@ def instagram_search():
         response.status_code = 400
     return response
 
-# TODO: Add RBAC control!!!
-@app.route("/instagram/profile", methods=["GET"])
+
+@app.route("/am/instagram/profile", methods=["GET"])
 def instagram_report():
     """
     This API pulls instagram full report from Modash
@@ -176,8 +175,8 @@ def instagram_report():
         response.status_code = 400
     return response
 
-# TODO: Add RBAC control!!!
-@app.route("/instagram/interests", methods=["GET"])
+
+@app.route("/am/instagram/interests", methods=["GET"])
 def instagram_interests():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~interests/get
@@ -187,8 +186,7 @@ def instagram_interests():
     return modash_instagram_utils('interests')
 
 
-# TODO: Add RBAC control!!!
-@app.route("/instagram/brands", methods=["GET"])
+@app.route("/am/instagram/brands", methods=["GET"])
 def instagram_brands():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~brands/get
@@ -198,8 +196,7 @@ def instagram_brands():
     return modash_instagram_utils('brands')
 
 
-# TODO: Add RBAC control!!!
-@app.route("/instagram/languages", methods=["GET"])
+@app.route("/am/instagram/languages", methods=["GET"])
 def instagram_languages():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~languages/get
@@ -210,8 +207,8 @@ def instagram_languages():
     """
     return modash_instagram_utils('languages')
 
-# TODO: Add RBAC control!!!
-@app.route("/instagram/locations", methods=["GET"])
+
+@app.route("/am/instagram/locations", methods=["GET"])
 def instagram_locations():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~1locations/get
@@ -221,6 +218,7 @@ def instagram_locations():
     use the "query" parameter when calling.
     """
     return modash_instagram_utils('locations')
+
 
 def modash_instagram_utils(endpoint_sufix):
     try:
@@ -244,7 +242,6 @@ def modash_instagram_utils(endpoint_sufix):
         response = flask.jsonify({'Error': f'Failed to find {endpoint_sufix}'})
         response.status_code = 400
     return response
-
 
 
 def get_client_secret():
