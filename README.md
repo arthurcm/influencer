@@ -52,3 +52,8 @@ This will launch a local server at localhost:4200
 ### Shopify APP
 The Shopify app is mainly composed of two modules: app server, and client side scripts
 
+
+### Nylas auth service
+We leverage Nylas API products as documented here: https://docs.nylas.com/reference#introduction
+The Nylas products provide a layer of abstraction for integrating both email and calendar for our customers. 
+
