@@ -36,6 +36,9 @@ import firebase_admin
 from firebase_admin import auth
 from firebase_admin import exceptions
 
+ACCOUNT_MANAGER_FLAG = 'account_manager'
+STORE_ACCOUNT = 'store_account'
+FROM_SHOPIFY = 'from_shopify'
 
 firebase_app = firebase_admin.initialize_app()
 
@@ -243,10 +246,7 @@ def _build_cors_prelight_response():
 def hook():
     if request.method == "OPTIONS": # CORS preflight
         return _build_cors_prelight_response()
-    if request.path.startswith('/brand') or request.path.startswith('/tam') or request.path.startswith('/influencer'):
-        if flask.session.get('uid'):
-            logging.info('request has been verified')
-            return
+    if request.path.startswith('/brand') or request.path.startswith('/am') or request.path.startswith('/influencer'):
         id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
         if not id_token:
             logging.error('Valid id_token required')
@@ -261,15 +261,20 @@ def hook():
             response.status_code = 401
             return response
         logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
-        if (request.path.startswith('/brand') and not decoded_token.get('store_account'))\
-                or (request.path.startswith('/influencer') and decoded_token.get('store_account')):
+        if decoded_token.get(ACCOUNT_MANAGER_FLAG):
+            logging.info('AM account has admin access')
+        elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
+                or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
             response = flask.jsonify({"status": "not authorized"})
             response.status_code = 403
             return response
 
         flask.session['uid'] = uid
-        flask.session['from_shopify'] = decoded_token.get('from_shopify')
-        flask.session['store_account'] = decoded_token.get('store_account')
+        flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
+        flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
+        flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
+        flask.session['name'] = decoded_token.get('name')
+        flask.session['email'] = decoded_token.get('email')
     else:
         logging.debug(f'By passing auth for request {request.path}')
 
