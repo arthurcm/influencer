@@ -41,6 +41,33 @@ exports.regiserUser = functions.auth.user().onCreate(async (user) => {
 });
 
 
+// On sign up.
+exports.processSignUp = functions.auth.user().onCreate((user) => {
+    // Check if user meets role criteria.
+    // TODO: Add email verification for better security!!!
+    if (user.email &&
+        user.email.endsWith('@lifo.ai')) {
+        const customClaims = {
+            account_manager: true,
+            access_level: 9
+        };
+        // Set custom user claims on this newly created user.
+        return admin.auth().setCustomUserClaims(user.uid, customClaims)
+            .then(() => {
+                // Update real-time database to notify client to force refresh.
+                const metadataRef = admin.database().ref('metadata/' + user.uid);
+                // Set the refresh time to the current UTC timestamp.
+                // This will be captured on the client to force a token refresh.
+                return metadataRef.set({refreshTime: new Date().getTime()});
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    }
+    return true;
+});
+
+
 // Imports the Google Cloud client library
 const {PubSub} = require('@google-cloud/pubsub');
 exports.genScheduledYouTubePost = functions.pubsub.topic('per-minute').onPublish((message) => {

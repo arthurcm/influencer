@@ -20,10 +20,10 @@ curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0s
 
 
 Test fetching instagram profile:
-curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/instagram/profile?userId=instagram&force_update=true" -X GET
+curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/profile?userId=instagram&force_update=true" -X GET
 
 Test search instagram profile:
-curl -H "Content-Type: application/json" -H "Authorization:<id_token>" "https://discover.lifo.ai/instagram/search" -X POST -d @modash_ins_search.json
+curl -H "Content-Type: application/json" -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/search" -X POST -d @modash_ins_search.json
 
 Test locations/languages/brands/interests:
-curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/instagram/interests" -X GET
+curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/interests" -X GET
