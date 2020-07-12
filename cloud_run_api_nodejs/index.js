@@ -40,7 +40,7 @@ app.use((req, res, next) => {
             // /brand/* end points can only be accessed by store accounts
             // /common/* endpoints require auth, can be accessed by both store and inf
             // /am/* endpoints require account manager accounts, and can ONLY be accessed by account managers.
-            if (req.path.startsWith('/am/') && !decodedToken.am_account){
+            if (req.path.startsWith('/am/') && !decodedToken.account_manager){
                 console.warn(`request to ${req.path} was rejected`);
                 return res.status(403).json({ error: 'Not authorized'});
             }

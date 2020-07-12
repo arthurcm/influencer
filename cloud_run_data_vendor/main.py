@@ -96,6 +96,10 @@ def hook():
         logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
         if decoded_token.get(ACCOUNT_MANAGER_FLAG):
             logging.info('AM account has admin access')
+        elif not decoded_token.get(ACCOUNT_MANAGER_FLAG) and request.path.startswith('/am'):
+            response = flask.jsonify({"status": "not authorized"})
+            response.status_code = 403
+            return response
         elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
                 or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
             response = flask.jsonify({"status": "not authorized"})
