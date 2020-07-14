@@ -642,7 +642,13 @@ app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next
     const brand_campaign_id = req.params.brand_campaign_id;
     return campaign.getBrandCampaignForBrand(brand_campaign_id)
         .then(result => {
-            res.status(200).send(result);
+            console.debug('get brand campaign results', result);
+            const brand_campaigns = result[0];
+            const discovered_infs = result[1];
+            res.status(200).send({
+                brand_campaigns,
+                discovered_infs,
+            });
             return result;
         })
         .catch(next);

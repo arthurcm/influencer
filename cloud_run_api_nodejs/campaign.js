@@ -757,12 +757,22 @@ function totalInfCount(uid){
 
 // this is for brand to see their promotions
 function getBrandCampaignForBrand(campaign_id){
-    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(campaign_id).get()
+    const campaign_ref =  db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(campaign_id).get()
         .then(querySnapshot => {
             const brand_campaign = querySnapshot.data();
             console.log('Found', brand_campaign);
             return brand_campaign;
         });
+    const discovered_inf_ref = access_influencer_subcollection(campaign_id).get()
+        .then(querySnapshot => {
+            const discovered_influencers = [];
+            querySnapshot.docs.forEach(doc => {
+                discovered_influencers.push(doc.data());
+            });
+            console.debug('Found', discovered_influencers.length, 'recommended influencers');
+            return discovered_influencers;
+        });
+    return Promise.all([campaign_ref, discovered_inf_ref]);
 }
 
 
