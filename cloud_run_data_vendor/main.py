@@ -3,8 +3,10 @@
 import os
 import flask
 import json
+import datetime
 
 from validator_collection import checkers
+import shopify
 
 import requests
 from flask import request
@@ -33,12 +35,17 @@ MODASH_API_ENDPINT = "https://api.modash.io/v1"
 MODASH_AUTH_HEADER = f'Bearer {MODASH_API_ACCESS_KEY}'
 MAX_RESULT_LIMIT = 200
 
+API_VERSION = os.getenv('API_VERSION', '2020-07')
+
 
 ACCOUNT_MANAGER_FLAG = 'account_manager'
 STORE_ACCOUNT = 'store_account'
 FROM_SHOPIFY = 'from_shopify'
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
+
+DEFFAULT_DATE_RANGE = 90
+MAX_SHOPIFY_RESULTS_LIMIT = 200
 
 import firebase_admin
 from firebase_admin import auth
@@ -252,6 +259,134 @@ def modash_instagram_utils(endpoint_sufix):
         logging.error(f'{endpoint_sufix} search error: {e}')
         response = flask.jsonify({'Error': f'Failed to find {endpoint_sufix}'})
         response.status_code = 400
+    return response
+
+
+def get_shopify_access_token(shop):
+    res = sql_handler.get_shop_auth(shop)
+    return res
+
+
+@app.route('/am/shopify_product_info', methods=['GET', 'PUT'])
+def shop_product_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    shop = flask.request.args.get('shop')
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    if request.method == 'PUT':
+        url = f'https://{shop}/admin/api/{API_VERSION}/products.json'
+        logging.info(f'Receiving request for url {url}')
+        headers = {"X-Shopify-Access-Token": shop_access_token}
+        params = {'limit': MAX_SHOPIFY_RESULTS_LIMIT}
+        res = requests.get(url, headers=headers, params=params)
+        logging.info(f'Obtained shop information token {shop_access_token} for shop {shop}: {res.json()}')
+        data = res.json()
+        products = res.json().get('products')
+        if products:
+            for product_json in products:
+                product_id = product_json.get('id')
+                sql_handler.save_product_info(shop, product_id, product_json)
+            logging.info(f'Saved {len(products)} for shop {shop}')
+        else:
+            logging.info('No products found')
+    else:
+        logging.info(f'Retrieving product information from shop {shop}')
+        tags_count = sql_handler.get_product_tags_counts(shop)
+        product_images = sql_handler.get_product_images(shop)
+        data = {}
+        tags_count_res = [{'vendor': row[0], 'tags': row[1], 'count': row[2]} for row in tags_count]
+        images_res = [{'title': row[0], 'image': row[1]} for row in product_images]
+        data['tags_count'] = tags_count_res
+        data['product_images'] = images_res
+    response = flask.jsonify(data)
+    response.status_code = 200
+    return response
+
+
+@app.route('/am/shopify_shop_info', methods=['GET'])
+def shop_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    shop = flask.request.args.get('shop')
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    url = f'https://{shop}/admin/api/{API_VERSION}/shop.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    res = requests.get(url, headers=headers)
+    logging.info(f'Obtained shop information for shop {shop}: {res.json()}')
+    sql_handler.save_shop_info(shop, res.json())
+    response = flask.jsonify(res.json())
+    response.status_code = 200
+    return response
+
+
+@app.route('/am/shopify_customers', methods=['GET', 'PUT'])
+def shop_customer_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    shop = flask.request.args.get('shop')
+    days_range = flask.request.args.get('days_range')
+    try:
+        days_range = int(days_range)
+    except Exception as e:
+        logging.warning('Illegal days_range, revert to default value')
+        days_range = DEFFAULT_DATE_RANGE
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    if request.method == 'PUT':
+        created_at_min = datetime.datetime.now() - datetime.timedelta(days=days_range)
+        url = f'https://{shop}/admin/api/{API_VERSION}/customers.json'
+        logging.info(f'Receiving request for url {url}')
+        headers = {"X-Shopify-Access-Token": shop_access_token}
+        params = {'limit': MAX_SHOPIFY_RESULTS_LIMIT,
+                  'created_at_min': created_at_min.isoformat()}
+        res = requests.get(url, headers=headers, params=params)
+        data = res.json()
+
+        logging.info(f'Obtained shop information for shop {shop}: {data}')
+        customers = data.get('customers')
+        if customers:
+            for customer_json in customers:
+                customer_id = customer_json.get('id')
+                sql_handler.save_customer_info(shop, customer_id, customer_json)
+            logging.info(f'Saved {len(customers)} for shop {shop}')
+        else:
+            logging.info('No customers found')
+    else:
+        logging.info(f'Getting customer location data for shop {shop}')
+        query_results = sql_handler.get_shop_customers_locations(shop)
+        data = []
+        for row in query_results:
+            cur_res = {}
+            cur_res['city'] = row[0]
+            cur_res['province'] = row[1]
+            cur_res['location_cnt'] = row[2]
+            data.append(cur_res)
+    response = flask.jsonify(data)
+    response.status_code = 200
     return response
 
 

@@ -51,6 +51,7 @@ exports.processSignUp = functions.auth.user().onCreate((user) => {
             account_manager: true,
             access_level: 9
         };
+        console.log(`Updating custom claims to ${user.email}`, customClaims);
         // Set custom user claims on this newly created user.
         return admin.auth().setCustomUserClaims(user.uid, customClaims)
             .then(() => {

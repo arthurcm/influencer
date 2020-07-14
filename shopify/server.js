@@ -60,7 +60,8 @@ server
         createShopifyAuth({
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
-            scopes: ['read_orders', 'write_orders', 'write_script_tags', 'read_script_tags'],
+            scopes: ['read_orders', 'write_orders', 'write_script_tags', 'read_script_tags',
+                'read_products', 'read_customers', 'read_locations'],
             nonce,
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
@@ -73,7 +74,7 @@ server
                 // We will stay free until we are ready to charge customers.
                 await getSubscriptionUrl(ctx, accessToken, shop);
 
-                fetch(`https://${shop}/admin/api/2020-04/graphql.json`, {
+                fetch(`https://${shop}/admin/api/${process.env.API_VERSION}/graphql.json`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

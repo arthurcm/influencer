@@ -88,7 +88,42 @@ class Sqlhandler:
                 Column('timestamp', DateTime),
             )
 
+        self.SHOPIFY_AUTH = Table(
+            'shopify_auth', MetaData(),
+            Column('shop', String, primary_key=True),
+            Column('access_token', String),
+            Column('timestamp', DateTime)
+        )
 
+        self.SHOPIFY_INFO = Table(
+            'shopify_info', MetaData(),
+            Column('shop', String, primary_key=True),
+            Column('shop_json', JSON),
+            Column('timestamp', DateTime)
+        )
+
+        self.SHOPIFY_CUSTOMERS = Table(
+            'shopify_customers', MetaData(),
+            Column('shop', String, primary_key=True),
+            Column('customer_id', String, primary_key=True),
+            Column('customer_json', JSON),
+            Column('city', String),
+            Column('province', String),
+            Column('country_code', String),
+            Column('timestamp', DateTime)
+        )
+
+        self.SHOPIFY_PRODUCTS = Table(
+            'shopify_products', MetaData(),
+            Column('shop', String, primary_key=True),
+            Column('product_id', String, primary_key=True),
+            Column('product_json', JSON),
+            Column('image', JSON),
+            Column('title', String),
+            Column('vendor', String),
+            Column('tags', String),
+            Column('timestamp', DateTime)
+        )
 
         # Create tables (if they don't already exist)
         with self.db.connect() as conn:
@@ -102,6 +137,59 @@ class Sqlhandler:
                 PRIMARY KEY (account_id, platform)
             );
             """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS shopify_auth(
+                    shop text,
+                    access_token text,
+                    timestamp timestamp,
+                    PRIMARY KEY (shop)
+                );
+                """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS shopify_info(
+                    shop text,
+                    shop_json json,
+                    timestamp timestamp,
+                    PRIMARY KEY (shop)
+                );
+                """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS shopify_customers(
+                    shop text,
+                    customer_id text,
+                    customer_json json,
+                    city text,
+                    province text,
+                    country_code text,
+                    timestamp timestamp,
+                    PRIMARY KEY (shop, customer_id)
+                );
+                """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS shopify_products(
+                    shop text,
+                    product_id text,
+                    product_json json,
+                    image json,
+                    title text,
+                    vendor text,
+                    tags text,
+                    timestamp timestamp,
+                    PRIMARY KEY (shop, product_id)
+                );
+                """
             )
 
     def save_profile(self, account_id, platform, profile_json):
@@ -159,5 +247,208 @@ class Sqlhandler:
             self.logger.exception(e)
             return {}, None
 
+    def save_shop_auth(self, shop, access_token):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.SHOPIFY_AUTH).values(
+                    shop=shop,
+                    access_token=access_token,
+                    timestamp=datetime.datetime.now(),
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['shop'],
+                    set_=dict(
+                        access_token=access_token,
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {'status': 'Failed'}
+        return {'status': 'OK'}
+
+    def get_shop_auth(self, shop):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select access_token
+                    from shopify_auth
+                    where shop=:shop
+                    """)
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get shop auth succeeded')
+                return result[0][0]
+        except Exception as e:
+            self.logger.exception(e)
+            return ''
+
+    def save_shop_info(self, shop, shop_json):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.SHOPIFY_INFO).values(
+                    shop=shop,
+                    shop_json=shop_json,
+                    timestamp=datetime.datetime.now(),
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['shop'],
+                    set_=dict(
+                        shop_json=shop_json,
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {'status': 'Failed'}
+        return {'status': 'OK'}
+
+    def get_shop_customers_locations(self, shop):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select city, province, COUNT(*) as location_cnt
+                    from shopify_customers
+                    where shop=:shop
+                    GROUP BY city, province
+                    """
+                )
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get shop auth succeeded')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return []
+
+    def save_customer_info(self, shop, customer_id, customer_json):
+        try:
+            address = customer_json.get('default_address')
+            city, province, country_code = address.get('city'), address.get('province'), address.get('country_code')
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.SHOPIFY_CUSTOMERS).values(
+                    shop=shop,
+                    customer_id=customer_id,
+                    customer_json=customer_json,
+                    city=city,
+                    province=province,
+                    country_code=country_code,
+                    timestamp=datetime.datetime.now(),
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['shop', 'customer_id'],
+                    set_=dict(
+                        customer_json=customer_json,
+                        city=city,
+                        province=province,
+                        country_code=country_code,
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {'status': 'Failed'}
+        return {'status': 'OK'}
+
+    def get_product_tags_counts(self, shop):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select vendor, tags, COUNT(*) as product_count
+                    from shopify_products
+                    where shop=:shop
+                    GROUP BY vendor, tags
+                    """
+                )
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get shop auth succeeded')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return []
+
+    def get_product_images(self, shop):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select title, image
+                    from shopify_products
+                    where shop=:shop
+                    """
+                )
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get shop auth succeeded')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return []
+
+    def save_product_info(self, shop, product_id, product_json):
+        try:
+            title = product_json.get('title')
+            tags = product_json.get('tags')
+            image = product_json.get('image')
+            vendor = product_json.get('vendor')
+
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.SHOPIFY_PRODUCTS).values(
+                    shop=shop,
+                    product_id=product_id,
+                    product_json=product_json,
+                    title=title,
+                    tags=tags,
+                    image=image,
+                    vendor=vendor,
+                    timestamp=datetime.datetime.now(),
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['shop', 'product_id'],
+                    set_=dict(
+                        product_json=product_json,
+                        title=title,
+                        tags=tags,
+                        image=image,
+                        vendor=vendor,
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {'status': 'Failed'}
+        return {'status': 'OK'}
 
 sql_handler = Sqlhandler()

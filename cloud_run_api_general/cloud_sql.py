@@ -138,6 +138,14 @@ class Sqlhandler:
             Column('timestamp', DateTime)
         )
 
+
+        self.SHOPIFY_AUTH = Table(
+            'shopify_auth', MetaData(),
+            Column('shop', String, primary_key=True),
+            Column('access_token', String),
+            Column('timestamp', DateTime)
+        )
+
         # Create tables (if they don't already exist)
         with self.db.connect() as conn:
             conn.execute(
@@ -213,6 +221,17 @@ class Sqlhandler:
                     commission_type text,
                     timestamp timestamp,
                     PRIMARY KEY (influencer_email, shop)
+                );
+                """
+            )
+
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS shopify_auth(
+                    shop text,
+                    access_token text,
+                    timestamp timestamp,
+                    PRIMARY KEY (shop)
                 );
                 """
             )
@@ -688,5 +707,50 @@ class Sqlhandler:
         except Exception as e:
             self.logger.exception(e)
             return None
+
+    def save_shop_auth(self, shop, access_token):
+        try:
+            # # Using a with statement ensures that the connection is always released
+            # # back into the pool at the end of statement (even if an error occurs)
+            with self.db.connect() as conn:
+                from sqlalchemy.dialects.postgresql import insert
+                insert_stmt = insert(self.SHOPIFY_AUTH).values(
+                    shop=shop,
+                    access_token=access_token,
+                    timestamp=datetime.datetime.now(),
+                )
+                do_update_stmt = insert_stmt.on_conflict_do_update(
+                    index_elements=['shop'],
+                    set_=dict(
+                        access_token=access_token,
+                        timestamp=datetime.datetime.now(),
+                    )
+                )
+                conn.execute(do_update_stmt)
+        except Exception as e:
+            # If something goes wrong, handle the error in this section. This might
+            # involve retrying or adjusting parameters depending on the situation.
+            # [START_EXCLUDE]
+            self.logger.exception(e)
+            return {'status': 'Failed'}
+        return {'status': 'OK'}
+
+    def get_shop_auth(self, shop):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select access_token
+                    from shopify_auth
+                    where shop=:shop
+                    """)
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get shop auth succeeded')
+                return result[0][0]
+        except Exception as e:
+            self.logger.exception(e)
+            return ''
+
 
 sql_handler = Sqlhandler()

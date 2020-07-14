@@ -22,7 +22,7 @@ client = google.cloud.logging.Client()
 client.setup_logging()
 
 
-DEFAULT_CONTACT_EMAIL = 'influencermkting@gmail.com'
+DEFAULT_CONTACT_EMAIL = 'customer@lifo.ai'
 
 
 def _send_sendgrid_email(from_email, to_emails,

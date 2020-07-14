@@ -509,6 +509,30 @@ def roi():
     return response
 
 
+@app.route('/brand/auth', methods=['POST', 'GET'])
+def register_brand():
+    """
+    This endpoint is called upon Shopify brands authentication (to save their access_token)
+    """
+    if flask.request.method == 'POST':
+        data = flask.request.json
+        shop = data['shop']
+        access_token = data['access_token']
+        logging.info(f'Received shop {shop} with access_token {access_token}')
+        res = sql_handler.save_shop_auth(shop, access_token)
+    else:
+        shop = flask.request.args.get('shop')
+        res = sql_handler.get_shop_auth(shop)
+        if not res:
+            res = {'status': 'access token not found'}
+            response = flask.jsonify(res)
+            response.status_code = 404
+            return response
+    response = flask.jsonify(res)
+    response.status_code = 200
+    return response
+
+
 def get_client_secret():
     """
     To enable iam role access (for service accounts) to the secret, run the following:
