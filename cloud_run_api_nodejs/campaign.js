@@ -10,6 +10,7 @@ const GENERIC_INF_CREATED_CAMPAIGN = 'generic_campaign';
 const BRAND_CAMPAIGN_COLLECTIONS = 'brand_campaigns';
 const INFLUENCER_COLLECTIONS = 'influencers';
 
+const INFLUENCER_RECOMMENDED = 'Recommended';
 
 function uriParse(media_name){
     const tokens = media_name.split('/');
@@ -857,6 +858,12 @@ function access_influencer_subcollection(brand_campaign_id) {
         .collection(INFLUENCER_COLLECTIONS);
 }
 
+
+function gen_influencer_doc_id(platform, account_id){
+    return `${platform}_${account_id}`;
+}
+
+
 // TODO: Add more details including commission, Modash profile etc.
 function add_recommended_influencers(brand_campaign_id, data){
     const batch = db.batch();
@@ -867,12 +874,14 @@ function add_recommended_influencers(brand_campaign_id, data){
             const cur_inf_email = influencer.email;
             const platform = influencer.platform;
             const account_id = influencer.account_id;
-            const influencer_ref= access_influencer_subcollection(brand_campaign_id).doc(cur_inf_email);
+            const influencer_ref= access_influencer_subcollection(brand_campaign_id)
+                .doc(account_id);
             batch.set(influencer_ref, {
                 email: cur_inf_email,
                 account_id,
                 platform,
                 profile: influencer,
+                inf_signing_status: INFLUENCER_RECOMMENDED,
             });
         };
     }else{

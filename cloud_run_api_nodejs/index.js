@@ -17,6 +17,10 @@ admin.initializeApp({
 const campaign = require('./campaign');
 const contract_sign = require('./contract_sign');
 
+
+const BRAND_CHOSEN = 'Brand chosen';
+const NO_RESPONSE = 'No response';
+
 // middleware for token verification
 app.use((req, res, next) => {
 
@@ -787,6 +791,28 @@ app.put('/brand/signature_complete/brand_campaign_id/:brand_campaign_id/signatur
         .catch(next);
 });
 
+
+app.put('/brand/choose_influencer/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    contract_sign.update_status(brand_campaign_id, account_id, BRAND_CHOSEN)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/am/deactivate_inf/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    contract_sign.update_status(brand_campaign_id, account_id, NO_RESPONSE)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

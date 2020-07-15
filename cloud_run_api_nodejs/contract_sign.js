@@ -14,8 +14,8 @@ const CONTRACTS_COLLECTION_NAME = 'contracts';
 const INFLUENCER_ROLE = 'Influencer';
 const BRAND_ROLE = 'Brand';
 const AM_ROLE = 'AM';
-const SIGNATURE_PENDING = 'pending contract signing';
-const CONTRACT_SIGNED = 'contract signed';
+const SIGNATURE_PENDING = 'Pending contract signing';
+const CONTRACT_SIGNED = 'Contract signed';
 
 const admin = require('firebase-admin');
 const db = admin.firestore();
@@ -44,8 +44,9 @@ function createContractFromCampaignData(data, campaign_data){
 function prepareSignatureRequestData(data){
     console.info('Retrieving campaign data for ', data.brand_campaign_id);
     return campaign.getBrandCampaignForBrand(data.brand_campaign_id)
-        .then(brand_campaign_data => {
-            console.debug('Found campaign data', brand_campaign_data);
+        .then(res => {
+            const brand_campaign_data = res[0]
+            console.info('Found campaign data', brand_campaign_data);
             // TODO: check email address validity
             const shop_email  = brand_campaign_data.contact_email;
             const contact_name = brand_campaign_data.contact_name;
@@ -59,7 +60,7 @@ function prepareSignatureRequestData(data){
                 contract_type = contract_pb.ContractType.US_FIXED_COMMISSION;
             }
 
-            console.debug('template id dictionary is', TEMPLATE_ID, 'contract type', contract_type);
+            console.info('template id dictionary is', TEMPLATE_ID, 'contract type', contract_type);
             const template_id = TEMPLATE_ID[contract_type];
             const brand_contract = createContractFromCampaignData(data, brand_campaign_data);
 
@@ -97,7 +98,7 @@ function prepareSignatureRequestData(data){
         });
 };
 
-function saveSignatureResponsedata(signature_info, response, brand_campaign_id, inf_email, shop_email){
+function saveSignatureResponsedata(signature_info, response, brand_campaign_id, inf_email, account_id, shop_email){
     const signature_request_id = signature_info.signature_request_id;
     const signatures = signature_info.signatures;
     const batch = db.batch();
@@ -111,7 +112,8 @@ function saveSignatureResponsedata(signature_info, response, brand_campaign_id, 
     });
     const inf_signature_id = findSignatureIdWithEmailAndRole(signatures, inf_email, INFLUENCER_ROLE);
     const brand_signature_id = findSignatureIdWithEmailAndRole(signatures, shop_email, BRAND_ROLE);
-    const inf_subcollection_ref = campaign.access_influencer_subcollection(brand_campaign_id).doc(inf_email);
+    const inf_subcollection_ref = campaign.access_influencer_subcollection(brand_campaign_id)
+        .doc(account_id);
 
     // Here we actually are saving both brand and influencer's signature ids to each influencer's profile.
     // This is mainly due to the fact that each brand-influencer pair determines a particular influencer's status.
@@ -187,10 +189,10 @@ function signatureRequest(data){
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific brand_campaign_id.');
     }
-    if (!data.inf_email) {
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a specific inf_email.');
-    }
+    // if (!data.inf_email) {
+    //     return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+    //         'with a specific inf_email.');
+    // }
     if (!data.inf_name && !data.account_id) {
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific inf_name or account_id.');
@@ -211,7 +213,7 @@ function signatureRequest(data){
             const shop_email = results.shop_email;
             console.debug('signature response is', response);
             const signature_info = response.signature_request;
-            return saveSignatureResponsedata(signature_info, response, data.brand_campaign_id, data.inf_email, shop_email);
+            return saveSignatureResponsedata(signature_info, response, data.brand_campaign_id, data.inf_email, data.account_id, shop_email);
         });
 };
 
@@ -302,6 +304,14 @@ async function signature_complete(brand_campaign_id, signature_id, is_brand){
     });
 };
 
+function update_status(brand_campaign_id, account_id, status_str){
+    return campaign.access_influencer_subcollection(brand_campaign_id)
+        .doc(account_id)
+        .update({
+            inf_signing_status: status_str,
+        });
+};
+
 
 module.exports = {
     signatureRequest,
@@ -309,4 +319,5 @@ module.exports = {
     getEmbeddedSignUrl,
     getSignedContract,
     signature_complete,
+    update_status,
 };
