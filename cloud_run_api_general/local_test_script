@@ -38,7 +38,7 @@ curl -X POST https://api.lifo.ai/orders_paid -d @new_orders_paid_webhook.json --
 
 To obtain a testing idToken for local curl testing to by pass authentication requirements, run the following
 and copy the "idToken" from the returned results json:
-curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd-J72Tyy6x-Oy474EXGplZYW6Q8rCd2vvMmvvpjaNYjgbsIpjYQsyAvAWppZf2EFaAMBXqPYwxzZ86sXJQWrDXkPE66_9KCP8LvJ17NJUwCg6C4S5QWhHL7ntUWkg8LxHNxy3NziCApIV9ElcE1j7TGKF4P3Iy-91TyABJUdLnnGxk-Tgg7It4UDT5FFok_Yb4Hex86JchsO7VmxSpSBnzwRMN0A'
 
 
 Test /campaign/lifo_tracker_id locally, replace the <idToken> with the one you get above:

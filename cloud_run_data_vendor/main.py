@@ -267,11 +267,7 @@ def get_shopify_access_token(shop):
     return res
 
 
-@app.route('/am/shopify_product_info', methods=['GET', 'PUT'])
-def shop_product_info():
-    """
-    This endpoint is called upon AM to access Shopify shop products for access_token
-    """
+def shopify_products():
     shop = flask.request.args.get('shop')
     res = get_shopify_access_token(shop)
     if not res:
@@ -309,6 +305,54 @@ def shop_product_info():
     response = flask.jsonify(data)
     response.status_code = 200
     return response
+
+
+@app.route('/am/shopify_product_info', methods=['GET', 'PUT'])
+def am_shop_product_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    return shopify_products()
+
+
+@app.route('/brand/shopify_product_info', methods=['GET', 'PUT'])
+def brand_shop_product_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    return shopify_products()
+
+
+def get_single_product():
+    shop = flask.request.args.get('shop')
+    product_id = flask.request.args.get('product_id')
+    logging.info(f'Retrieving product information from shop {shop}')
+    single_product = sql_handler.get_product_info(shop, product_id)
+    if len(single_product) > 0:
+        product_res = single_product[2]
+        response = flask.jsonify(product_res)
+        response.status_code = 200
+    else:
+        res = {'status': 'product not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+    return response
+
+
+@app.route('/am/shopify_single_product', methods=['GET'])
+def am_get_product_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    return get_single_product()
+
+
+@app.route('/brand/shopify_single_product', methods=['GET'])
+def brand_get_product_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    return get_single_product()
 
 
 @app.route('/am/shopify_shop_info', methods=['GET'])

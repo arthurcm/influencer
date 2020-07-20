@@ -410,6 +410,27 @@ class Sqlhandler:
             self.logger.exception(e)
             return []
 
+    def get_product_info(self, shop, product_id):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select title, image, product_json
+                    from shopify_products
+                    where shop=:shop and product_id=:product_id
+                    """
+                )
+                stmt = stmt.bindparams(shop=shop, product_id=product_id)
+                result = conn.execute(stmt, {
+                    "shop": shop,
+                    "product_id": product_id
+                }).fetchall()
+                logging.info(f'the get shop product info succeeded')
+                return result[0]
+        except Exception as e:
+            self.logger.exception(e)
+            return []
+
     def save_product_info(self, shop, product_id, product_json):
         try:
             title = product_json.get('title')
