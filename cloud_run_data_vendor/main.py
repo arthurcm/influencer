@@ -299,7 +299,7 @@ def shopify_products():
         product_images = sql_handler.get_product_images(shop)
         data = {}
         tags_count_res = [{'vendor': row[0], 'tags': row[1], 'count': row[2]} for row in tags_count]
-        images_res = [{'title': row[0], 'image': row[1]} for row in product_images]
+        images_res = [{'title': row[0], 'image': row[1], 'product_id': row[2]} for row in product_images]
         data['tags_count'] = tags_count_res
         data['product_images'] = images_res
     response = flask.jsonify(data)

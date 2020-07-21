@@ -397,7 +397,7 @@ class Sqlhandler:
             with self.db.connect() as conn:
                 stmt = text(
                     """
-                    select title, image
+                    select title, image, product_id
                     from shopify_products
                     where shop=:shop
                     """
