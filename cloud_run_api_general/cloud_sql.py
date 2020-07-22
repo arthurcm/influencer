@@ -624,7 +624,7 @@ class Sqlhandler:
             self.logger.exception(e)
             return None
 
-    def get_all_data_per_shop_per_campaign(self, shop):
+    def get_all_data_per_shop(self, shop):
         try:
             with self.db.connect() as conn:
                 stmt = text(
@@ -638,6 +638,26 @@ class Sqlhandler:
                     """)
                 stmt = stmt.bindparams(shop=shop)
                 result = conn.execute(stmt, {"shop": shop}).fetchall()
+                logging.info(f'the get_all_data_per_shop result is {result}')
+                return result
+        except Exception as e:
+            self.logger.exception(e)
+            return None
+
+    def get_all_data_per_shop_per_campaign(self, shop, campaign_id):
+        try:
+            with self.db.connect() as conn:
+                stmt = text(
+                    """
+                    select subtotal_price, uid, campaign_id, commission, commission_type, 
+                        commission_percentage, order_date, order_complete.shop
+                    from order_complete join tracker_id
+                    on order_complete.lifo_tracker_id = tracker_id.lifo_tracker_id  
+                        and order_complete.shop = tracker_id.shop
+                    where order_complete.shop = :shop and tracker_id.campaign_id = :campaign_id
+                    """)
+                stmt = stmt.bindparams(shop=shop)
+                result = conn.execute(stmt, {"shop": shop, "campaign_id": campaign_id}).fetchall()
                 logging.info(f'the get_all_data_per_shop_per_campaign result is {result}')
                 return result
         except Exception as e:

@@ -6,6 +6,8 @@ const hellosign = require('hellosign-sdk')({ key: HELLO_SIGN_API_KEY });
 const protobuf = require('protobufjs');
 const functions = require('firebase-functions');
 
+const moment = require('moment');
+
 const contract_pb = require('./proto_gen/contract_pb');
 // import {Contract, ContractType} from '/proto_gen/contract_pb';
 const campaign = require('./campaign');
@@ -14,6 +16,7 @@ const CONTRACTS_COLLECTION_NAME = 'contracts';
 const INFLUENCER_ROLE = 'Influencer';
 const BRAND_ROLE = 'Brand';
 const AM_ROLE = 'AM';
+const SENDER_ROLE = 'Sender';
 const SIGNATURE_PENDING = 'Pending contract signing';
 const CONTRACT_SIGNED = 'Contract signed';
 
@@ -24,20 +27,56 @@ const db = admin.firestore();
 // evolve into multiple ones
 const contract_type = contract_pb.ContractType.US_FIXED_COMMISSION;
 const TEMPLATE_ID = {};
-TEMPLATE_ID[contract_type] = '1a0f4e4aa93d939ff0fd67bed1eb544942c03cff';
+TEMPLATE_ID[contract_type] = 'da0b474680382655db0ba8f7be9739f936288602';
 
+function timestampToString(ts){
+    const dateTimeString = moment.unix(ts).format('MM/DD/YYYY');
+
+}
 function createContractFromCampaignData(data, campaign_data){
     const contract_proto = new contract_pb.Contract();
     const brand_proto = new contract_pb.Brand();
     brand_proto.shopName = campaign_data.brand;
     const BrandMessage = contract_pb.Brand;
+    const platform = campaign_data.extra_info.platform || data.platform;
+    const campaign_name = campaign_data.campaign_name || data.campaign_name;
+    let start_date = Date.now();
+    if(data.start_date){
+        start_date = data.start_date;
+    }
+    const campaignStartDate = timestampToString(start_date);
+    const campaignEndDateTs = data.end_time || campaign_data.end_time;
+    const campaignEndDate = timestampToString(campaignEndDateTs);
+    const fixedCommission = data.fixed_commission;
+    const percentageCommission = data.percentage_commission;
     return [
-        {name:'shopName', value: campaign_data.brand, editor: AM_ROLE, required:true},
-        {name:'shopEmail', value: campaign_data.contact_email, editor: AM_ROLE, required:true},
-        {name:'contactPersonName', value: campaign_data.contact_name, editor: AM_ROLE, required:true},
-        {name:'influencerEmail', value: data.inf_email, editor: AM_ROLE, required:true},
-        {name:'influencerName', value: data.inf_name, editor: AM_ROLE, required:true},
-        {name:'accountId', value: data.account_id, editor: AM_ROLE, required:true},
+        {name:'shopName', value: campaign_data.brand, editor: SENDER_ROLE, required:true},
+        // {name:'contactPersonName', value: campaign_data.contact_name, editor: SENDER_ROLE, required:true},
+        {name:'shopAddress1', value: data.shop_address_line1, editor: SENDER_ROLE, required:false},
+        {name:'shopAddress2', value: data.shop_address_line2, editor: SENDER_ROLE, required:false},
+        {name:'shopEmail', value: campaign_data.contact_email, editor: SENDER_ROLE, required:true},
+        {name:'influencerName', value: data.inf_name, editor: SENDER_ROLE, required:true},
+        {name:'influencerAddress1', value: data.influencer_address1, editor: SENDER_ROLE, required:false},
+        {name:'influencerAddress2', value: data.influencer_address2, editor: SENDER_ROLE, required:false},
+        {name:'influencerEmail', value: data.inf_email, editor: SENDER_ROLE, required:true},
+        {name:'productName1', value: data.product_name1, editor: SENDER_ROLE, required:false},
+        {name:'productName2', value: data.product_name2, editor: SENDER_ROLE, required:false},
+        {name:'platform', value: platform, editor: SENDER_ROLE, required:true},
+        {name:'accountId', value: data.account_id, editor: SENDER_ROLE, required:true},
+        {name:'deliverable1', value: data.deliverable1, editor: SENDER_ROLE, required:true},
+        {name:'deliverable2', value: data.deliverable2, editor: SENDER_ROLE, required:false},
+        {name:'deliverable3', value: data.deliverable3, editor: SENDER_ROLE, required:false},
+        {name:'campaignStartDate', value: campaignStartDate, editor: SENDER_ROLE, required:true},
+        {name:'campaignEndDate', value: campaignEndDate, editor: SENDER_ROLE, required:true},
+        {name:'fixedCommission', value: fixedCommission, editor: SENDER_ROLE, required:false},
+        {name:'percentageCommission', value: percentageCommission, editor: SENDER_ROLE, required:false},
+        {name:'productName1', value: data.product_name1, editor: SENDER_ROLE, required:false},
+        {name:'productName2', value: data.product_name2, editor: SENDER_ROLE, required:false},
+        {name:'tradeName1', value: data.trade_name1, editor: SENDER_ROLE, required:false},
+        {name:'tradeName2', value: data.trade_name2, editor: SENDER_ROLE, required:false},
+        {name:'tradeName3', value: data.trade_name3, editor: SENDER_ROLE, required:false},
+        {name:'storeState', value: data.store_state, editor: SENDER_ROLE, required:true},
+        {name:'storeCounty', value: data.store_county, editor: SENDER_ROLE, required:true},
     ];
 };
 
@@ -76,7 +115,7 @@ function prepareSignatureRequestData(data){
                     {
                         email_address: 'arthur.meng@lifo.ai',
                         name: 'Arthur Meng',
-                        role: AM_ROLE,
+                        role: SENDER_ROLE,
                     },
                     {
                         email_address: shop_email,
@@ -109,7 +148,8 @@ function saveSignatureResponsedata(signature_info, response, brand_campaign_id, 
         brand_campaign_id,
         signatures,
         signature_response: response,
-    });
+    }, {merge: true});
+    const am_signature_id = signatures[0].signature_id;
     const inf_signature_id = findSignatureIdWithEmailAndRole(signatures, inf_email, INFLUENCER_ROLE);
     const brand_signature_id = findSignatureIdWithEmailAndRole(signatures, shop_email, BRAND_ROLE);
     const inf_subcollection_ref = campaign.access_influencer_subcollection(brand_campaign_id)
@@ -121,11 +161,14 @@ function saveSignatureResponsedata(signature_info, response, brand_campaign_id, 
     batch.set(inf_subcollection_ref, {
         inf_signing_status: SIGNATURE_PENDING,
         brand_signing_status: SIGNATURE_PENDING,
+        am_signing_status: SIGNATURE_PENDING,
         signature_request_id,
         inf_signature_id,
         brand_signature_id,
-    });
+        am_signature_id,
+    }, {merge: true});
     return {
+        am_signature_id,
         save_promise: batch.commit(),
         signature_request_id,
         signatures,
@@ -214,6 +257,13 @@ function signatureRequest(data){
             console.debug('signature response is', response);
             const signature_info = response.signature_request;
             return saveSignatureResponsedata(signature_info, response, data.brand_campaign_id, data.inf_email, data.account_id, shop_email);
+        })
+        .then(results => {
+            const am_signature_id = results.am_signature_id;
+            if(!am_signature_id){
+                return new functions.https.HttpsError('failed-precondition', 'AM signature not found.');
+            }
+            return hellosign.embedded.getSignUrl(am_signature_id);
         });
 };
 

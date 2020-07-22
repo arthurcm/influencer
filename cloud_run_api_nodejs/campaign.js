@@ -882,7 +882,7 @@ function add_recommended_influencers(brand_campaign_id, data){
                 platform,
                 profile: influencer,
                 inf_signing_status: INFLUENCER_RECOMMENDED,
-            });
+            }, {merge: true});
         };
     }else{
         console.warn('Incoming data does not have influencer profiles');

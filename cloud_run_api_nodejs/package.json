@@ -21,6 +21,7 @@
     "firebase-functions": "^3.3.0",
     "isomorphic-fetch": "^2.2.1",
     "is-valid-domain": "^0.0.14",
+    "moment": "^2.27.0",
     "valid-url": "^1.0.9",
     "path": "^0.12.7",
     "hellosign-sdk": "^1.5.0",

@@ -1,6 +1,9 @@
+from collections import defaultdict
+
+
 def percentage_commission_per_row(row):
     """
-    Each row is a list of results from cloud_sql.get_all_data_per_shop_per_campaign(), which represents
+    Each row is a list of results from cloud_sql.get_all_data_per_shop(), which represents
     one order promoted by one inf for one campaign and one shop
     the row is ordered in:
     subtotal_price, uid, campaign_id, commission, commission_type, commission_percentage, order_complete.shop
@@ -34,7 +37,7 @@ def percentage_commission_per_shop(sqldata):
         return percentage_commission
     per_campaign_commission = {}
     for row in sqldata:
-        campaign_id, _, commission = percentage_commission_per_row(row)
+        campaign_id, uid, commission = percentage_commission_per_row(row)
         if campaign_id not in per_campaign_commission:
             per_campaign_commission[campaign_id] = commission
         else:
@@ -155,3 +158,60 @@ def calculate_campaign_daily_revenue(sqldata):
             else:
                 campaign_revenue[campaign_id] = campaign_daily_revenue
     return campaign_revenue
+
+
+def calculate_per_inf_roi(sqldata):
+    """
+    Each row is a list of results from cloud_sql.get_all_data_per_shop_per_campaign(), which represents
+    one order promoted by one inf for one campaign and one shop
+    the row is ordered in:
+    subtotal_price, uid, campaign_id, commission, commission_type, commission_percentage, order_date, order_complete.shop
+    :return: a series of data representing ROI per influencer.
+    """
+    total_revenue = {}
+    total_fixed_commission = {}
+    total_percentage_commission = {}
+    total_commission = {}
+    revenue_ts = defaultdict(dict)
+    total_roi = {}
+    for row in sqldata:
+        uid = row[1]
+        cur_rev = float(row[0])
+        if uid not in total_revenue:
+            total_revenue[uid] = cur_rev
+        else:
+            total_revenue[uid] += cur_rev
+        cur_fixed_commission = row[3] or 0
+        cur_fixed_commission = float(cur_fixed_commission)
+        if uid not in total_fixed_commission:
+            total_fixed_commission[uid] = cur_fixed_commission
+        else:
+            total_fixed_commission[uid] += cur_fixed_commission
+        cur_commission_percentage = row[5] or 0
+        cur_commission_percentage = float(cur_commission_percentage)
+        percent_commission = cur_commission_percentage * cur_rev
+        if uid not in total_percentage_commission:
+            total_percentage_commission[uid] = percent_commission
+        else:
+            total_percentage_commission[uid] += percent_commission
+        order_date = row[6].strftime("%m/%d/%Y")
+        if uid not in revenue_ts:
+            revenue_ts[uid] = {order_date: cur_rev}
+        else:
+            if order_date not in revenue_ts[uid]:
+                revenue_ts[uid][order_date] = cur_rev
+            else:
+                revenue_ts[uid][order_date] += cur_rev
+    for uid, fixed_comm in total_fixed_commission.items():
+        total_commission[uid] = fixed_comm + total_percentage_commission[uid]
+        total_roi[uid] = max((total_revenue[uid] - total_commission[uid]) / total_commission[uid], 0)
+    res = []
+    for uid, roi in total_roi.items():
+        res.append({
+            'uid': uid,
+            'roi': float(roi),
+            'total_revenue': float(total_revenue[uid]),
+            'total_commission': float(total_commission[uid]),
+            'revenue_ts': revenue_ts[uid]
+        })
+    return res

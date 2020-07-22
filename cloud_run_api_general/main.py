@@ -17,7 +17,8 @@ import logging
 from email_util import share_draft_email
 from cloud_sql import sql_handler
 from campaign_perf_utils import (fixed_commission_per_shop, percentage_commission_per_shop, combine_final_commissions,
-                                 count_visits_daily, calculate_shop_daily_revenue, calculate_campaign_daily_revenue)
+                                 count_visits_daily, calculate_shop_daily_revenue, calculate_campaign_daily_revenue,
+                                 calculate_per_inf_roi)
 
 # Instantiates a client
 client = google.cloud.logging.Client()
@@ -470,7 +471,7 @@ def roi():
             'per_campaign_fixed_commission': {}
         }
     try:
-        sqldata_per = sql_handler.get_all_data_per_shop_per_campaign(shop)
+        sqldata_per = sql_handler.get_all_data_per_shop(shop)
         percentage_commission = percentage_commission_per_shop(sqldata_per)
     except Exception as e:
         logging.error(f'Getting percentage_commission error: {e}')
@@ -505,6 +506,22 @@ def roi():
     final_results['shop'] = shop
     logging.info(f'For shop: {shop}, getting total campaign report of {final_results}')
     response = flask.jsonify(final_results)
+    response.status_code = 200
+    return response
+
+
+@app.route('/brand/roi_per_inf', methods=['GET'])
+def inf_roi():
+    shop = flask.session['uid']
+    campaign_id = flask.request.args.get('campaign_id')
+    try:
+        sqldata_all = sql_handler.get_all_data_per_shop_per_campaign(shop, campaign_id)
+        per_inf_roi = calculate_per_inf_roi(sqldata_all)
+    except Exception as e:
+        logging.error(f'Getting final results error: {e}')
+        per_inf_roi = []
+    logging.info(f'For shop: {shop}, getting total campaign report of {per_inf_roi}')
+    response = flask.jsonify(per_inf_roi)
     response.status_code = 200
     return response
 

@@ -1,6 +1,6 @@
 {
   "campaign_name":"my campaign",
-  "commission_dollar":"1222",
+  "fixed_commission":"100",
   "contacts":"shuo@influencer.com",
   "content_concept":"final fantasy",
   "end_time": "12312321321",

@@ -724,10 +724,18 @@ app.get('/embedded/sign_url/brand_campaign_id/:brand_campaign_id', (req, res, ne
 });
 
 // return the respective sign_url based on the current user
-app.get('/brand/embedded/sign_url/brand_campaign_id/:brand_campaign_id/inf_email/:inf_email', (req, res, next)=>{
+app.get('/brand/embedded/sign_url/brand_campaign_id/:brand_campaign_id/inf_email/:inf_email', async (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const inf_email = req.params.inf_email;
-    const email = res.locals.email;
+    let email = res.locals.email;
+    if(!email){
+        await campaign.getBrandCampaignForBrand(brand_campaign_id)
+            .then(res => {
+                const brand_campaign_data = res[0];
+                email  = brand_campaign_data.contact_email;
+            })
+            .catch(next);
+    }
     console.debug(`/embedded/sign_url/ received a brand_campaign_id ${brand_campaign_id} with inf_email ${inf_email}`);
     return contract_sign.getEmbeddedSignUrl(email, brand_campaign_id, inf_email)
         .then(result => {

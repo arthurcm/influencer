@@ -1,11 +1,12 @@
 import unittest
 from campaign_perf_utils import (percentage_commission_per_row, percentage_commission_per_shop,
-                                 fixed_commission_per_shop, combine_final_commissions, count_visits_daily)
+                                 fixed_commission_per_shop, combine_final_commissions, count_visits_daily,
+                                 calculate_per_inf_roi)
 
 class TestCampaignPerf(unittest.TestCase):
     def gen_per_shop_per_campaign_join_data(self):
         """
-        cloud_sql.get_all_data_per_shop_per_campaign()
+        cloud_sql.get_all_data_per_shop()
         subtotal_price, uid, campaign_id, commission, commission_type, commission_percentage, order_complete.shop
         """
         rows = [
@@ -75,6 +76,21 @@ class TestCampaignPerf(unittest.TestCase):
         results = count_visits_daily(daily_visits)
         self.assertEqual(results, {'visit_counts': 60, 'daily_visit': {'2019-10-1': 10, '2019-10-2': 50}})
 
+    def gen_per_shop_per_campaign_join_data(self):
+        """
+        cloud_sql.get_all_data_per_shop()
+        subtotal_price, uid, campaign_id, commission, commission_type, commission_percentage, order_date, order_complete.shop
+        """
+        rows = [
+            [123123132, '123', 'campaign1', 10, 'commission', None, '2020-07-01', 'Lifo shop'],
+            [100, '123', 'campaign2', None, 'commission', 12, '2020-07-02', 'Lifo shop'],
+            [10, '456', 'campaign1', 20, 'commission', 10, '2020-07-01', 'Lifo shop'],
+        ]
+        return rows
+
+    def test_per_inf_performance(self):
+        rows = self.gen_per_shop_per_campaign_join_data()
+        print(calculate_per_inf_roi(rows))
 
 if __name__ == '__main__':
     unittest.main()
