@@ -1,0 +1,6 @@
+{
+  "subject":"Lifo IPO",
+  "body":"<html><body><p>Hi, $(name)<br><span> $(file_id) </span><br></p></body></html>",
+  "to_name": "Arthur Meng",
+  "to_email": "arthur.meng@lifo.ai"
+}

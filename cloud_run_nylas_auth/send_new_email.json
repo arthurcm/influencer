@@ -1,6 +1,6 @@
 {
   "subject":"Lifo IPO",
-  "body":"benu",
+  "body":"<html><body><p>Hi, $(name)<br><span> $(file_id) </span><br></p></body></html>",
   "to": [
     {"name": "My Lifo.ai Friend", "email": "alexnew@gmail.com"},
     {"name": "My Lifo.ai Friend", "email": "shanshuo0918@gmail.com"}],

@@ -363,6 +363,59 @@ function update_status(brand_campaign_id, account_id, status_str){
 };
 
 
+function make_offer(brand_campaign_id, account_id, data){
+    const influencer_ref = campaign.access_influencer_subcollection(brand_campaign_id)
+        .doc(account_id);
+    if(!data.commission_type){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a specific commission_type.');
+    }
+    return influencer_ref.set({
+        offer: data,
+        inf_signing_status: campaign.OFFER_MADE,
+    }, {
+        merge: true,
+    });
+};
+
+
+function create_email_template(data){
+    if(!data.subject || !data.body){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none empty subject and body.');
+    }
+    if(!data.template_name){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none empty template_name.');
+    }
+    return db.collection('emails').doc(data.template_name).set(data);
+}
+
+function get_email_template(template_name){
+    if(!template_name){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none empty template_name.');
+    }
+    return db.collection('emails').doc(template_name).get();
+}
+
+function delete_email_template(template_name){
+    if(!template_name){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none empty template_name.');
+    }
+    return db.collection('emails').doc(template_name).delete();
+}
+
+function update_email_template(template_name, data){
+    if(!template_name){
+        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
+            'with a none empty template_name.');
+    }
+    return db.collection('emails').doc(template_name).set(data, {merge: true});
+}
+
+
 module.exports = {
     signatureRequest,
     getAllContractsBrand,
@@ -370,4 +423,9 @@ module.exports = {
     getSignedContract,
     signature_complete,
     update_status,
+    make_offer,
+    create_email_template,
+    update_email_template,
+    get_email_template,
+    delete_email_template,
 };

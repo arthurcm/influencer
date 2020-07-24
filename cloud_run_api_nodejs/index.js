@@ -18,9 +18,6 @@ const campaign = require('./campaign');
 const contract_sign = require('./contract_sign');
 
 
-const BRAND_CHOSEN = 'Brand chosen';
-const NO_RESPONSE = 'No response';
-
 // middleware for token verification
 app.use((req, res, next) => {
 
@@ -780,7 +777,7 @@ app.put('/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:
     const brand_campaign_id = req.params.brand_campaign_id;
     const signature_id = req.params.signature_id;
     console.debug(`Received ${brand_campaign_id} and ${signature_id}`);
-    contract_sign.signature_complete(brand_campaign_id, signature_id, false)
+    return contract_sign.signature_complete(brand_campaign_id, signature_id, false)
         .then(result => {
             res.status(200).send({status: 'OK'});
             return result;
@@ -791,7 +788,7 @@ app.put('/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:
 app.put('/brand/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const signature_id = req.params.signature_id;
-    contract_sign.signature_complete(brand_campaign_id, signature_id, true)
+    return contract_sign.signature_complete(brand_campaign_id, signature_id, true)
         .then(result => {
             res.status(200).send({status: 'OK'});
             return result;
@@ -803,7 +800,7 @@ app.put('/brand/signature_complete/brand_campaign_id/:brand_campaign_id/signatur
 app.put('/brand/choose_influencer/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
-    contract_sign.update_status(brand_campaign_id, account_id, BRAND_CHOSEN)
+    return contract_sign.update_status(brand_campaign_id, account_id, campaign.BRAND_CHOSEN)
         .then(result => {
             res.status(200).send({status: 'OK'});
             return result;
@@ -814,13 +811,70 @@ app.put('/brand/choose_influencer/brand_campaign_id/:brand_campaign_id/account_i
 app.put('/am/deactivate_inf/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
-    contract_sign.update_status(brand_campaign_id, account_id, NO_RESPONSE)
+    return contract_sign.update_status(brand_campaign_id, account_id, campaign.NO_RESPONSE)
         .then(result => {
             res.status(200).send({status: 'OK'});
             return result;
         })
         .catch(next);
 });
+
+app.put('/am/make_offer/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    const data = req.body;
+    return contract_sign.make_offer(brand_campaign_id, account_id, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.post('/am/email_template', (req, res, next) => {
+    const data = req.body;
+    return contract_sign.create_email_template(data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
+    const data = req.body;
+    const template_name = req.params.template_name;
+    return contract_sign.update_email_template(template_name, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.get('/am/email_template', (req, res, next) => {
+    const template_name = req.params.template_name;
+    return contract_sign.get_email_template(template_name)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.delete('/am/email_template/template_name/:template_name', (req, res, next) => {
+    const template_name = req.params.template_name;
+    return contract_sign.delete_email_template(template_name)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

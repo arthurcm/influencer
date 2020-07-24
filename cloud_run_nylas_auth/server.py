@@ -23,12 +23,17 @@ firebase_app = firebase_admin.initialize_app()
 
 LIFO_CALENDAR_EVENT_SIGNATURE = " -- Created by Lifo.ai"
 
+ACCOUNT_MANAGER_FLAG = 'account_manager'
+STORE_ACCOUNT = 'store_account'
+FROM_SHOPIFY = 'from_shopify'
+
 # Imports from third-party modules that this project depends on
 try:
     import requests
     import flask
-    from flask import Flask, render_template
+    from flask import Flask, render_template, request
     from werkzeug.middleware.proxy_fix import ProxyFix
+    from werkzeug.utils import secure_filename
     from flask_dance.contrib.nylas import make_nylas_blueprint, nylas
 except ImportError:
     message = textwrap.dedent(
@@ -61,6 +66,8 @@ except ImportError:
 # Create a Flask app, and load the configuration file.
 app = Flask(__name__)
 app.config.from_json("config.json")
+app.config['UPLOAD_FOLDER'] = '/tmp/upload/'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # limit the upload file size to be 16MB
 
 # Check for dummy configuration values.
 # If you are building your own application based on this example,
@@ -153,6 +160,54 @@ def token_verification(id_token):
         logging.error('id_token has been revoked')
         return ''
     return uid
+
+def _build_cors_prelight_response():
+    response = flask.make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "*")
+    response.headers.add("Access-Control-Allow-Methods", "*")
+    return response
+
+
+@app.before_request
+def hook():
+    if request.method == "OPTIONS": # CORS preflight
+        return _build_cors_prelight_response()
+    if request.path.startswith('/brand') or request.path.startswith('/am') or request.path.startswith('/influencer'):
+        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+        if not id_token:
+            logging.error('Valid id_token required')
+            response = flask.jsonify('Valid id_token required')
+            response.status_code = 401
+            return response
+        decoded_token = token_verification(id_token)
+        uid = decoded_token['uid']
+        if not uid:
+            logging.error('id_token verification failed')
+            response = flask.jsonify('id_token verification failed')
+            response.status_code = 401
+            return response
+        logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
+        if decoded_token.get(ACCOUNT_MANAGER_FLAG):
+            logging.info('AM account has admin access')
+        elif not decoded_token.get(ACCOUNT_MANAGER_FLAG) and request.path.startswith('/am'):
+            response = flask.jsonify({"status": "not authorized"})
+            response.status_code = 403
+            return response
+        elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
+                or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
+            response = flask.jsonify({"status": "not authorized"})
+            response.status_code = 403
+            return response
+
+        flask.session['uid'] = uid
+        flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
+        flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
+        flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
+        flask.session['name'] = decoded_token.get('name')
+        flask.session['email'] = decoded_token.get('email')
+    else:
+        logging.debug(f'By passing auth for request {request.path}')
 
 
 @app.route("/authorize")
@@ -439,9 +494,7 @@ def send_email():
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
-        response = flask.jsonify('Failed to get access token! Re-authenticate the user')
-        response.status_code = 400
-        return response
+        return flask.redirect("authorize", code=302)
     logging.info(f'Retrieved nylas access token {access_token}')
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
@@ -463,6 +516,118 @@ def send_email():
         logging.error(f'Sending email failed! Error message is {str(e)}')
         response = flask.jsonify(str(e))
         response.status_code = 400
+        return response
+
+
+@app.route("/single_email_with_template", methods=["POST"])
+def send_single_email_with_template():
+    """
+    This method sends email with template, and replace:
+    ${receiver_name} with to_name
+    ${file_id} (if any) with file_id
+    """
+    uid = flask.session.get('uid')
+    sender_name = flask.session.get('name')
+    sender_email = flask.session.get('email')
+    data = flask.request.json
+    logging.info(f'Receiving request {data} for session uid {uid}')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        return flask.redirect("authorize", code=302)
+    logging.info(f'Retrieved nylas access token {access_token}')
+    nylas = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+    try:
+        draft = nylas.drafts.create()
+        if not data.get('subject') or not data.get('body') or not data.get('to_email') or not data.get('to_name'):
+            response = flask.jsonify({'error': 'need valid file_id query param'})
+            response.status_code = 412
+        draft.subject = data.get('subject')
+        draft.body = data.get('body')
+        draft.body.replace("$(receiver_name)", data.get('to_name'))
+
+        draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
+        if data.get('file_id'):
+            file = nylas.files.get(data.get('file_id'))
+            draft.attach(file)
+            draft.body.replace("$(file_id)", file.id)
+        draft.tracking = {'links': 'true',
+                          'opens': 'true',
+                          'thread_replies': 'true',
+                          'payload': data.get('campaign_name') or f'{sender_name} <{sender_email}>'
+                          }
+        draft.send()
+        logging.info('email sent successfully')
+        response = flask.jsonify('email sent successfully')
+        response.status_code = 200
+        return response
+    except Exception as e:
+        logging.error(f'Sending email failed! Error message is {str(e)}')
+        response = flask.jsonify(str(e))
+        response.status_code = 400
+        return response
+
+
+
+@app.route("/files", methods=["POST", "GET"])
+def files():
+    """
+    POST: upload attachment
+    GET: get attachment status.
+    """
+    uid = flask.session.get('uid')
+    data = flask.request.json
+    logging.info(f'Receiving request {data} for session uid {uid}')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        return flask.redirect("authorize", code=302)
+    logging.info(f'Retrieved Nylas access token {access_token}')
+    nylas = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+
+    if flask.request.method == 'POST':
+        try:
+            # check if the post request has the file part
+            if 'file' not in flask.request.files:
+                logging.info('No file part')
+                return flask.redirect(flask.request.url)
+            file = flask.request.files['file']
+            # if user does not select file, browser also
+            # submit an empty part without filename
+            if file.filename == '':
+                logging.info('No selected file')
+                return flask.redirect(flask.request.url)
+            if file:
+                filename = secure_filename(file.filename)
+                # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+                nylas_file = nylas.files.create()
+                nylas_file.filename = file.filename
+                nylas_file.stream = file
+                # .save() saves the file to Nylas, file.id can then be used to attach the file to an email
+                nylas_file.save()
+                response = flask.jsonify({'file_id': nylas_file.id})
+                response.status_code = 200
+            return response
+        except Exception as e:
+            logging.error(f'Uploading attachment failed! Error message is {str(e)}')
+            response = flask.jsonify(str(e))
+            response.status_code = 400
+            return response
+    elif flask.request.method == 'GET':
+        file_id = flask.request.args.get('file_id')
+        if not file_id:
+            response = flask.jsonify({'error': 'need valid file_id query param'})
+            response.status_code = 412
+        nylas_file = nylas.files.get('{id}')
+        response = flask.jsonify({'file': nylas_file})
+        response.status_code = 200
         return response
 
 
