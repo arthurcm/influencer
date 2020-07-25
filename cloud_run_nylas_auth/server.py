@@ -32,6 +32,7 @@ try:
     import requests
     import flask
     from flask import Flask, render_template, request
+    from flask_cors import CORS
     from werkzeug.middleware.proxy_fix import ProxyFix
     from werkzeug.utils import secure_filename
     from flask_dance.contrib.nylas import make_nylas_blueprint, nylas
@@ -65,6 +66,7 @@ except ImportError:
 # For more information, check out the documentation: http://flask.pocoo.org
 # Create a Flask app, and load the configuration file.
 app = Flask(__name__)
+CORS(app)
 app.config.from_json("config.json")
 app.config['UPLOAD_FOLDER'] = '/tmp/upload/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # limit the upload file size to be 16MB
@@ -97,29 +99,6 @@ app.register_blueprint(nylas_bp, url_prefix="/login")
 
 # Teach Flask how to find out that it's behind an ngrok proxy
 app.wsgi_app = ProxyFix(app.wsgi_app)
-
-SCOPE_REDIRECT_URL_MAPPING = {
-    'calendar': "http://auth.lifo.ai/authorize",
-    'email.send': "http://auth.lifo.ai/authorize"
-}
-
-
-@app.before_request
-def hook():
-    if not flask.session.get('uid'):
-        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
-        if not id_token:
-            logging.error('Valid id_token required')
-            response = flask.jsonify('Valid id_token required')
-            response.status_code = 400
-            return response
-        uid = token_verification(id_token)
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 400
-            return response
-        flask.session['uid'] = uid
 
 
 # Define what Flask should do when someone visits the root URL of this website.
@@ -210,6 +189,54 @@ def hook():
         logging.debug(f'By passing auth for request {request.path}')
 
 
+def _build_cors_prelight_response():
+    response = flask.make_response()
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "*")
+    response.headers.add("Access-Control-Allow-Methods", "*")
+    return response
+
+@app.before_request
+def hook():
+    if request.method == "OPTIONS": # CORS preflight
+        return _build_cors_prelight_response()
+    if request.path.startswith('/brand') or request.path.startswith('/am') or request.path.startswith('/influencer'):
+        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
+        if not id_token:
+            logging.error('Valid id_token required')
+            response = flask.jsonify('Valid id_token required')
+            response.status_code = 401
+            return response
+        decoded_token = token_verification(id_token)
+        uid = decoded_token['uid']
+        if not uid:
+            logging.error('id_token verification failed')
+            response = flask.jsonify('id_token verification failed')
+            response.status_code = 401
+            return response
+        logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
+        if decoded_token.get(ACCOUNT_MANAGER_FLAG):
+            logging.info('AM account has admin access')
+        elif not decoded_token.get(ACCOUNT_MANAGER_FLAG) and request.path.startswith('/am'):
+            response = flask.jsonify({"status": "not authorized"})
+            response.status_code = 403
+            return response
+        elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
+                or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
+            response = flask.jsonify({"status": "not authorized"})
+            response.status_code = 403
+            return response
+
+        flask.session['uid'] = uid
+        flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
+        flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
+        flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
+        flask.session['name'] = decoded_token.get('name')
+        flask.session['email'] = decoded_token.get('email')
+    else:
+        logging.debug(f'By passing auth for request {request.path}')
+
+
 @app.route("/authorize")
 def authorize():
     """
@@ -236,11 +263,7 @@ def authorize():
             response = flask.jsonify('Need a valid scope string, currently supporting: calendar or email.send')
             response.status_code = 400
             return response
-        redirect_url = SCOPE_REDIRECT_URL_MAPPING.get(scope)
-        if not redirect_url:
-            response = flask.jsonify(f'{scope} not supported')
-            response.status_code = 400
-            return response
+        redirect_url = 'http://auth.lifo.ai/authorize'
         logging.info(f'receiving request for scope {scope}, and redirect to {redirect_url}')
         flask.session['scope'] = scope
 
@@ -252,7 +275,7 @@ def authorize():
         return flask.redirect(auth_url)
     else:
         # note, here we have not handled the declined auth case
-        logging.info('authentication success')
+        logging.info(f'authentication success with code: {nylas_code}')
         access_token = nylas_client.token_for_code(nylas_code)
 
         nylas_client = APIClient(
@@ -320,6 +343,7 @@ def verify_auth_status():
         access_token=access_token,
     )
     sync_state = nylas_client.account.sync_state
+    logging.info(f'Current syncing status is {sync_state}')
     if sync_state == 'running':
         logging.info(f'The account {uid} is in sync')
         response = flask.jsonify('OK')
@@ -546,14 +570,15 @@ def send_single_email_with_template():
             response = flask.jsonify({'error': 'need valid file_id query param'})
             response.status_code = 412
         draft.subject = data.get('subject')
-        draft.body = data.get('body')
-        draft.body.replace("$(receiver_name)", data.get('to_name'))
+        body = data.get('body')
+        body = body.replace("$(receiver_name)", data.get('to_name'))
 
         draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
         if data.get('file_id'):
             file = nylas.files.get(data.get('file_id'))
             draft.attach(file)
-            draft.body.replace("$(file_id)", file.id)
+            body = body.replace("$(file_id)", file.id)
+        draft.body = body
         draft.tracking = {'links': 'true',
                           'opens': 'true',
                           'thread_replies': 'true',
@@ -571,7 +596,6 @@ def send_single_email_with_template():
         return response
 
 
-
 @app.route("/files", methods=["POST", "GET"])
 def files():
     """
@@ -579,7 +603,7 @@ def files():
     GET: get attachment status.
     """
     uid = flask.session.get('uid')
-    data = flask.request.json
+    data = flask.request.files
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
@@ -625,7 +649,7 @@ def files():
         if not file_id:
             response = flask.jsonify({'error': 'need valid file_id query param'})
             response.status_code = 412
-        nylas_file = nylas.files.get('{id}')
+        nylas_file = nylas.files.get(file_id)
         response = flask.jsonify({'file': nylas_file})
         response.status_code = 200
         return response

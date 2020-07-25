@@ -30,54 +30,63 @@ const TEMPLATE_ID = {};
 TEMPLATE_ID[contract_type] = 'da0b474680382655db0ba8f7be9739f936288602';
 
 function timestampToString(ts){
-    const dateTimeString = moment.unix(ts).format('MM/DD/YYYY');
-
+    return moment.unix(ts/1000).format('MM/DD/YYYY');
 }
+
 function createContractFromCampaignData(data, campaign_data){
     const contract_proto = new contract_pb.Contract();
     const brand_proto = new contract_pb.Brand();
     brand_proto.shopName = campaign_data.brand;
     const BrandMessage = contract_pb.Brand;
-    const platform = campaign_data.extra_info.platform || data.platform;
+    const platform = campaign_data.extra_info.platform || data.platform || 'instagram';
     const campaign_name = campaign_data.campaign_name || data.campaign_name;
     let start_date = Date.now();
     if(data.start_date){
         start_date = data.start_date;
     }
-    const campaignStartDate = timestampToString(start_date);
+    const campaign_start_date = timestampToString(start_date);
     const campaignEndDateTs = data.end_time || campaign_data.end_time;
-    const campaignEndDate = timestampToString(campaignEndDateTs);
-    const fixedCommission = data.fixed_commission;
-    const percentageCommission = data.percentage_commission;
-    return [
-        {name:'shopName', value: campaign_data.brand, editor: SENDER_ROLE, required:true},
-        // {name:'contactPersonName', value: campaign_data.contact_name, editor: SENDER_ROLE, required:true},
-        {name:'shopAddress1', value: data.shop_address_line1, editor: SENDER_ROLE, required:false},
-        {name:'shopAddress2', value: data.shop_address_line2, editor: SENDER_ROLE, required:false},
-        {name:'shopEmail', value: campaign_data.contact_email, editor: SENDER_ROLE, required:true},
-        {name:'influencerName', value: data.inf_name, editor: SENDER_ROLE, required:true},
-        {name:'influencerAddress1', value: data.influencer_address1, editor: SENDER_ROLE, required:false},
-        {name:'influencerAddress2', value: data.influencer_address2, editor: SENDER_ROLE, required:false},
-        {name:'influencerEmail', value: data.inf_email, editor: SENDER_ROLE, required:true},
-        {name:'productName1', value: data.product_name1, editor: SENDER_ROLE, required:false},
-        {name:'productName2', value: data.product_name2, editor: SENDER_ROLE, required:false},
-        {name:'platform', value: platform, editor: SENDER_ROLE, required:true},
-        {name:'accountId', value: data.account_id, editor: SENDER_ROLE, required:true},
-        {name:'deliverable1', value: data.deliverable1, editor: SENDER_ROLE, required:true},
-        {name:'deliverable2', value: data.deliverable2, editor: SENDER_ROLE, required:false},
-        {name:'deliverable3', value: data.deliverable3, editor: SENDER_ROLE, required:false},
-        {name:'campaignStartDate', value: campaignStartDate, editor: SENDER_ROLE, required:true},
-        {name:'campaignEndDate', value: campaignEndDate, editor: SENDER_ROLE, required:true},
-        {name:'fixedCommission', value: fixedCommission, editor: SENDER_ROLE, required:false},
-        {name:'percentageCommission', value: percentageCommission, editor: SENDER_ROLE, required:false},
-        {name:'productName1', value: data.product_name1, editor: SENDER_ROLE, required:false},
-        {name:'productName2', value: data.product_name2, editor: SENDER_ROLE, required:false},
-        {name:'tradeName1', value: data.trade_name1, editor: SENDER_ROLE, required:false},
-        {name:'tradeName2', value: data.trade_name2, editor: SENDER_ROLE, required:false},
-        {name:'tradeName3', value: data.trade_name3, editor: SENDER_ROLE, required:false},
-        {name:'storeState', value: data.store_state, editor: SENDER_ROLE, required:true},
-        {name:'storeCounty', value: data.store_county, editor: SENDER_ROLE, required:true},
-    ];
+    const campaign_end_date = timestampToString(campaignEndDateTs);
+    const fixed_commission = data.fixed_commission;
+    const percentage_commission = data.percentage_commission;
+    data.platform = platform;
+    data.campaign_name = campaign_name;
+    data.brand = campaign_data.brand;
+    data.campaign_start_date = campaign_start_date;
+    data.campaign_end_date = campaign_end_date;
+    data.brand_campaign_id = campaign_data.brand_campaign_id;
+    return {
+        custom_fields: [
+            {name: 'brand', value: campaign_data.brand, editor: SENDER_ROLE, required: true},
+            {name: 'shop_address_line1', value: data.shop_address_line1, editor: SENDER_ROLE, required: false},
+            {name: 'shop_address_line2', value: data.shop_address_line2, editor: SENDER_ROLE, required: false},
+            {name: 'contact_email', value: campaign_data.contact_email, editor: SENDER_ROLE, required: true},
+            {name: 'inf_name', value: data.inf_name, editor: SENDER_ROLE, required: true},
+            {name: 'influencer_address1', value: data.influencer_address1, editor: SENDER_ROLE, required: false},
+            {name: 'influencer_address2', value: data.influencer_address2, editor: SENDER_ROLE, required: false},
+            {name: 'inf_email', value: data.inf_email, editor: SENDER_ROLE, required: true},
+            {name: 'product_name1', value: data.product_name1, editor: SENDER_ROLE, required: false},
+            {name: 'product_name2', value: data.product_name2, editor: SENDER_ROLE, required: false},
+            {name: 'platform', value: platform, editor: SENDER_ROLE, required: true},
+            {name: 'account_id', value: data.account_id, editor: SENDER_ROLE, required: true},
+            {name: 'deliverable1', value: data.deliverable1, editor: SENDER_ROLE, required: true},
+            {name: 'deliverable2', value: data.deliverable2, editor: SENDER_ROLE, required: false},
+            {name: 'deliverable3', value: data.deliverable3, editor: SENDER_ROLE, required: false},
+            {name: 'campaign_name', value: campaign_name, editor: SENDER_ROLE, required: false},
+            {name: 'campaign_start_date', value: campaign_start_date, editor: SENDER_ROLE, required: true},
+            {name: 'campaign_end_date', value: campaign_end_date, editor: SENDER_ROLE, required: true},
+            {name: 'fixed_commission', value: fixed_commission, editor: SENDER_ROLE, required: false},
+            {name: 'percentage_commission', value: percentage_commission, editor: SENDER_ROLE, required: false},
+            {name: 'product_name1', value: data.product_name1, editor: SENDER_ROLE, required: false},
+            {name: 'product_name2', value: data.product_name2, editor: SENDER_ROLE, required: false},
+            {name: 'trade_name1', value: data.trade_name1, editor: SENDER_ROLE, required: false},
+            {name: 'trade_name2', value: data.trade_name2, editor: SENDER_ROLE, required: false},
+            {name: 'trade_name3', value: data.trade_name3, editor: SENDER_ROLE, required: false},
+            {name: 'store_state', value: data.store_state, editor: SENDER_ROLE, required: true},
+            {name: 'store_county', value: data.store_county, editor: SENDER_ROLE, required: true},
+        ],
+        data,
+    };
 };
 
 function prepareSignatureRequestData(data){
@@ -102,7 +111,9 @@ function prepareSignatureRequestData(data){
             console.info('template id dictionary is', TEMPLATE_ID, 'contract type', contract_type);
             const template_id = TEMPLATE_ID[contract_type];
             const brand_contract = createContractFromCampaignData(data, brand_campaign_data);
-
+            const custom_fields = brand_contract.custom_fields;
+            const contract_data = brand_contract.data;
+            console.log('Got contract data', contract_data);
             // TODO: remove the hardcode here for test_mode.
             const opts = {
                 test_mode: 1,
@@ -128,11 +139,12 @@ function prepareSignatureRequestData(data){
                         role: INFLUENCER_ROLE,
                     },
                 ],
-                custom_fields: brand_contract,
+                custom_fields,
             };
             return {
                 opts,
                 shop_email,
+                contract_data,
             };
         });
 };
@@ -228,27 +240,20 @@ function getSignatureID(email, brand_campaign_id, inf_email){
 };
 
 function signatureRequest(data){
-    if (!data.brand_campaign_id) {
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a specific brand_campaign_id.');
-    }
-    // if (!data.inf_email) {
-    //     return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-    //         'with a specific inf_email.');
-    // }
-    if (!data.inf_name && !data.account_id) {
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a specific inf_name or account_id.');
-    }
     return prepareSignatureRequestData(data)
         .then(async results => {
             const opts = results.opts;
             const shop_email = results.shop_email;
+            const contract_data = results.contract_data;
+            const inf_subcollection_ref = campaign.access_influencer_subcollection(contract_data.brand_campaign_id)
+                .doc(contract_data.account_id);
+            const contract_promise = inf_subcollection_ref.set(contract_data, {merge:true});
             console.debug('Signature request options are:', opts, 'and shop email', shop_email);
             const response = await hellosign.signatureRequest.createEmbeddedWithTemplate(opts);
             return {
                 response,
                 shop_email,
+                contract_promise,
             };
         })
         .then(results => {
@@ -366,10 +371,6 @@ function update_status(brand_campaign_id, account_id, status_str){
 function make_offer(brand_campaign_id, account_id, data){
     const influencer_ref = campaign.access_influencer_subcollection(brand_campaign_id)
         .doc(account_id);
-    if(!data.commission_type){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a specific commission_type.');
-    }
     return influencer_ref.set({
         offer: data,
         inf_signing_status: campaign.OFFER_MADE,
@@ -380,38 +381,18 @@ function make_offer(brand_campaign_id, account_id, data){
 
 
 function create_email_template(data){
-    if(!data.subject || !data.body){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a none empty subject and body.');
-    }
-    if(!data.template_name){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a none empty template_name.');
-    }
     return db.collection('emails').doc(data.template_name).set(data);
 }
 
 function get_email_template(template_name){
-    if(!template_name){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a none empty template_name.');
-    }
     return db.collection('emails').doc(template_name).get();
 }
 
 function delete_email_template(template_name){
-    if(!template_name){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a none empty template_name.');
-    }
     return db.collection('emails').doc(template_name).delete();
 }
 
 function update_email_template(template_name, data){
-    if(!template_name){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a none empty template_name.');
-    }
     return db.collection('emails').doc(template_name).set(data, {merge: true});
 }
 

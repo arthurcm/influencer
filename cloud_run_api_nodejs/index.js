@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const functions = require('firebase-functions');
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -683,6 +684,14 @@ app.post('/signature_request/create_embedded_with_template', (req, res, next) =>
     console.debug('/signature_request/create_embedded_with_template received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
+    if (!data.brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if (!data.inf_name && !data.account_id) {
+        console.warn('inf_name or account_id can not be empty');
+        res.status(412).send({status: 'inf_name and account_id both empty'});
+    }
     return contract_sign.signatureRequest(data)
         .then(result => {
             res.status(200).send(result);
@@ -823,6 +832,18 @@ app.put('/am/make_offer/brand_campaign_id/:brand_campaign_id/account_id/:account
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
     const data = req.body;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    if(!data.commission_type){
+        console.warn('commission_type can not be empty');
+        res.status(412).send({status: 'commission_type empty'});
+    }
     return contract_sign.make_offer(brand_campaign_id, account_id, data)
         .then(result => {
             res.status(200).send({status: 'OK'});
@@ -833,6 +854,14 @@ app.put('/am/make_offer/brand_campaign_id/:brand_campaign_id/account_id/:account
 
 app.post('/am/email_template', (req, res, next) => {
     const data = req.body;
+    if(!data.subject || !data.body){
+        console.warn('subject and body can not be empty');
+        res.status(412).send({status: 'subject or body empty'});
+    }
+    if(!data.template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
     return contract_sign.create_email_template(data)
         .then(result => {
             res.status(200).send({status: 'OK'});
@@ -845,6 +874,10 @@ app.post('/am/email_template', (req, res, next) => {
 app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
     const data = req.body;
     const template_name = req.params.template_name;
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
     return contract_sign.update_email_template(template_name, data)
         .then(result => {
             res.status(200).send({status: 'OK'});
@@ -854,8 +887,12 @@ app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
 });
 
 
-app.get('/am/email_template', (req, res, next) => {
+app.get('/am/email_template/template_name/:template_name', (req, res, next) => {
     const template_name = req.params.template_name;
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
     return contract_sign.get_email_template(template_name)
         .then(result => {
             res.status(200).send(result);
@@ -867,10 +904,90 @@ app.get('/am/email_template', (req, res, next) => {
 
 app.delete('/am/email_template/template_name/:template_name', (req, res, next) => {
     const template_name = req.params.template_name;
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
     return contract_sign.delete_email_template(template_name)
         .then(result => {
-            res.status(200).send(result);
+            res.status(200).send({status: 'deleted'});
             return result;
+        })
+        .catch(next);
+});
+
+
+// This is to display the offer/campaign details to influencers, who does not have account with lifo yet.
+app.get('/share/influencer/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id).get()
+        .then(results => {
+            console.debug('getting profile', results.data())
+            res.status(200).send(results.data());
+            return results;
+        })
+        .catch(next);
+});
+
+
+// this is to allow influencers to fill in detailed information for campaign after influencer accepts the offer.
+app.put('/share/influencer', (req, res, next) => {
+    const data = req.body;
+    if(!data.brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!data.account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    const influencer_profile = {
+        inf_name : data.inf_name,
+        inf_email : data.inf_email,
+        inf_phone: data.inf_phone,
+        influencer_address1: data.influencer_address1,
+        inf_signing_status: campaign.INFLUENCER_SIGNEDUP,
+    };
+    if(data.influencer_address2){
+        influencer_profile.influencer_address2 = data.influencer_address2;
+    }
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .set(influencer_profile, {merge:true})
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
+
+
+// this is to allow influencers to accept/decline the campaign offer.
+app.put('/share/influencer_offer', (req, res, next) => {
+    const data = req.body;
+    if(!data.brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!data.account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    let inf_signing_status = campaign.INFLUENCER_ACCEPT;
+    if(!data.accept){
+        console.log('Influencer declined the offer');
+        inf_signing_status = campaign.INFLUENCER_DECLINE;
+    }
+    const influencer_profile = {
+        inf_signing_status,
+        decline_type : data.decline_type,
+        decline_text_reason : data.decline_text_reason,
+    };
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .set(influencer_profile, {merge:true})
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
         })
         .catch(next);
 });

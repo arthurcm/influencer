@@ -15,10 +15,15 @@ gcloud secrets versions add client_secret --data-file="/Users/acm/Downloads/clie
 test create new calendar event:
 curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" -X POST https://auth.lifo.ai/create_calendar_event -d @create_new_calendar_event.json
 
+test file upload:
+curl -H "Content-Type: multipart/form-data" -H "Authorization:<idToken>" -X POST -F "file=@test_image.jpg" https://auth.lifo.ai/files
+
+
+test send single email with template:
+curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" -X POST https://auth.lifo.ai/single_email_with_template -d @send_single_email_template.json
+
 get test idToken by registering a new testing account:
 curl 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/json' --data-binary '{"email":"user@example.com","password":"PASSWORD","returnSecureToken":true}'
 
 get refreshed idToken:
-curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd9jNsiulzKAU2d3Z4HdMNXWVhWOmEICWds73tSIM-9aSfr_Z1O-1S34eOeMVhY9LUOWT6yICgq1lw4G45pEUSlSFPNlU5VZ1_OVsoZyqHPUcJY59cxVmfo79oBEml5BW0CrsZkQ9B5TBOz2zxKYT1jYmXJjLniCluviYBLOCtfzJPZArvP8eq8YO5Dz6Ddma8OL_8l9qYbN5jBYzADL53ZT8jdBw'
-
-
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd-J72Tyy6x-Oy474EXGplZYW6Q8rCd2vvMmvvpjaNYjgbsIpjYQsyAvAWppZf2EFaAMBXqPYwxzZ86sXJQWrDXkPE66_9KCP8LvJ17NJUwCg6C4S5QWhHL7ntUWkg8LxHNxy3NziCApIV9ElcE1j7TGKF4P3Iy-91TyABJUdLnnGxk-Tgg7It4UDT5FFok_Yb4Hex86JchsO7VmxSpSBnzwRMN0A'
