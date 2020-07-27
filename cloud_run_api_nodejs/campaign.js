@@ -14,10 +14,10 @@ const INFLUENCER_RECOMMENDED = 'Recommended';
 const BRAND_CHOSEN = 'Brand chosen';
 const NO_RESPONSE = 'No response';
 const OFFER_MADE = 'Offer made';
+const EMAIL_SENT = 'Email sent. Waiting for response.';
 const INFLUENCER_ACCEPT = 'Influencer accepted offer';
 const INFLUENCER_DECLINE = 'Influencer declined offer';
 const INFLUENCER_SIGNEDUP = 'Influencer signed up';
-const EMAIL_SENT = 'Email sent. Waiting for response.';
 
 function uriParse(media_name){
     const tokens = media_name.split('/');

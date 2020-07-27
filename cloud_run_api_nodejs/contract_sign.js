@@ -17,8 +17,9 @@ const INFLUENCER_ROLE = 'Influencer';
 const BRAND_ROLE = 'Brand';
 const AM_ROLE = 'AM';
 const SENDER_ROLE = 'Sender';
-const SIGNATURE_PENDING = 'Pending contract signing';
-const CONTRACT_SIGNED = 'Contract signed';
+
+const SIGNATURE_PENDING = 'pending contract signing';
+const CONTRACT_SIGNED = 'contract signed';
 
 const admin = require('firebase-admin');
 const db = admin.firestore();
@@ -388,12 +389,81 @@ function get_email_template(template_name){
     return db.collection('emails').doc(template_name).get();
 }
 
+function get_all_email_template(){
+    return db.collection('emails').get()
+        .then(snapshots => {
+            const templates = [];
+            snapshots.forEach(snapshot => {
+                const data = snapshot.data();
+                if(data.template_name){
+                    templates.push(data);
+                }
+            })
+            return templates;
+        });
+}
+
 function delete_email_template(template_name){
     return db.collection('emails').doc(template_name).delete();
 }
 
 function update_email_template(template_name, data){
     return db.collection('emails').doc(template_name).set(data, {merge: true});
+}
+
+// This is a util function checks whether the campaign is in contractual status.
+// if true, then the contract information cannot be modified.
+function check_contract_signing_status(brand_campaign_id, account_id){
+    return get_inf_status(brand_campaign_id, account_id)
+        .then(res => {
+            if(res.inf_status && res.inf_status.indexOf('contract') !== -1){
+                return true;
+            }
+            return false;
+        });
+}
+
+
+// util function to fetch current inf signing status inf_signing_status
+function get_inf_status(brand_campaign_id, account_id){
+    const reco_inf_profile = campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id);
+    return reco_inf_profile.get()
+        .then(snapshot => {
+            const data = snapshot.data();
+            return {inf_status: data.inf_signing_status};
+        });
+}
+
+
+function get_influencer_view(brand_campaign_id, account_id){
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .get()
+        .then(snapshot => {
+            const data = snapshot.data();
+            const influencer_public_profile = {
+                inf_name : data.inf_name || '',
+                inf_email : data.inf_email,
+                inf_phone: data.inf_phone || '',
+                influencer_address1: data.influencer_address1 || '',
+                product_message: data.product_message || '',
+                compensation_message: data.compensation_message || '',
+            };
+            return {
+                influencer_public_profile,
+            };
+        });
+}
+
+
+function update_product_message(brand_campaign_id, account_id, product_message){
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .set({product_message}, {merge:true});
+}
+
+
+function update_comp_message(brand_campaign_id, account_id, compensation_message){
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .set({compensation_message}, {merge:true});
 }
 
 
@@ -408,5 +478,11 @@ module.exports = {
     create_email_template,
     update_email_template,
     get_email_template,
+    get_all_email_template,
     delete_email_template,
+    check_contract_signing_status,
+    get_inf_status,
+    get_influencer_view,
+    update_product_message,
+    update_comp_message,
 };

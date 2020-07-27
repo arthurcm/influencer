@@ -112,12 +112,12 @@ class Sqlhandler:
             """
             )
 
-
     def get_nylas_access_token(self, uid):
         try:
             select_query = select([self.nylas_access_token.c.nylas_access_token]).where(self.nylas_access_token.c.uid == uid)
             conn = self.db.connect()
             result = conn.execute(select_query).fetchall()
+            logging.info(f'Getting nylass code sql results: {result}')
             return result[0][0]
         except Exception as e:
             logging.error(f'Error getting access code for uid {uid}, the error is' + str(e))

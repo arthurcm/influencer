@@ -887,6 +887,16 @@ app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
 });
 
 
+// return all email templates
+app.get('/am/email_template', (req, res, next) => {
+    return contract_sign.get_all_email_template()
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
 app.get('/am/email_template/template_name/:template_name', (req, res, next) => {
     const template_name = req.params.template_name;
     if(!template_name){
@@ -900,7 +910,6 @@ app.get('/am/email_template/template_name/:template_name', (req, res, next) => {
         })
         .catch(next);
 });
-
 
 app.delete('/am/email_template/template_name/:template_name', (req, res, next) => {
     const template_name = req.params.template_name;
@@ -917,14 +926,73 @@ app.delete('/am/email_template/template_name/:template_name', (req, res, next) =
 });
 
 
+// This is to check the inf's current status, so that different view can be shown to influencers.
+app.get('/share/inf_status/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    return contract_sign.get_inf_status(brand_campaign_id, account_id)
+        .then(results => {
+            console.debug('getting profile', results)
+            res.status(200).send(results);
+            return results;
+        })
+        .catch(next);
+});
+
 // This is to display the offer/campaign details to influencers, who does not have account with lifo yet.
 app.get('/share/influencer/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
-    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id).get()
+    return contract_sign.get_influencer_view(brand_campaign_id, account_id)
         .then(results => {
-            console.debug('getting profile', results.data())
-            res.status(200).send(results.data());
+            console.debug('getting profile', results)
+            res.status(200).send(results);
+            return results;
+        })
+        .catch(next);
+});
+
+
+// Corresponds to a html editor results
+// this is to allow AM to fill in detailed information for campaign for influencers to review.
+app.post('/am/inf_product_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const data = req.body;
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    return contract_sign.update_product_message(brand_campaign_id, account_id, data.product_message)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
+
+
+// Corresponds to a html editor results
+// this is to allow AM to fill in detailed information for campaign for influencers to review.
+app.post('/am/inf_comp_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const data = req.body;
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    return contract_sign.update_comp_message(brand_campaign_id, account_id, data.compensation_message)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
             return results;
         })
         .catch(next);
@@ -967,11 +1035,15 @@ app.put('/share/influencer_offer', (req, res, next) => {
     const data = req.body;
     if(!data.brand_campaign_id){
         console.warn('brand_campaign_id can not be empty');
-        res.status(412).send({status: 'brand_campaign_id empty'});
+        return res.status(412).send({status: 'brand_campaign_id empty'});
     }
     if(!data.account_id){
         console.warn('account_id can not be empty');
-        res.status(412).send({status: 'account_id empty'});
+        return res.status(412).send({status: 'account_id empty'});
+    }
+    if(data.accept == null){
+        console.warn('have to either accept or decline can not be empty');
+        return res.status(412).send({status: 'choose either accept or decline'});
     }
     let inf_signing_status = campaign.INFLUENCER_ACCEPT;
     if(!data.accept){
@@ -983,9 +1055,19 @@ app.put('/share/influencer_offer', (req, res, next) => {
         decline_type : data.decline_type,
         decline_text_reason : data.decline_text_reason,
     };
-    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
-        .set(influencer_profile, {merge:true})
+    return contract_sign.check_contract_signing_status(data.brand_campaign_id, data.account_id)
+        .then(in_contract_status => {
+            if(!in_contract_status){
+                return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
+                    .set(influencer_profile, {merge:true});
+            }
+            console.error('Influencer in contract signing status, cannot modify campaign details.');
+            return false;
+        })
         .then(results => {
+            if(!results){
+                res.status(405).send({error: 'Influencer in contract signing status, cannot modify campaign details.'});
+            }
             res.status(200).send({status: 'OK'});
             return results;
         })

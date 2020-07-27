@@ -131,14 +131,14 @@ def index():
 def token_verification(id_token):
     try:
         decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token['uid']
     except ValueError or exceptions.InvalidArgumentError:
         logging.error('id_token not string or empty or invalid')
         return ''
     except auth.RevokedIdTokenError:
         logging.error('id_token has been revoked')
         return ''
-    return uid
+    return decoded_token
+
 
 def _build_cors_prelight_response():
     response = flask.make_response()
@@ -152,89 +152,41 @@ def _build_cors_prelight_response():
 def hook():
     if request.method == "OPTIONS": # CORS preflight
         return _build_cors_prelight_response()
-    if request.path.startswith('/brand') or request.path.startswith('/am') or request.path.startswith('/influencer'):
-        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
-        if not id_token:
-            logging.error('Valid id_token required')
-            response = flask.jsonify('Valid id_token required')
-            response.status_code = 401
-            return response
-        decoded_token = token_verification(id_token)
-        uid = decoded_token['uid']
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 401
-            return response
-        logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
-        if decoded_token.get(ACCOUNT_MANAGER_FLAG):
-            logging.info('AM account has admin access')
-        elif not decoded_token.get(ACCOUNT_MANAGER_FLAG) and request.path.startswith('/am'):
-            response = flask.jsonify({"status": "not authorized"})
-            response.status_code = 403
-            return response
-        elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
-                or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
-            response = flask.jsonify({"status": "not authorized"})
-            response.status_code = 403
-            return response
+    id_token = flask.request.headers.get('Authorization') \
+               or flask.request.args.get('id_token') \
+               or flask.session.get('id_token')
+    if not id_token:
+        logging.error('Valid id_token required')
+        response = flask.jsonify({"status": "not authorized"})
+        response.status_code = 403
+        return response
+    decoded_token = token_verification(id_token)
+    uid = decoded_token['uid']
+    if not uid:
+        logging.error('id_token verification failed')
+        response = flask.jsonify({'status': 'id_token verification failed'})
+        response.status_code = 401
+        return response
+    logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
+    if decoded_token.get(ACCOUNT_MANAGER_FLAG):
+        logging.info('AM account has admin access')
+    elif not decoded_token.get(ACCOUNT_MANAGER_FLAG) and request.path.startswith('/am'):
+        response = flask.jsonify({"status": "not authorized"})
+        response.status_code = 403
+        return response
+    elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
+            or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
+        response = flask.jsonify({"status": "not authorized"})
+        response.status_code = 403
+        return response
 
-        flask.session['uid'] = uid
-        flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
-        flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
-        flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
-        flask.session['name'] = decoded_token.get('name')
-        flask.session['email'] = decoded_token.get('email')
-    else:
-        logging.debug(f'By passing auth for request {request.path}')
-
-
-def _build_cors_prelight_response():
-    response = flask.make_response()
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "*")
-    response.headers.add("Access-Control-Allow-Methods", "*")
-    return response
-
-@app.before_request
-def hook():
-    if request.method == "OPTIONS": # CORS preflight
-        return _build_cors_prelight_response()
-    if request.path.startswith('/brand') or request.path.startswith('/am') or request.path.startswith('/influencer'):
-        id_token = flask.request.headers.get('Authorization') or flask.request.args.get('id_token')
-        if not id_token:
-            logging.error('Valid id_token required')
-            response = flask.jsonify('Valid id_token required')
-            response.status_code = 401
-            return response
-        decoded_token = token_verification(id_token)
-        uid = decoded_token['uid']
-        if not uid:
-            logging.error('id_token verification failed')
-            response = flask.jsonify('id_token verification failed')
-            response.status_code = 401
-            return response
-        logging.info(f'request path is: {request.path} with decoded token {decoded_token}')
-        if decoded_token.get(ACCOUNT_MANAGER_FLAG):
-            logging.info('AM account has admin access')
-        elif not decoded_token.get(ACCOUNT_MANAGER_FLAG) and request.path.startswith('/am'):
-            response = flask.jsonify({"status": "not authorized"})
-            response.status_code = 403
-            return response
-        elif (request.path.startswith('/brand') and not decoded_token.get(STORE_ACCOUNT))\
-                or (request.path.startswith('/influencer') and decoded_token.get(STORE_ACCOUNT)):
-            response = flask.jsonify({"status": "not authorized"})
-            response.status_code = 403
-            return response
-
-        flask.session['uid'] = uid
-        flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
-        flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
-        flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
-        flask.session['name'] = decoded_token.get('name')
-        flask.session['email'] = decoded_token.get('email')
-    else:
-        logging.debug(f'By passing auth for request {request.path}')
+    flask.session['uid'] = uid
+    flask.session['id_token'] = id_token
+    flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
+    flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
+    flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
+    flask.session['name'] = decoded_token.get('name')
+    flask.session['email'] = decoded_token.get('email')
 
 
 @app.route("/authorize")
@@ -248,6 +200,10 @@ def authorize():
     nylas_code = flask.request.args.get('code')
     error = flask.request.args.get('error')
 
+    uid = flask.session['uid']
+    logging.info(f'verifying auth sync status for uid {uid}')
+    access_token = sql_handler.get_nylas_access_token(uid)
+
     # this is to handle potential authorization errors including access denied by customers.
     if error:
         logging.error(f'Authorization failed due to error: {error}')
@@ -256,13 +212,11 @@ def authorize():
         return response
     nylas_client = APIClient(app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
                              app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"])
-    if not nylas_code:
+    if not nylas_code and not access_token:
         scope = flask.request.args.get('scope')
         if not scope:
-            logging.error('Need a valid scope string, currently supporting: calendar or email.send')
-            response = flask.jsonify('Need a valid scope string, currently supporting: calendar or email.send')
-            response.status_code = 400
-            return response
+            logging.error('Need a valid scope string, currently supporting: calendar,email.send,email.modify')
+            scope = 'calendar,email.send,email.modify'
         redirect_url = 'http://auth.lifo.ai/authorize'
         logging.info(f'receiving request for scope {scope}, and redirect to {redirect_url}')
         flask.session['scope'] = scope
@@ -274,30 +228,35 @@ def authorize():
         )
         return flask.redirect(auth_url)
     else:
-        # note, here we have not handled the declined auth case
-        logging.info(f'authentication success with code: {nylas_code}')
-        access_token = nylas_client.token_for_code(nylas_code)
+        if nylas_code and not access_token:
+            # note, here we have not handled the declined auth case
+            logging.info(f'authentication success with code: {nylas_code}')
+            access_token = nylas_client.token_for_code(nylas_code)
+            nylas_client = APIClient(
+                app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+                app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+                access_token=access_token,
+            )
 
-        nylas_client = APIClient(
-            app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
-            app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
-            access_token=access_token,
-        )
+            # Revoke all tokens except for the new one
+            nylas_client.revoke_all_tokens(keep_access_token=access_token)
 
-        # Revoke all tokens except for the new one
-        nylas_client.revoke_all_tokens(keep_access_token=access_token)
+            account = nylas_client.account
+            nylas_account_id = account.id
 
-        account = nylas_client.account
-        nylas_account_id = account.id
+            uid = flask.session['uid']
+            scope = flask.session['scope']
+            logging.info(f'handling auth for firebase uid: {uid} for scope {scope} and nylas id {nylas_account_id}')
 
-        uid = flask.session['uid']
-        scope = flask.session['scope']
-        logging.info(f'handling auth for firebase uid: {uid} for scope {scope} and nylas id {nylas_account_id}')
-
-        # Note: here we automatically handle the Nylas id changing case, as each user is recognized by their firebase
-        # uid, and any new Nylas ids will be overwritten. This does bring in limitations: a user can only authorize one
-        # Calendar account, which is not an issue for foreseeable future.
-        return sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id)
+            # Note: here we automatically handle the Nylas id changing case, as each user is recognized by their firebase
+            # uid, and any new Nylas ids will be overwritten. This does bring in limitations: a user can only authorize one
+            # Calendar account, which is not an issue for foreseeable future.
+            sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id)
+        else:
+            logging.info(f'{uid} has cached access_token {access_token}')
+        response = flask.jsonify({'status': 'OK'})
+        response.status_code = 200
+        return response
 
 
 @app.route("/revoke_auth", methods=["DELETE"])
@@ -310,8 +269,8 @@ def revoke_auth():
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
         logging.info(f'The account {uid} has not authorized yet')
-        response = flask.jsonify('no auth')
-        response.status_code = 200
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
         return response
     nylas_client = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
@@ -334,8 +293,8 @@ def verify_auth_status():
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
         logging.info(f'The account {uid} has not authorized yet')
-        response = flask.jsonify('no auth')
-        response.status_code = 200
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
         return response
     nylas_client = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
@@ -353,8 +312,8 @@ def verify_auth_status():
         # Here we simplify the status into binary cases.
         # for more statuses, check https://docs.nylas.com/reference#account-sync-status
         logging.warning(f'The account {uid} need resync')
-        response = flask.jsonify('Need resync')
-        response.status_code = 200
+        response = flask.jsonify({'status': 'Need resync'})
+        response.status_code = 402
         return response
 
 
@@ -383,8 +342,9 @@ def get_lifo_events():
     uid = flask.session.get('uid')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
-        response = flask.jsonify({})
-        response.status_code = 200
+        logging.info(f'The account {uid} has not authorized yet')
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
         return response
     nylas_client = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
@@ -407,6 +367,11 @@ def events(event_id):
         return response
     uid = flask.session.get('uid')
     access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        logging.info(f'The account {uid} has not authorized yet')
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
     nylas_client = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
         app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
@@ -471,8 +436,8 @@ def create_calendar_event():
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
-        response = flask.jsonify('Failed to get access token! Re-authenticate the user')
-        response.status_code = 400
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
         return response
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
@@ -492,7 +457,7 @@ def create_calendar_event():
         calendar_id = calendar.id
         logging.info(f'Found a valid writable calendar {calendar.name}')
     if not calendar_id:
-        response = flask.jsonify('No writable calendar found!')
+        response = flask.jsonify({'status': 'No writable calendar found!'})
         response.status_code = 400
         return response
 
@@ -518,8 +483,10 @@ def send_email():
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
-        return flask.redirect("authorize", code=302)
-    logging.info(f'Retrieved nylas access token {access_token}')
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
+    logging.info(f'Retrieved Nylas access token {access_token}')
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
         app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
@@ -557,7 +524,9 @@ def send_single_email_with_template():
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
-        return flask.redirect("authorize", code=302)
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
     logging.info(f'Retrieved nylas access token {access_token}')
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
@@ -607,14 +576,15 @@ def files():
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
-        return flask.redirect("authorize", code=302)
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
     logging.info(f'Retrieved Nylas access token {access_token}')
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
         app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
         access_token=access_token
     )
-
     if flask.request.method == 'POST':
         try:
             # check if the post request has the file part
@@ -641,7 +611,7 @@ def files():
             return response
         except Exception as e:
             logging.error(f'Uploading attachment failed! Error message is {str(e)}')
-            response = flask.jsonify(str(e))
+            response = flask.jsonify({'error': f'Uploading attachment failed! Error message is {str(e)}'})
             response.status_code = 400
             return response
     elif flask.request.method == 'GET':
