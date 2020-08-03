@@ -10,6 +10,7 @@ nylas
 google-cloud-logging
 google-cloud-secret-manager
 firebase_admin
+google-cloud-firestore
 
 
 SQLAlchemy

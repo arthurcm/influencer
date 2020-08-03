@@ -3,10 +3,11 @@ from __future__ import print_function
 import os
 import sys
 import textwrap
+import datetime
 
-from cloud_sql import sql_handler
 import firebase_admin
 from firebase_admin import auth, exceptions
+from google.cloud import firestore
 
 # Imports the Google Cloud client library
 import google.cloud.logging
@@ -21,11 +22,18 @@ client.setup_logging()
 
 firebase_app = firebase_admin.initialize_app()
 
+# here the db variable is a firestore client. We name it as "db" just to be consistent with JS side.
+db = firestore.Client()
+
 LIFO_CALENDAR_EVENT_SIGNATURE = " -- Created by Lifo.ai"
 
 ACCOUNT_MANAGER_FLAG = 'account_manager'
 STORE_ACCOUNT = 'store_account'
 FROM_SHOPIFY = 'from_shopify'
+
+BRAND_CAMPAIGN_COLLECTIONS = 'brand_campaigns'
+INFLUENCER_COLLECTIONS = 'influencers'
+EMAILS_COLLECTIONS = 'emails'
 
 # Imports from third-party modules that this project depends on
 try:
@@ -197,6 +205,7 @@ def authorize():
     for the given Nylas id.
     :return: flask response, 200 if success, 400 if failed.
     """
+    from cloud_sql import sql_handler
     nylas_code = flask.request.args.get('code')
     error = flask.request.args.get('error')
 
@@ -265,6 +274,8 @@ def revoke_auth():
     This API essentially unauthorize and removes the customer from the Nylas authentication, along with auth for the
     Calendar and email accounts.
     """
+
+    from cloud_sql import sql_handler
     uid = flask.session['uid']
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
@@ -288,6 +299,7 @@ def verify_auth_status():
     """
     This is an API that verifies the authorization status. Called when user loads up the page.
     """
+    from cloud_sql import sql_handler
     uid = flask.session['uid']
     logging.info(f'verifying auth sync status for uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
@@ -339,6 +351,7 @@ def get_lifo_events():
     In future we may want to save all the events created by our product, and then get accordingly. 
     But this will force us to fully manage the events life cycle.
     """
+    from cloud_sql import sql_handler
     uid = flask.session.get('uid')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
@@ -360,6 +373,7 @@ def get_lifo_events():
 
 @app.route("/events/<event_id>", methods=["GET", "PUT", "DELETE"])
 def events(event_id):
+    from cloud_sql import sql_handler
     if not event_id:
         logging.error('Need a valid event id')
         response = flask.jsonify('Need a valid event id')
@@ -431,6 +445,7 @@ def update_event_from_json(event, data, calendar_id):
 
 @app.route("/create_calendar_event", methods=["POST"])
 def create_calendar_event():
+    from cloud_sql import sql_handler
     uid = flask.session.get('uid')
     data = flask.request.json
     logging.info(f'Receiving request {data} for session uid {uid}')
@@ -478,6 +493,7 @@ def create_calendar_event():
 
 @app.route("/send_email", methods=["POST"])
 def send_email():
+    from cloud_sql import sql_handler
     uid = flask.session.get('uid')
     data = flask.request.json
     logging.info(f'Receiving request {data} for session uid {uid}')
@@ -517,6 +533,7 @@ def send_single_email_with_template():
     ${receiver_name} with to_name
     ${file_id} (if any) with file_id
     """
+    from cloud_sql import sql_handler
     uid = flask.session.get('uid')
     sender_name = flask.session.get('name')
     sender_email = flask.session.get('email')
@@ -540,7 +557,12 @@ def send_single_email_with_template():
             response.status_code = 412
         draft.subject = data.get('subject')
         body = data.get('body')
+
+        #Note: should to_name be account_id instead?
         body = body.replace("$(receiver_name)", data.get('to_name'))
+
+        # note: need to anonymize the email for external url usage.
+        body = body.replace("$(inf_email)", data.get('to_email'))
 
         draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
         if data.get('file_id'):
@@ -553,6 +575,30 @@ def send_single_email_with_template():
                           'thread_replies': 'true',
                           'payload': data.get('campaign_name') or f'{sender_name} <{sender_email}>'
                           }
+
+        """
+        Here we access influencer sub_collection under each brand campaign. This is to replicate the following
+        function from Nodejs side under api_nodejs service. 
+            function access_influencer_subcollection(brand_campaign_id) {
+                return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id)
+                    .collection(INFLUENCER_COLLECTIONS);
+            }
+        """
+        brand_campaign_id = data.get('brand_campaign_id')
+        inf_account_id = data.get('account_id')
+        emails_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS,
+                                   brand_campaign_id,
+                                   INFLUENCER_COLLECTIONS,
+                                   inf_account_id,
+                                   EMAILS_COLLECTIONS)
+        email_history = {
+            'ts': firestore.SERVER_TIMESTAMP,
+            'body': draft.body,
+            'subject': draft.subject,
+            'to': draft.to,
+            'file_id': data.get('file_id')
+        }
+        emails_ref.document().set(email_history)
         draft.send()
         logging.info('email sent successfully')
         response = flask.jsonify('email sent successfully')
@@ -571,6 +617,7 @@ def files():
     POST: upload attachment
     GET: get attachment status.
     """
+    from cloud_sql import sql_handler
     uid = flask.session.get('uid')
     data = flask.request.files
     logging.info(f'Receiving request {data} for session uid {uid}')

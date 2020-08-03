@@ -401,7 +401,7 @@ function likeFeedback(data, like_id){
             like_list = [...new Set(like_list)];
             return {
                 like: like_list,
-                like_count: like_list.length
+                like_count: like_list.length,
             };
         });
 
