@@ -16,44 +16,22 @@ exports.provideFeedback = campaign.provideFeedback;
 exports.finalizeCampaign = campaign.finalizeCampaign;
 exports.finalizeVideoDraft = campaign.finalizeVideoDraft;
 
-exports.regiserUser = functions.auth.user().onCreate(async (user) => {
-    // send welcome email to users when signed up using Auth
-    const email = user.email; // The email of the user.
-    const uid = user.uid;
-    const displayName = user.displayName; // The display name of the user.
-
-    const data  = {
-        contacts: email,
-        name: displayName,
-        uid,
-        profile_picture: user.photoURL,
-    };
-
-    db.collection('influencers').doc(uid)
-        .set(data)
-        .then(() => {
-            console.log('Document successfully written!');
-            return null;
-        })
-        .catch((error) => {
-            console.log('Document creation failed', docData);
-        });
-});
-
 
 // On sign up.
-exports.processSignUp = functions.auth.user().onCreate((user) => {
+exports.processSignUp = functions.auth.user().onCreate(async (user) => {
     // Check if user meets role criteria.
     // TODO: Add email verification for better security!!!
+    let account_manager = false;
     if (user.email &&
         user.email.endsWith('@lifo.ai')) {
+        account_manager = true;
         const customClaims = {
-            account_manager: true,
+            account_manager,
             access_level: 9
         };
         console.log(`Updating custom claims to ${user.email}`, customClaims);
         // Set custom user claims on this newly created user.
-        return admin.auth().setCustomUserClaims(user.uid, customClaims)
+        await admin.auth().setCustomUserClaims(user.uid, customClaims)
             .then(() => {
                 // Update real-time database to notify client to force refresh.
                 const metadataRef = admin.database().ref('metadata/' + user.uid);
@@ -65,14 +43,38 @@ exports.processSignUp = functions.auth.user().onCreate((user) => {
                 console.log(error);
             });
     }
-    return true;
+
+    const email = user.email; // The email of the user.
+    const uid = user.uid;
+    const displayName = user.displayName; // The display name of the user.
+    const from_shopify = user.customClaims.from_shopify || false;
+    const store_account = user.customClaims.store_account || false;
+    const data  = {
+        contacts: email,
+        name: displayName,
+        uid,
+        profile_picture: user.photoURL,
+        from_shopify,
+        store_account,
+        account_manager,
+    };
+    console.log('Receiving data for signing up', data);
+    return db.collection('influencers').doc(uid)
+        .set(data)
+        .then(() => {
+            console.log('Document successfully written!');
+            return null;
+        })
+        .catch((error) => {
+            console.log('Document creation failed', docData);
+        });
 });
 
 
 // Imports the Google Cloud client library
 const {PubSub} = require('@google-cloud/pubsub');
 exports.genScheduledYouTubePost = functions.pubsub.topic('per-minute').onPublish((message) => {
-    // This is a cloud funciton that is tirggered when the pubsub topic has new message (in this case, per-minute topic).
+    // This is a cloud function that is tirggered when the pubsub topic has new message (in this case, per-minute topic).
     // The function grabs all the posting that are needed to post, and send the requests to pubsub ytpost topic, whose
     // message eventually gets processed by upload_video_youtube_pubsub_gcf function (in Python)
 

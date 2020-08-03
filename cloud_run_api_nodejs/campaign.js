@@ -98,6 +98,23 @@ function getAllCampaign(uid) {
 }
 
 
+function amGetAllBrandCampaign() {
+    console.info('Get all brand campaign meta data for Account manager.');
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).get()
+        .then(querySnapshot => {
+            const campaigns = [];
+            querySnapshot.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                if(!doc_snap.deleted){
+                    campaigns.push(doc_snap);
+                }
+            });
+            console.debug('Found', campaigns.length, 'campaigns in /campaign GET');
+            return campaigns;
+        });
+}
+
+
 function getLatestCampaignPath(uid, campaign_id){
     return db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').orderBy('time_stamp', 'desc').limit(1).get()
@@ -121,7 +138,7 @@ function getCampaignHistories(campaign_id) {
     return db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').orderBy('time_stamp', 'desc').get()
         .then(querySnapshot => {
-            let histories = []
+            const histories = [];
             querySnapshot.docs.forEach(doc => {
                 histories.push(doc.data());
             });
@@ -298,7 +315,6 @@ function createFeedbackObject(feedback_str, media_object_path, displayName='', l
         timestamp: FieldValue.serverTimestamp(),
     };
 }
-
 
 
 // for creating a new thread of feedbacks
@@ -928,6 +944,7 @@ module.exports = {
     createBrandCampaign,
     listBrandCampaignForBrand,
     getBrandCampaignForBrand,
+    amGetAllBrandCampaign,
     updateBrandCampaign,
     deleteBrandCampaign,
     endBrandCampaign,

@@ -594,6 +594,16 @@ app.get('/brand/campaign', (req, res, next) => {
         .catch(next);
 });
 
+app.get('/am/campaign', (req, res, next) => {
+    const uid = res.locals.uid;
+    return campaign.amGetAllBrandCampaign()
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
 
 app.get('/brand/influencers', (req, res, next) => {
     const uid = res.locals.uid;
@@ -717,9 +727,9 @@ app.post('/signature_request/create_embedded_with_template', (req, res, next) =>
 
 
 // return the respective sign_url based on the current user
-app.get('/embedded/sign_url/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+app.get('/share/embedded/sign_url/brand_campaign_id/:brand_campaign_id/email/:email', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
-    const email = res.locals.email;
+    const email = req.params.email;
     console.debug(`/embedded/sign_url/brand_campaign_id received a brand_campaign_id ${brand_campaign_id}`);
     return contract_sign.getEmbeddedSignUrl(email, brand_campaign_id, null)
         .then(result => {
@@ -775,14 +785,14 @@ app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req,
 });
 
 
-app.get('/signature_request/files/signature_request_id/:signature_request_id', (req, res, next) => {
+app.get('/common/signature_request/files/signature_request_id/:signature_request_id', (req, res, next) => {
     const signature_request_id = req.params.signature_request_id;
     contract_sign.getSignedContract(signature_request_id);
     res.status(200).send({status: 'OK'});
 });
 
 
-app.put('/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
+app.put('/share/signature_complete/brand_campaign_id/:brand_campaign_id/signature_id/:signature_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const signature_id = req.params.signature_id;
     console.debug(`Received ${brand_campaign_id} and ${signature_id}`);
@@ -932,7 +942,7 @@ app.get('/share/inf_status/brand_campaign_id/:brand_campaign_id/account_id/:acco
     const account_id = req.params.account_id;
     return contract_sign.get_inf_status(brand_campaign_id, account_id)
         .then(results => {
-            console.debug('getting profile', results)
+            console.debug('getting profile', results);
             res.status(200).send(results);
             return results;
         })
