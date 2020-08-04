@@ -602,7 +602,7 @@ async function listBrandCampaignsInf(uid, idToken, next){
     if (shop_list.length === 0){
 
         // this is a hack to avoid empty list error by the .where() clause below.
-        shop_list.push('TestStoreLfioDefault');
+        shop_list.push('TestStoreLifoDefault');
     }
     return db.collection(BRAND_CAMPAIGN_COLLECTIONS).where('brand_id', 'in', shop_list).get()
         .then(querySnapshot => {

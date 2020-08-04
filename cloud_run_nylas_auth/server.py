@@ -526,6 +526,74 @@ def send_email():
         return response
 
 
+@app.route("/email_to_brand", methods=["POST"])
+def send_email_to_brand():
+    """
+    This method sends email with template, and replace:
+    ${receiver_name} with to_name
+    ${file_id} (if any) with file_id
+    """
+    from cloud_sql import sql_handler
+    uid = flask.session.get('uid')
+    sender_name = flask.session.get('name')
+    sender_email = flask.session.get('email')
+    data = flask.request.json
+    logging.info(f'Receiving request {data} for session uid {uid}')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
+    logging.info(f'Retrieved nylas access token {access_token}')
+    nylas = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+    try:
+        draft = nylas.drafts.create()
+        if not data.get('subject') or not data.get('body') or not data.get('to_email') or not data.get('to_name'):
+            response = flask.jsonify({'error': 'need valid file_id query param'})
+            response.status_code = 412
+        draft.subject = data.get('subject')
+        body = data.get('body')
+        body = body.replace("$(receiver_name)", data.get('to_name'))
+        draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
+        if data.get('file_id'):
+            file = nylas.files.get(data.get('file_id'))
+            draft.attach(file)
+            body = body.replace("$(file_id)", file.id)
+        draft.body = body
+        draft.tracking = {'links': 'true',
+                          'opens': 'true',
+                          'thread_replies': 'true',
+                          'payload': data.get('campaign_name') or f'{sender_name} <{sender_email}>'
+                          }
+
+        brand_campaign_id = data.get('brand_campaign_id')
+        emails_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS,
+                                   brand_campaign_id,
+                                   EMAILS_COLLECTIONS)
+        email_history = {
+            'ts': firestore.SERVER_TIMESTAMP,
+            'body': draft.body,
+            'subject': draft.subject,
+            'to': draft.to,
+            'file_id': data.get('file_id')
+        }
+        emails_ref.document().set(email_history)
+        draft.send()
+        logging.info('email sent successfully')
+        response = flask.jsonify('email sent successfully')
+        response.status_code = 200
+        return response
+    except Exception as e:
+        logging.error(f'Sending email failed! Error message is {str(e)}')
+        response = flask.jsonify(str(e))
+        response.status_code = 400
+        return response
+
+
 @app.route("/single_email_with_template", methods=["POST"])
 def send_single_email_with_template():
     """

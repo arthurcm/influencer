@@ -23,6 +23,8 @@ const CONTRACT_SIGNED = 'contract signed';
 
 const admin = require('firebase-admin');
 const db = admin.firestore();
+const BUCKET_NAME = 'gs://influencer-272204.appspot.com/';
+const bucket = admin.storage().bucket(BUCKET_NAME);
 
 // TODO: here we list the first version lifo agreement's template id, in near future, this single template may
 // evolve into multiple ones
@@ -119,14 +121,14 @@ function prepareSignatureRequestData(data){
             const opts = {
                 test_mode: 1,
                 clientId: HELLO_SIGN_CLIENT_ID,
-                requester_email_address: 'arthur.meng@lifo.ai',
+                requester_email_address: 'customer@lifo.ai',
                 template_id,
                 subject: 'Lifo brand influencer campaign agreement',
                 message: 'Glad we could come to an agreement.',
                 signers: [
                     {
-                        email_address: 'arthur.meng@lifo.ai',
-                        name: 'Arthur Meng',
+                        email_address: 'customer@lifo.ai',
+                        name: 'Lifo Inc.',
                         role: SENDER_ROLE,
                     },
                     {
@@ -174,7 +176,6 @@ function saveSignatureResponsedata(signature_info, response, brand_campaign_id, 
     batch.set(inf_subcollection_ref, {
         inf_signing_status: SIGNATURE_PENDING,
         brand_signing_status: SIGNATURE_PENDING,
-        am_signing_status: SIGNATURE_PENDING,
         signature_request_id,
         inf_signature_id,
         brand_signature_id,
@@ -318,13 +319,23 @@ function getEmbeddedSignUrl(email, brand_campaign_id, inf_email){
 
 function getSignedContract(signature_request_id){
     const fs = require('fs');
-    hellosign.signatureRequest.download(signature_request_id, { file_type: 'pdf' }, (err, res) => {
-        const file = fs.createWriteStream('contract.pdf');
-
+    return hellosign.signatureRequest.download(signature_request_id, { file_type: 'pdf' }, (err, res) => {
+        console.log('error message is:', err, 'and response is', res);
+        const file_path = `${signature_request_id}.pdf`;
+        const remote_path = `/contract/${signature_request_id}/${file_path}`;
+        const file = fs.createWriteStream(file_path);
         res.pipe(file);
-
         return file.on('finish', () => {
             file.close();
+            return bucket.upload(file_path, {destination: remote_path})
+                .then(() => {
+                    console.log('The file has been uploaded to', remote_path);
+                    return true;
+                })
+                .catch(err => {
+                    console.log('failed to download', err);
+                    throw err;
+                });
         });
     });
 }
@@ -445,7 +456,9 @@ function get_influencer_view(brand_campaign_id, account_id){
                 inf_email : data.inf_email,
                 inf_phone: data.inf_phone || '',
                 influencer_address1: data.influencer_address1 || '',
+                influencer_address2: data.influencer_address2 || '',
                 product_message: data.product_message || '',
+                product_image_list: data.product_image_list || [],
                 compensation_message: data.compensation_message || '',
             };
             return {
@@ -455,9 +468,12 @@ function get_influencer_view(brand_campaign_id, account_id){
 }
 
 
-function update_product_message(brand_campaign_id, account_id, product_message){
+function update_product_message(brand_campaign_id, account_id, product_message, product_image_list){
     return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
-        .set({product_message}, {merge:true});
+        .set({
+            product_message,
+            product_image_list,
+        }, {merge:true});
 }
 
 
@@ -485,4 +501,5 @@ module.exports = {
     get_influencer_view,
     update_product_message,
     update_comp_message,
+    hellosign,
 };

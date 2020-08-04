@@ -785,10 +785,21 @@ app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req,
 });
 
 
+// TODO: The files API works regardless of signing status. Add webhook to capture pdf status instead of letting
+// client side handle the status.
 app.get('/common/signature_request/files/signature_request_id/:signature_request_id', (req, res, next) => {
     const signature_request_id = req.params.signature_request_id;
-    contract_sign.getSignedContract(signature_request_id);
-    res.status(200).send({status: 'OK'});
+    const fs = require('fs');
+    const file_path = `${signature_request_id}.pdf`;
+    return contract_sign.hellosign.signatureRequest.download(signature_request_id, { file_type: 'pdf' }, (err, result) => {
+        console.log('error message is:', err);
+        const file = fs.createWriteStream(file_path);
+        result.pipe(file);
+        return file.on('finish', () => {
+            res.download(file_path);
+            file.close();
+        });
+    });
 });
 
 
@@ -977,7 +988,7 @@ app.post('/am/inf_product_message/brand_campaign_id/:brand_campaign_id/account_i
         console.warn('account_id can not be empty');
         res.status(412).send({status: 'account_id empty'});
     }
-    return contract_sign.update_product_message(brand_campaign_id, account_id, data.product_message)
+    return contract_sign.update_product_message(brand_campaign_id, account_id, data.product_message, data.product_image_list)
         .then(results => {
             res.status(200).send({status: 'OK'});
             return results;
