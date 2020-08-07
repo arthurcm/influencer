@@ -121,7 +121,7 @@ function prepareSignatureRequestData(data){
             const opts = {
                 test_mode: 1,
                 clientId: HELLO_SIGN_CLIENT_ID,
-                requester_email_address: 'customer@lifo.ai',
+                // requester_email_address: 'arthur.meng@lifo.ai',
                 template_id,
                 subject: 'Lifo brand influencer campaign agreement',
                 message: 'Glad we could come to an agreement.',
@@ -396,8 +396,18 @@ function create_email_template(data){
     return db.collection('emails').doc(data.template_name).set(data);
 }
 
+
+function create_message_template(data){
+    return db.collection(data.template_type).doc(data.template_name).set(data);
+}
+
+
 function get_email_template(template_name){
     return db.collection('emails').doc(template_name).get();
+}
+
+function get_message_template(template_type, template_name){
+    return db.collection(template_type).doc(template_name).get();
 }
 
 function get_all_email_template(){
@@ -414,12 +424,35 @@ function get_all_email_template(){
         });
 }
 
+function get_all_templates(template_type){
+    return db.collection(template_type).get()
+        .then(snapshots => {
+            const templates = [];
+            snapshots.forEach(snapshot => {
+                const data = snapshot.data();
+                if(data.template_name){
+                    templates.push(data);
+                }
+            })
+            return templates;
+        });
+}
+
 function delete_email_template(template_name){
     return db.collection('emails').doc(template_name).delete();
 }
 
+function delete_template(template_type, template_name){
+    return db.collection(template_type).doc(template_name).delete();
+}
+
 function update_email_template(template_name, data){
     return db.collection('emails').doc(template_name).set(data, {merge: true});
+}
+
+
+function update_template(template_type, template_name, data){
+    return db.collection(template_type).doc(template_name).set(data, {merge: true});
 }
 
 // This is a util function checks whether the campaign is in contractual status.
@@ -496,6 +529,11 @@ module.exports = {
     get_email_template,
     get_all_email_template,
     delete_email_template,
+    create_message_template,
+    get_message_template,
+    update_template,
+    get_all_templates,
+    delete_template,
     check_contract_signing_status,
     get_inf_status,
     get_influencer_view,

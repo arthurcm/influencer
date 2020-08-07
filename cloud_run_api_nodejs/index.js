@@ -22,10 +22,10 @@ const contract_sign = require('./contract_sign');
 // middleware for token verification
 app.use((req, res, next) => {
 
-    // // all /share/* endpoints require no authorization
-    // if (req.path.startsWith('/share')){
-    //     return next();
-    // }
+    // all /share/* endpoints require no authorization
+    if (req.path.startsWith('/share')){
+        return next();
+    }
 
     // idToken comes from the client
     if (!req.headers.authorization) {
@@ -899,7 +899,7 @@ app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
         console.warn('template_name can not be empty');
         res.status(412).send({status: 'template_name empty'});
     }
-    return contract_sign.update_email_template(template_name, data)
+    return contract_sign.update_template('emails', template_name, data)
         .then(result => {
             res.status(200).send({status: 'OK'});
             return result;
@@ -910,7 +910,7 @@ app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
 
 // return all email templates
 app.get('/am/email_template', (req, res, next) => {
-    return contract_sign.get_all_email_template()
+    return contract_sign.get_all_templates('emails')
         .then(result => {
             res.status(200).send(result);
             return result;
@@ -924,7 +924,7 @@ app.get('/am/email_template/template_name/:template_name', (req, res, next) => {
         console.warn('template_name can not be empty');
         res.status(412).send({status: 'template_name empty'});
     }
-    return contract_sign.get_email_template(template_name)
+    return contract_sign.get_message_template('emails', template_name)
         .then(result => {
             res.status(200).send(result);
             return result;
@@ -938,7 +938,99 @@ app.delete('/am/email_template/template_name/:template_name', (req, res, next) =
         console.warn('template_name can not be empty');
         res.status(412).send({status: 'template_name empty'});
     }
-    return contract_sign.delete_email_template(template_name)
+    return contract_sign.delete_template('emails', template_name)
+        .then(result => {
+            res.status(200).send({status: 'deleted'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.post('/am/template', (req, res, next) => {
+    const data = req.body;
+    if(!data.template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    if(!data.template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
+    return contract_sign.create_message_template(data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.put('/am/template/template_type/:template_type/template_name/:template_name', (req, res, next) => {
+    const data = req.body;
+    const template_name = req.params.template_name;
+    const template_type = req.params.template_type;
+    if(!template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
+    return contract_sign.update_template(template_type, template_name, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.get('/am/template/template_type/:template_type', (req, res, next) => {
+    const template_type = req.params.template_type;
+    if(!template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    return contract_sign.get_all_templates(template_type)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+app.get('/am/template/template_type/:template_type/template_name/:template_name', (req, res, next) => {
+    const template_name = req.params.template_name;
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
+    const template_type = req.params.template_type;
+    if(!template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    return contract_sign.get_message_template(template_type, template_name)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.delete('/am/template/template_type/:template_type/template_name/:template_name', (req, res, next) => {
+    const template_name = req.params.template_name;
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
+    const template_type = req.params.template_type;
+    if(!template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    return contract_sign.delete_template(template_type, template_name)
         .then(result => {
             res.status(200).send({status: 'deleted'});
             return result;
@@ -1041,7 +1133,7 @@ app.put('/share/influencer', (req, res, next) => {
     if(data.influencer_address2){
         influencer_profile.influencer_address2 = data.influencer_address2;
     }
-    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+    return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
         .set(influencer_profile, {merge:true})
         .then(results => {
             res.status(200).send({status: 'OK'});

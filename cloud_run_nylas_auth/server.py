@@ -628,9 +628,12 @@ def send_single_email_with_template():
 
         #Note: should to_name be account_id instead?
         body = body.replace("$(receiver_name)", data.get('to_name'))
+        body = body.replace("$(sender_name)", sender_name)
 
         # note: need to anonymize the email for external url usage.
         body = body.replace("$(inf_email)", data.get('to_email'))
+        brand_campaign_id = data.get('brand_campaign_id')
+        body = body.replace("$(brand_campaign_id)", brand_campaign_id)
 
         draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
         if data.get('file_id'):
@@ -652,8 +655,16 @@ def send_single_email_with_template():
                     .collection(INFLUENCER_COLLECTIONS);
             }
         """
-        brand_campaign_id = data.get('brand_campaign_id')
         inf_account_id = data.get('account_id')
+        influencer_ref = db.document(BRAND_CAMPAIGN_COLLECTIONS,
+                                     brand_campaign_id,
+                                     INFLUENCER_COLLECTIONS,
+                                     inf_account_id)
+        influencer_ref.update(
+            {
+                'inf_contacting_status': 'Email sent'
+            }
+        )
         emails_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS,
                                    brand_campaign_id,
                                    INFLUENCER_COLLECTIONS,
@@ -667,6 +678,7 @@ def send_single_email_with_template():
             'file_id': data.get('file_id')
         }
         emails_ref.document().set(email_history)
+
         draft.send()
         logging.info('email sent successfully')
         response = flask.jsonify('email sent successfully')
