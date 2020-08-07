@@ -14,6 +14,7 @@ admin.initializeApp({
     credential: admin.credential.applicationDefault(),
     databaseURL: 'https://influencer-272204.firebaseio.com',
 });
+const db = admin.firestore();
 
 const campaign = require('./campaign');
 const contract_sign = require('./contract_sign');
@@ -653,10 +654,27 @@ app.put('/brand/end_campaign/brand_campaign_id/:brand_campaign_id', (req, res, n
 app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const brand_campaign_id = req.params.brand_campaign_id;
     return campaign.getBrandCampaignForBrand(brand_campaign_id)
-        .then(result => {
+        .then(async result => {
             console.debug('get brand campaign results', result);
             const brand_campaigns = result[0];
             const discovered_infs = result[1];
+            let shop_info = null;
+            await db.collection('brands').doc(brand_campaigns.brand_id)
+                .get()
+                .then(snapShot => {
+                    shop_info = snapShot.data().shop;
+                    console.log('Getting shop info:', shop_info);
+                    return shop_info;
+                });
+            const shop_address = {
+                address1 : shop_info.address1,
+                address2 : shop_info.address2,
+                city : shop_info.city,
+                state : shop_info.province,
+                country : shop_info.country,
+            }
+            brand_campaigns.shop_address = shop_address;
+            console.log('After adding address:', brand_campaigns);
             res.status(200).send({
                 brand_campaigns,
                 discovered_infs,

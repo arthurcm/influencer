@@ -50,9 +50,13 @@ MAX_SHOPIFY_RESULTS_LIMIT = 200
 import firebase_admin
 from firebase_admin import auth
 from firebase_admin import exceptions
+from google.cloud import firestore
 
 
 firebase_app = firebase_admin.initialize_app()
+
+# here the db variable is a firestore client. We name it as "db" just to be consistent with JS side.
+db = firestore.Client()
 
 app = flask.Flask(__name__)
 CORS(app)
@@ -374,6 +378,8 @@ def shop_info():
     headers = {"X-Shopify-Access-Token": shop_access_token}
     res = requests.get(url, headers=headers)
     logging.info(f'Obtained shop information for shop {shop}: {res.json()}')
+    brand_ref = db.collection('brands')
+    brand_ref.document(shop).set(res.json())
     sql_handler.save_shop_info(shop, res.json())
     response = flask.jsonify(res.json())
     response.status_code = 200
