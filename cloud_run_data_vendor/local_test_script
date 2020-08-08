@@ -27,3 +27,7 @@ curl -H "Content-Type: application/json" -H "Authorization:<id_token>" "https://
 
 Test locations/languages/brands/interests:
 curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/interests" -X GET
+
+
+Test get shopify shop information:
+curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/shopify_shop_info?shop=meteneus.myshopify.com" -X GET

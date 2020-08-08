@@ -332,6 +332,11 @@ def get_single_product():
     product_id = flask.request.args.get('product_id')
     logging.info(f'Retrieving product information from shop {shop}')
     single_product = sql_handler.get_product_info(shop, product_id)
+
+    # this is to make sure that we get shop information
+    shop_info = get_shopify_shop_info(shop)
+    logging.info(f'Retrieving shop information {shop_info}')
+
     if len(single_product) > 0:
         product_res = single_product[2]
         response = flask.jsonify(product_res)
@@ -359,12 +364,11 @@ def brand_get_product_info():
     return get_single_product()
 
 
-@app.route('/am/shopify_shop_info', methods=['GET'])
-def shop_info():
-    """
-    This endpoint is called upon AM to access Shopify shop products for access_token
-    """
-    shop = flask.request.args.get('shop')
+def get_shopify_shop_info(shop):
+    shop_info_ref = db.document('brands', shop).get()
+    if shop_info_ref.to_dict():
+        logging.info('Shop info exists. Skip pulling it from Shopify API.')
+        return shop_info_ref.to_dict()
     res = get_shopify_access_token(shop)
     if not res:
         res = {'status': 'access token not found'}
@@ -372,7 +376,6 @@ def shop_info():
         response.status_code = 404
         return response
     shop_access_token = res
-
     url = f'https://{shop}/admin/api/{API_VERSION}/shop.json'
     logging.info(f'Receiving request for url {url}')
     headers = {"X-Shopify-Access-Token": shop_access_token}
@@ -381,7 +384,19 @@ def shop_info():
     brand_ref = db.collection('brands')
     brand_ref.document(shop).set(res.json())
     sql_handler.save_shop_info(shop, res.json())
-    response = flask.jsonify(res.json())
+    return res.json()
+
+
+@app.route('/am/shopify_shop_info', methods=['GET'])
+def shop_info():
+    """
+    This endpoint is called upon AM to access Shopify shop products for access_token
+    """
+    shop = flask.request.args.get('shop')
+    shop_info = get_shopify_shop_info(shop)
+    if type(shop_info) is flask.Response:
+        return shop_info
+    response = flask.jsonify(shop_info)
     response.status_code = 200
     return response
 
