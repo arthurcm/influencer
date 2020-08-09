@@ -607,6 +607,19 @@ app.get('/am/campaign', (req, res, next) => {
 });
 
 
+// This is to get all influencers who are at post-contract stage.
+// Then we call '/common/campaign/campaign_id/:campaign_id to get specific campaign histories.
+app.get('/am/inf_campaigns/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id
+    return campaign.amGetInfCampaigns(brand_campaign_id)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
 app.get('/brand/influencers', (req, res, next) => {
     const uid = res.locals.uid;
     return campaign.totalInfCount(uid)
@@ -892,78 +905,6 @@ app.put('/am/make_offer/brand_campaign_id/:brand_campaign_id/account_id/:account
         .catch(next);
 });
 
-app.post('/am/email_template', (req, res, next) => {
-    const data = req.body;
-    if(!data.subject || !data.body){
-        console.warn('subject and body can not be empty');
-        res.status(412).send({status: 'subject or body empty'});
-    }
-    if(!data.template_name){
-        console.warn('template_name can not be empty');
-        res.status(412).send({status: 'template_name empty'});
-    }
-    return contract_sign.create_email_template(data)
-        .then(result => {
-            res.status(200).send({status: 'OK'});
-            return result;
-        })
-        .catch(next);
-});
-
-
-app.put('/am/email_template/template_name/:template_name', (req, res, next) => {
-    const data = req.body;
-    const template_name = req.params.template_name;
-    if(!template_name){
-        console.warn('template_name can not be empty');
-        res.status(412).send({status: 'template_name empty'});
-    }
-    return contract_sign.update_template('emails', template_name, data)
-        .then(result => {
-            res.status(200).send({status: 'OK'});
-            return result;
-        })
-        .catch(next);
-});
-
-
-// return all email templates
-app.get('/am/email_template', (req, res, next) => {
-    return contract_sign.get_all_templates('emails')
-        .then(result => {
-            res.status(200).send(result);
-            return result;
-        })
-        .catch(next);
-});
-
-app.get('/am/email_template/template_name/:template_name', (req, res, next) => {
-    const template_name = req.params.template_name;
-    if(!template_name){
-        console.warn('template_name can not be empty');
-        res.status(412).send({status: 'template_name empty'});
-    }
-    return contract_sign.get_message_template('emails', template_name)
-        .then(result => {
-            res.status(200).send(result);
-            return result;
-        })
-        .catch(next);
-});
-
-app.delete('/am/email_template/template_name/:template_name', (req, res, next) => {
-    const template_name = req.params.template_name;
-    if(!template_name){
-        console.warn('template_name can not be empty');
-        res.status(412).send({status: 'template_name empty'});
-    }
-    return contract_sign.delete_template('emails', template_name)
-        .then(result => {
-            res.status(200).send({status: 'deleted'});
-            return result;
-        })
-        .catch(next);
-});
 
 app.post('/am/template', (req, res, next) => {
     const data = req.body;
@@ -1249,6 +1190,23 @@ app.get('/am/post_perf/brand_campaign_id/:brand_campaign_id', (req, res, next)=>
             return results;
         })
         .catch(next);
+});
+
+
+// Only works for Shopify stores.
+app.get('/am/tracking_url/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
+    const idToken = req.headers.authorization;
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    return campaign.register_tracking_url(idToken, account_id, brand_campaign_id)
 });
 
 

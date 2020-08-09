@@ -7,7 +7,9 @@ const path = require('path');
 const PERCENTAGE_RATE = 'commission_per_sales_campaign';
 const FIXED_RATE = 'one_time_commission_campaign';
 const GENERIC_INF_CREATED_CAMPAIGN = 'generic_campaign';
+
 const BRAND_CAMPAIGN_COLLECTIONS = 'brand_campaigns';
+const INFLUENCER_CAMPAIGN_COLLECTIONS = 'campaigns';
 const INFLUENCER_COLLECTIONS = 'influencers';
 
 const INFLUENCER_RECOMMENDED = 'Recommended';
@@ -111,6 +113,17 @@ function amGetAllBrandCampaign() {
             });
             console.debug('Found', campaigns.length, 'campaigns in /campaign GET');
             return campaigns;
+        });
+}
+
+
+function amGetInfCampaigns(brand_campaign_id) {
+    console.info('Get all active influencer campaigns.');
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
+        .then(snapshot => {
+            const brand_campaign_data = snapshot.data();
+            console.info('Obtained collaborating influencer information', brand_campaign_data.inf_campaign_dict);
+            return brand_campaign_data.inf_campaign_dict;
         });
 }
 
@@ -622,7 +635,7 @@ async function listBrandCampaignsInf(uid, idToken, next){
 
 async function get_referral_url(idToken, campaign_data, next){
     let response_data = {};
-    await fetch('https://api.lifo.ai/influencer/lifo_tracker_id', {
+    await fetch('https://api.lifo.ai/influencer/lifo_tracking', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -640,6 +653,53 @@ async function get_referral_url(idToken, campaign_data, next){
         })
         .catch(next);
     return response_data;
+}
+
+
+// This is recommended to be used instead of get_referral_url to allow better workflow.
+async function assign_referral_url(idToken, contract_data, next){
+    let response_data = {};
+    await fetch('https://api.lifo.ai/am/lifo_tracking', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: idToken,
+        },
+        body: JSON.stringify(contract_data),
+    })
+        .then(response => {
+            if (response.statusCode > 299){
+                console.error('failed to retrieve referral url with statusCode', response.statusCode, response.statusText);
+                return new functions.https.HttpsError('not-found','failed to get matched shops');
+            }
+            response_data = response.json();
+            return response_data;
+        })
+        .catch(next);
+    return response_data;
+}
+
+async function register_tracking_url(idToken, account_id, brand_campaign_id){
+    let brand_id = null;
+    await db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
+        .then(snapshot => {
+            const data = snapshot.data();
+            brand_id = data.brand_id;
+            return brand_id;
+        });
+    return access_influencer_subcollection(brand_campaign_id).doc(account_id).get()
+        .then(async snapshot => {
+            const contract_data = snapshot.data();
+            const data = {
+                fixed_commission: contract_data.fixed_commission,
+                percentage_commission: contract_data.percentage_commission,
+                brand_campaign_id: contract_data.brand_campaign_id,
+                account_id,
+                brand_id,
+            };
+            const tracking_url = await assign_referral_url(idToken, data, next);
+            return tracking_url;
+        });
 }
 
 
@@ -945,12 +1005,14 @@ module.exports = {
     listBrandCampaignForBrand,
     getBrandCampaignForBrand,
     amGetAllBrandCampaign,
+    amGetInfCampaigns,
     updateBrandCampaign,
     deleteBrandCampaign,
     endBrandCampaign,
     totalInfCount,
     add_recommended_influencers,
     access_influencer_subcollection,
+    register_tracking_url,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

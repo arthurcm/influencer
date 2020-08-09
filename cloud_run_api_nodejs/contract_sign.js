@@ -340,6 +340,55 @@ function getSignedContract(signature_request_id){
     });
 }
 
+async function create_campaign_for_inf(brand_campaign_id, account_id) {
+    const inf_ref = campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id);
+    let contract_data = null;
+    await inf_ref.get()
+        .then(snapshot => {
+            if (snapshot) {
+                contract_data = snapshot.data();
+            }
+            return contract_data;
+        });
+    const brand_campaigns_ref = db.collection(campaign.BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
+    return brand_campaigns_ref.get()
+        .then((snapshot) => {
+            const brand_campaign_data = snapshot.data();
+
+            // Logic is the same as signupToBrandCampaign() which is to be deprecated.
+            // this section handles the influencers for brand side of the campaign.
+            let collaborating_influencers = brand_campaign_data.collaborating_influencers;
+            if (!collaborating_influencers){
+                collaborating_influencers = [];
+            }else if(collaborating_influencers.includes(account_id)){
+                console.debug('Influencer has already signed up');
+                return null;
+            }
+            collaborating_influencers.push(account_id);
+            const uniq_inf = [...new Set(collaborating_influencers)];
+            // brand_campaign_data.collaborating_influencers = uniq;
+
+            brand_campaign_data.commission_percentage = contract_data.percentage_commission;
+            brand_campaign_data.commission_dollar = contract_data.fixed_commission;
+            console.info('Creating new campaign using data', brand_campaign_data);
+            const results = campaign.createCampaign(brand_campaign_data, account_id, false);
+
+            const batch = results.batch_promise;
+
+            // unique influencers are only updated to brand side campaign and not influencer side.
+            batch.set(brand_campaigns_ref, {collaborating_influencers: uniq_inf}, {merge: true});
+
+            // when influencers sign up to a campaign, save the influencer campaign id pairs.
+            let inf_campaign_dict = brand_campaign_data.inf_campaign;
+            if (!inf_campaign_dict) {
+                inf_campaign_dict = {};
+            }
+            inf_campaign_dict[account_id] = results.campaign_id;
+            batch.set(brand_campaigns_ref, {inf_campaign_dict}, {merge: true});
+            return batch;
+        });
+}
+
 async function signature_complete(brand_campaign_id, signature_id, is_brand){
     let signature_id_field_name = 'inf_signature_id';
     if(is_brand){
@@ -366,9 +415,14 @@ async function signature_complete(brand_campaign_id, signature_id, is_brand){
             brand_signing_status: CONTRACT_SIGNED,
         });
     }
-    return inf_ref.update({
-        inf_signing_status: CONTRACT_SIGNED,
-    });
+    return create_campaign_for_inf(brand_campaign_id, inf_doc_id)
+        .then(batch_promise => {
+            if(!batch_promise){
+                return batch_promise;
+            }
+            batch_promise.update(inf_ref, {inf_signing_status: CONTRACT_SIGNED});
+            return batch_promise.commit();
+        });
 };
 
 function update_status(brand_campaign_id, account_id, status_str){
@@ -392,37 +446,15 @@ function make_offer(brand_campaign_id, account_id, data){
 };
 
 
-function create_email_template(data){
-    return db.collection('emails').doc(data.template_name).set(data);
-}
-
-
 function create_message_template(data){
     return db.collection(data.template_type).doc(data.template_name).set(data);
 }
 
 
-function get_email_template(template_name){
-    return db.collection('emails').doc(template_name).get();
-}
-
 function get_message_template(template_type, template_name){
     return db.collection(template_type).doc(template_name).get();
 }
 
-function get_all_email_template(){
-    return db.collection('emails').get()
-        .then(snapshots => {
-            const templates = [];
-            snapshots.forEach(snapshot => {
-                const data = snapshot.data();
-                if(data.template_name){
-                    templates.push(data);
-                }
-            })
-            return templates;
-        });
-}
 
 function get_all_templates(template_type){
     return db.collection(template_type).get()
@@ -438,16 +470,8 @@ function get_all_templates(template_type){
         });
 }
 
-function delete_email_template(template_name){
-    return db.collection('emails').doc(template_name).delete();
-}
-
 function delete_template(template_type, template_name){
     return db.collection(template_type).doc(template_name).delete();
-}
-
-function update_email_template(template_name, data){
-    return db.collection('emails').doc(template_name).set(data, {merge: true});
 }
 
 
@@ -524,11 +548,6 @@ module.exports = {
     signature_complete,
     update_status,
     make_offer,
-    create_email_template,
-    update_email_template,
-    get_email_template,
-    get_all_email_template,
-    delete_email_template,
     create_message_template,
     get_message_template,
     update_template,

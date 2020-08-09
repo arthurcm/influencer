@@ -300,7 +300,68 @@ def generate_shop_url(domain_or_url):
     return url
 
 
-@app.route("/influencer/lifo_tracker_id", methods=["POST"])
+def gen_lifo_tracker_id(account_id, contract_data):
+    """
+    Create and save tracking url for given influencer. Currently only support Shopify platform.
+    :param account_id: influencer account_id
+    :param contract_data: the data used for signing influencer-brand contract, which includes contractual details.
+    """
+
+    lifo_tracker_id = create_tracker_id(uid=account_id,
+                                        brand_campaign_id=contract_data.get('brand_campaign_id'))
+    try:
+        domain_or_url = contract_data.get('brand_id')
+        shop_url = generate_shop_url(domain_or_url)
+        if not shop_url:
+            response = flask.jsonify({'Status': 'Invalid shop url'})
+            response.status_code = 422
+            return response
+        tracking_url = f'{shop_url}/?lftracker={lifo_tracker_id}'
+        commission = contract_data.get('fixed_commission')
+        commission_type = contract_data.get('commission_type')
+        commission_percentage = contract_data.get('percentage_commission')
+        brand_campaign_id = contract_data.get('brand_campaign_id')
+        res = sql_handler.save_lifo_tracker_id(account_id, lifo_tracker_id, domain_or_url, commission, commission_type,
+                                               commission_percentage, brand_campaign_id, tracking_url)
+        if len(res) > 0:
+            logging.info(f'Data saved to cloud SQL: {tracking_url}')
+    except Exception as e:
+        logging.error(f'Saving events error: {e}')
+        response = flask.jsonify({'Status': 'Failed'})
+        response.status_code = 400
+        return response
+    return tracking_url
+
+
+@app.route("/am/lifo_tracking", methods=["POST"])
+def create_lifo_tracker_id():
+    """
+    This is the internal endpoint for creating lifo tracker id, and requires auth from Influencers.
+    The caller is currently from campaign side, where queries are sent from api_nodejs during influencer
+    signing up for brand initiated campaigns.
+    The request payload will include campaign_data as defined in campaign.js under api_nodejs.
+    """
+    contract_data = flask.request.json
+    logging.debug(f'{request.path} receiving contract data {contract_data}')
+    if not contract_data.get('brand_campaign_id'):
+        response = flask.jsonify({'Status': 'A valid brand_campaign_id is required'})
+        response.status_code = 422
+        return response
+
+    if not contract_data.get('account_id'):
+        response = flask.jsonify({'Status': 'A valid account_id is required'})
+        response.status_code = 422
+        return response
+
+    tracking_url = gen_lifo_tracker_id(contract_data.get('account_id'), contract_data)
+    if type(tracking_url) is flask.Response:
+        return tracking_url
+    response = flask.jsonify({'tracking_url': tracking_url})
+    response.status_code = 200
+    return response
+
+
+@app.route("/influencer/lifo_tracking", methods=["POST"])
 def create_lifo_tracker_id():
     """
     This is the internal endpoint for creating lifo tracker id, and requires auth from Influencers.
@@ -321,32 +382,9 @@ def create_lifo_tracker_id():
         response.status_code = 422
         return response
 
-    lifo_tracker_id = create_tracker_id(uid=uid,
-                                        brand_campaign_id=campaign_data.get('brand_campaign_id'))
-    try:
-        if from_shopify:
-            domain_or_url = campaign_data.get('brand_id')
-        else:
-            domain_or_url = campaign_data.get('website')
-        shop_url = generate_shop_url(domain_or_url)
-        if not shop_url:
-            response = flask.jsonify({'Status': 'Invalid shop url'})
-            response.status_code = 422
-            return response
-        tracking_url = f'{shop_url}/?lftracker={lifo_tracker_id}'
-        commission = campaign_data.get('commission_dollar')
-        commission_type = campaign_data.get('commission_type')
-        commission_percentage = campaign_data.get('commission_percentage')
-        brand_campaign_id = campaign_data.get('brand_campaign_id')
-        res = sql_handler.save_lifo_tracker_id(uid, lifo_tracker_id, domain_or_url, commission, commission_type,
-                                               commission_percentage, brand_campaign_id, tracking_url)
-        if len(res) > 0:
-            logging.info(f'Data saved to cloud SQL: {tracking_url}')
-    except Exception as e:
-        logging.error(f'Saving events error: {e}')
-        response = flask.jsonify({'Status': 'Failed'})
-        response.status_code = 400
-        return response
+    tracking_url = gen_lifo_tracker_id(uid, campaign_data)
+    if type(tracking_url) is flask.Response:
+        return tracking_url
     response = flask.jsonify({'tracking_url': tracking_url})
     response.status_code = 200
     return response
@@ -399,33 +437,33 @@ def get_revenue_per_shop(shop):
     return revenue_results
 
 
-@app.route("/tam/entitlement", methods=["POST"])
-def create_entitlement():
-    """
-    TODO: create internal TAM type accounts as internal tool to create entitlements,
-    so that business team can help operate POC.
-    This is an internal API for TAM to create entitlement records.
-    This should be replaced with matching algorithm with human supervision in near future
-    before GA. Currently this assumes manual input of entitlement data (from BD and sales team)
-    before each POC.
-    :return: list of matched "shop" along with potential commission information (to be consumed)
-    """
-    uid = flask.session['uid']
-    user = auth.get_user(uid)
-    data = flask.request.json
-    logging.info(f'Receiving request from {user} with data {data}')
-    influencer_email = data.get('influencer_email')
-    shop = data.get('shop')
-    if not influencer_email or not checkers.is_email(influencer_email)\
-            or not shop:
-        logging.error(f'Invalid email or shop')
-        response = flask.jsonify({'Status': 'Need valid email and shop'})
-        response.status_code = 422
-        return response
-    res = sql_handler.save_campaign_entitlement(influencer_email, shop, data.get('commission'))
-    response = flask.jsonify(res)
-    response.status_code = 200
-    return response
+# @app.route("/tam/entitlement", methods=["POST"])
+# def create_entitlement():
+#     """
+#     TODO: create internal TAM type accounts as internal tool to create entitlements,
+#     so that business team can help operate POC.
+#     This is an internal API for TAM to create entitlement records.
+#     This should be replaced with matching algorithm with human supervision in near future
+#     before GA. Currently this assumes manual input of entitlement data (from BD and sales team)
+#     before each POC.
+#     :return: list of matched "shop" along with potential commission information (to be consumed)
+#     """
+#     uid = flask.session['uid']
+#     user = auth.get_user(uid)
+#     data = flask.request.json
+#     logging.info(f'Receiving request from {user} with data {data}')
+#     influencer_email = data.get('influencer_email')
+#     shop = data.get('shop')
+#     if not influencer_email or not checkers.is_email(influencer_email)\
+#             or not shop:
+#         logging.error(f'Invalid email or shop')
+#         response = flask.jsonify({'Status': 'Need valid email and shop'})
+#         response.status_code = 422
+#         return response
+#     res = sql_handler.save_campaign_entitlement(influencer_email, shop, data.get('commission'))
+#     response = flask.jsonify(res)
+#     response.status_code = 200
+#     return response
 
 
 @app.route('/brand/revenue', methods=['GET'])
