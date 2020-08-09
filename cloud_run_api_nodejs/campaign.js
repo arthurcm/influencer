@@ -952,6 +952,7 @@ module.exports = {
     add_recommended_influencers,
     access_influencer_subcollection,
     GENERIC_INF_CREATED_CAMPAIGN,
+    BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,
     PERCENTAGE_RATE,
     BRAND_CHOSEN,

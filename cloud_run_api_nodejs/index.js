@@ -18,6 +18,7 @@ const db = admin.firestore();
 
 const campaign = require('./campaign');
 const contract_sign = require('./contract_sign');
+const reporting = require('./reporting')
 
 
 // middleware for token verification
@@ -1200,6 +1201,51 @@ app.put('/share/influencer_offer', (req, res, next) => {
                 res.status(405).send({error: 'Influencer in contract signing status, cannot modify campaign details.'});
             }
             res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
+
+
+app.post('/am/post_perf', (req, res, next)=>{
+    const data = req.body;
+    if(!data.brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        return res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!data.account_id){
+        console.warn('account_id can not be empty');
+        return res.status(412).send({status: 'account_id empty'});
+    }
+
+    if(!data.likes){
+        console.warn('likes can not be empty');
+        return res.status(412).send({status: 'likes empty'});
+    }
+
+    if(!data.comments){
+        console.warn('comments can not be empty');
+        return res.status(412).send({status: 'comments empty'});
+    }
+
+    return reporting.reportPostingPerformance(data)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
+
+
+app.get('/am/post_perf/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return reporting.campaignPerformance(brand_campaign_id)
+        .then(results => {
+            res.status(200).send(results);
             return results;
         })
         .catch(next);

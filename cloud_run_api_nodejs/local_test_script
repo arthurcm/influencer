@@ -8,9 +8,11 @@ PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CO
 To deploy api-nodejs with service account access to secret manager:
 gcloud run deploy api-nodejs --image gcr.io/influencer-272204/api_nodejs --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
 
-
 local test create campaign:
 curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" http://localhost:9090/create_campaign -X POST -d @create_campaign_local_test.json
+
+test add influencer campaign perf:
+curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" -X POST http://localhost:9090/am/post_perf/ -d @influencer_perf.json
 
 Test on cloud run:
 curl  -H "Content-Type: application/json" -H "Authorization:<idToken>"" -X PUT http://localhost:9090/finalize_media_draft/campaign_id/Hi4ZBC0bofNhjSc9uoUG/history_id/JgxTvni4tUKsM34oAU1W

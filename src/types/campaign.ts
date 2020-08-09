@@ -30,8 +30,6 @@ export interface CampaignDetail {
     contacts: string;
     contact_name: string;
     contact_email: string;
-    commission_dollar?: number;
-    commission_percent?: number;
     milestones?: string[];
     donts?: string[];
     requirements?: string[];
@@ -49,6 +47,17 @@ export interface CampaignDetail {
     tracking_url?: string;
     short_tracking_url?: string;
     is_final?: boolean;
+    campaign_type: string;
+    commission_dollar?: number;
+    commission_percent?: number;
+    product_name: string;
+    product_price: number;
+    unit_cost: number;
+    amazon_url?: string;
+    number_of_posts: number;
+    estimated_total_cost: number;
+    campaign_coupon_code?: string;
+    coupon_discount_percentage?: number;
 }
 
 export interface CampaignExtraInfo {
