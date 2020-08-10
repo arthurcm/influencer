@@ -38,7 +38,11 @@ async function campaignPerformance(brand_campaign_id){
                 total_comments += cur_perf.comments;
                 total_commission += cur_perf.commission;
             }
-            const product_cost = campaign_data.unit_cost * campaign_data.number_of_posts;
+            let unit_cost = campaign_data.unit_cost;
+            if(!unit_cost){
+                unit_cost = campaign_data.product_price * 0.5 || 0;
+            }
+            const product_cost = unit_cost * campaign_data.number_of_posts;
             const amount_spent = product_cost + total_commission;
             let cost_per_like = null;
             let cost_per_engagement = null;

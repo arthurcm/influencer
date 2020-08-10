@@ -117,7 +117,6 @@ app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
 });
 
 app.get('/common/campaign/campaign_id/:campaign_id', (req, res, next) => {
-    const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
     console.debug('Receiving campaign id for /common/campaign/', campaign_id);
     if(!campaign_id){
