@@ -1177,13 +1177,24 @@ app.post('/am/post_perf', (req, res, next)=>{
 });
 
 
-app.get('/am/post_perf/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
+app.get('/brand/post_perf/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     if(!brand_campaign_id){
         console.warn('brand_campaign_id can not be empty');
         res.status(412).send({status: 'brand_campaign_id empty'});
     }
     return reporting.campaignPerformance(brand_campaign_id)
+        .then(results => {
+            res.status(200).send(results);
+            return results;
+        })
+        .catch(next);
+});
+
+
+app.get('/brand/post_perf/brand_id/:brand_id', (req, res, next)=>{
+    const brand_id = req.params.brand_id;
+    return reporting.campaignDashboard(brand_id)
         .then(results => {
             res.status(200).send(results);
             return results;
