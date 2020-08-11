@@ -559,6 +559,9 @@ def send_email_to_brand():
         body = data.get('body')
         body = body.replace("$(receiver_name)", data.get('to_name'))
         draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
+
+        # bcc our Lifo's internal support account to allow better tracking.
+        draft.bcc = [{'email': 'customer@lifo.ai', 'name': 'lifo customer support'}]
         if data.get('file_id'):
             file = nylas.files.get(data.get('file_id'))
             draft.attach(file)
@@ -636,6 +639,9 @@ def send_single_email_with_template():
         body = body.replace("$(brand_campaign_id)", brand_campaign_id)
 
         draft.to = [{'email': data.get('to_email'), 'name': data.get('to_name')}]
+
+        # bcc our Lifo's internal support account to allow better tracking.
+        draft.bcc = [{'email': 'customer@lifo.ai', 'name': 'lifo customer support'}]
         if data.get('file_id'):
             file = nylas.files.get(data.get('file_id'))
             draft.attach(file)
@@ -656,29 +662,30 @@ def send_single_email_with_template():
             }
         """
         inf_account_id = data.get('account_id')
-        influencer_ref = db.document(BRAND_CAMPAIGN_COLLECTIONS,
-                                     brand_campaign_id,
-                                     INFLUENCER_COLLECTIONS,
-                                     inf_account_id)
-        influencer_ref.update(
-            {
-                'inf_contacting_status': 'Email sent'
+        if inf_account_id != 'lifo' and data.get('to_name') != 'lifo':
+            influencer_ref = db.document(BRAND_CAMPAIGN_COLLECTIONS,
+                                         brand_campaign_id,
+                                         INFLUENCER_COLLECTIONS,
+                                         inf_account_id)
+            influencer_ref.set(
+                {
+                    'inf_contacting_status': 'Email sent'
+                },
+                merge=True
+            )
+            emails_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS,
+                                       brand_campaign_id,
+                                       INFLUENCER_COLLECTIONS,
+                                       inf_account_id,
+                                       EMAILS_COLLECTIONS)
+            email_history = {
+                'ts': firestore.SERVER_TIMESTAMP,
+                'body': draft.body,
+                'subject': draft.subject,
+                'to': draft.to,
+                'file_id': data.get('file_id')
             }
-        )
-        emails_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS,
-                                   brand_campaign_id,
-                                   INFLUENCER_COLLECTIONS,
-                                   inf_account_id,
-                                   EMAILS_COLLECTIONS)
-        email_history = {
-            'ts': firestore.SERVER_TIMESTAMP,
-            'body': draft.body,
-            'subject': draft.subject,
-            'to': draft.to,
-            'file_id': data.get('file_id')
-        }
-        emails_ref.document().set(email_history)
-
+            emails_ref.document().set(email_history)
         draft.send()
         logging.info('email sent successfully')
         response = flask.jsonify('email sent successfully')

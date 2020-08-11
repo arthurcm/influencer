@@ -139,7 +139,7 @@ function campaignDashboard(uid){
                 total_likes,
                 total_comments,
                 total_engagements,
-                total_posts,
+                posts: total_posts,
                 amount_spent: total_amount_spent,
             };
             console.info('Final dashboard results is', data);
