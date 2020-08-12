@@ -20,6 +20,8 @@ const campaign = require('./campaign');
 const contract_sign = require('./contract_sign');
 const reporting = require('./reporting')
 
+const CLIENT_ONBOARDING_EMAILS = ['arthur.meng@lifo.ai', 'alex.niu@lifo.ai', 'shuo.shan@lifo.ai', 'claire.zhou@lifo.ai', 'test@lifo.ai'];
+
 
 // middleware for token verification
 app.use((req, res, next) => {
@@ -585,6 +587,37 @@ app.post('/brand/campaign', (req, res, next) => {
 });
 
 
+app.post('/brand/targeting_info', (req, res, next) => {
+    console.debug('/brand/targeting_info received a request', req.body);
+    const data = req.body;
+    if (!data.brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return campaign.saveTargetingInfo(data.brand_campaign_id, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.get('/brand/targeting_info/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id
+    if (!brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return campaign.getTargetingInfo(brand_campaign_id)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
 app.get('/brand/campaign', (req, res, next) => {
     const uid = res.locals.uid;
     return campaign.listBrandCampaignForBrand(uid)
@@ -609,7 +642,7 @@ app.get('/am/campaign', (req, res, next) => {
 // This is to get all influencers who are at post-contract stage.
 // Then we call '/common/campaign/campaign_id/:campaign_id to get specific campaign histories.
 app.get('/am/inf_campaigns/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
-    const brand_campaign_id = req.params.brand_campaign_id
+    const brand_campaign_id = req.params.brand_campaign_id;
     return campaign.amGetInfCampaigns(brand_campaign_id)
         .then(result => {
             res.status(200).send(result);
@@ -1217,6 +1250,45 @@ app.get('/am/tracking_url/brand_campaign_id/:brand_campaign_id/account_id/:accou
         res.status(412).send({status: 'account_id empty'});
     }
     return campaign.register_tracking_url(idToken, account_id, brand_campaign_id)
+        .then(results => {
+            res.status(200).send(results);
+            return results;
+        })
+        .catch(next);
+});
+
+
+app.post('/am/register_brand', (req, res, next)=>{
+    const am_email = res.locals.email;
+    if(!CLIENT_ONBOARDING_EMAILS.includes(am_email)){
+        console.warn(`request to ${req.path} was rejected`);
+        return res.status(403).json({ error: 'Not authorized'});
+    }
+    const data = req.body;
+    const email = data.email;
+    const from_amazon = data.from_amazon;
+    const brand_name = data.brand_name;
+    const password = data.password;
+    const first_name = data.first_name;
+    const last_name = data.last_name;
+    if(!email){
+        console.warn('email can not be empty');
+        res.status(412).send({status: 'email empty'});
+    }
+    if(!brand_name){
+        console.warn('brand_name can not be empty');
+        res.status(412).send({status: 'brand_name empty'});
+    }
+    if(!password){
+        console.warn('password can not be empty');
+        res.status(412).send({status: 'password empty'});
+    }
+    return reporting.registerBrandAccount(email, password, from_amazon, brand_name, first_name, last_name)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
 });
 
 

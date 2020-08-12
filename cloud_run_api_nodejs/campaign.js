@@ -860,6 +860,22 @@ function getBrandCampaignForBrand(campaign_id){
 }
 
 
+function saveTargetingInfo(brand_campaign_id, data){
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id)
+        .update({
+            targeting_info: data,
+        });
+}
+
+function getTargetingInfo(brand_campaign_id){
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
+        .then(snapshot => {
+            const campaign_data = snapshot.data();
+            return campaign_data.targeting_info;
+        });
+}
+
+
 function updateBrandCampaign(data, uid, brand_campaign_id){
     if(!brand_campaign_id){
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
@@ -1013,6 +1029,8 @@ module.exports = {
     add_recommended_influencers,
     access_influencer_subcollection,
     register_tracking_url,
+    saveTargetingInfo,
+    getTargetingInfo,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

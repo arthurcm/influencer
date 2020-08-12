@@ -145,10 +145,36 @@ function campaignDashboard(uid){
             console.info('Final dashboard results is', data);
             return data;
         });
-};
+}
+
+
+function registerBrandAccount(email, password, from_amazon, brand_name, first_name, last_name){
+    const customClaims = {
+        store_account: true,
+        from_shopify:false,
+        from_amazon,
+        store_email: email,
+        store_name: brand_name,
+    };
+    const display_name = first_name || brand_name;
+    return admin.auth().createUser({
+        uid: brand_name,
+        email,
+        password,
+        displayName: display_name,
+    })
+        .then(userRecord => {
+            // See the UserRecord reference doc for the contents of userRecord.
+            console.log('Successfully created new user:', userRecord.uid);
+            return admin.auth().setCustomUserClaims(userRecord.uid, customClaims).then(() => {
+                console.info('Successfully registered brand account', brand_name);
+            });
+        });
+}
 
 module.exports = {
     reportPostingPerformance,
     campaignPerformance,
     campaignDashboard,
+    registerBrandAccount,
 };
