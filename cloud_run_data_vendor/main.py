@@ -4,6 +4,7 @@ import os
 import flask
 import json
 import datetime
+import time
 
 from validator_collection import checkers
 import shopify
@@ -174,21 +175,26 @@ def instagram_report():
         force_update = False
 
     profile = None
+
     if not force_update:
         profile, update_time = sql_handler.get_profile(userId, platform='instagram')
         logging.info(f'Not forcing profile update, and obtained profile {profile}')
     if not profile or len(profile) == 0:
-        logging.info(f'Fetching profile from Modash for userid {userId}')
-        url = f'{MODASH_API_ENDPINT}/instagram/profile/{userId}/report'
-        logging.info(f'Receiving request for url {url}')
-        headers = {'Authorization': MODASH_AUTH_HEADER}
-        profile_res = requests.get(url, headers=headers)
-        profile_json = profile_res.json()
-        logging.info(f'Modash instagram profile response is: {profile_res.json()}')
-        error = profile_json.get('error')
-        if not error:
+        for i in range(0, 5):
+            logging.info(f'Fetching profile from Modash for userid {userId}: # {i+1}th try')
+            url = f'{MODASH_API_ENDPINT}/instagram/profile/{userId}/report'
+            logging.info(f'Receiving request for url {url}')
+            headers = {'Authorization': MODASH_AUTH_HEADER}
+            profile_res = requests.get(url, headers=headers)
+            profile_json = profile_res.json()
+            logging.info(f'Modash instagram profile response is: {profile_res.json()}')
             profile = profile_json.get('profile')
-            sql_handler.save_profile(userId, 'instagram', profile)
+            if profile:
+                sql_handler.save_profile(userId, 'instagram', profile)
+                break
+            else:
+                logging.warning('Modash API not responding, retrying')
+                time.sleep(1)
     if profile:
         response = flask.jsonify(profile)
         response.status_code = 200
@@ -198,7 +204,7 @@ def instagram_report():
     return response
 
 
-@app.route("/am/instagram/interests", methods=["GET"])
+@app.route("/brand/instagram/interests", methods=["GET"])
 def instagram_interests():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~interests/get
@@ -208,7 +214,7 @@ def instagram_interests():
     return modash_instagram_utils('interests')
 
 
-@app.route("/am/instagram/brands", methods=["GET"])
+@app.route("/brand/instagram/brands", methods=["GET"])
 def instagram_brands():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~brands/get
@@ -218,7 +224,7 @@ def instagram_brands():
     return modash_instagram_utils('brands')
 
 
-@app.route("/am/instagram/languages", methods=["GET"])
+@app.route("/brand/instagram/languages", methods=["GET"])
 def instagram_languages():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~languages/get
@@ -230,7 +236,7 @@ def instagram_languages():
     return modash_instagram_utils('languages')
 
 
-@app.route("/am/instagram/locations", methods=["GET"])
+@app.route("/brand/instagram/locations", methods=["GET"])
 def instagram_locations():
     """
     https://docs.modash.io/#tag/Instagram/paths/~1instagram~1locations/get
@@ -280,6 +286,9 @@ def shopify_products():
         response.status_code = 404
         return response
     shop_access_token = res
+
+    #TODO: no need to get shop info every time.
+    shop_info = get_shopify_shop_info(shop)
 
     if request.method == 'PUT':
         url = f'https://{shop}/admin/api/{API_VERSION}/products.json'

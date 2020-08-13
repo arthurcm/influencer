@@ -708,6 +708,10 @@ app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next
             await db.collection('brands').doc(brand_campaigns.brand_id)
                 .get()
                 .then(snapShot => {
+
+                    // TODO: FIX bug!!!
+                    // TODO: FIX bug!!!
+                    // TODO: FIX bug!!!
                     shop_info = snapShot.data().shop;
                     console.log('Getting shop info:', shop_info);
                     return shop_info;

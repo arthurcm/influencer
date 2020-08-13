@@ -221,7 +221,7 @@ def authorize():
         return response
     nylas_client = APIClient(app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
                              app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"])
-    if not nylas_code and not access_token:
+    if not nylas_code:
         scope = flask.request.args.get('scope')
         if not scope:
             logging.error('Need a valid scope string, currently supporting: calendar,email.send,email.modify')
@@ -237,35 +237,32 @@ def authorize():
         )
         return flask.redirect(auth_url)
     else:
-        if nylas_code and not access_token:
-            # note, here we have not handled the declined auth case
-            logging.info(f'authentication success with code: {nylas_code}')
-            access_token = nylas_client.token_for_code(nylas_code)
-            nylas_client = APIClient(
-                app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
-                app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
-                access_token=access_token,
-            )
+        # note, here we have not handled the declined auth case
+        logging.info(f'authentication success with code: {nylas_code}')
+        access_token = nylas_client.token_for_code(nylas_code)
+        nylas_client = APIClient(
+            app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+            app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+            access_token=access_token,
+        )
 
-            # Revoke all tokens except for the new one
-            nylas_client.revoke_all_tokens(keep_access_token=access_token)
+        # Revoke all tokens except for the new one
+        nylas_client.revoke_all_tokens(keep_access_token=access_token)
 
-            account = nylas_client.account
-            nylas_account_id = account.id
+        account = nylas_client.account
+        nylas_account_id = account.id
 
-            uid = flask.session['uid']
-            scope = flask.session['scope']
-            logging.info(f'handling auth for firebase uid: {uid} for scope {scope} and nylas id {nylas_account_id}')
+        uid = flask.session['uid']
+        scope = flask.session['scope']
+        logging.info(f'handling auth for firebase uid: {uid} for scope {scope} and nylas id {nylas_account_id}')
 
-            # Note: here we automatically handle the Nylas id changing case, as each user is recognized by their firebase
-            # uid, and any new Nylas ids will be overwritten. This does bring in limitations: a user can only authorize one
-            # Calendar account, which is not an issue for foreseeable future.
-            sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id)
-        else:
-            logging.info(f'{uid} has cached access_token {access_token}')
-        response = flask.jsonify({'status': 'OK'})
-        response.status_code = 200
-        return response
+        # Note: here we automatically handle the Nylas id changing case, as each user is recognized by their firebase
+        # uid, and any new Nylas ids will be overwritten. This does bring in limitations: a user can only authorize one
+        # Calendar account, which is not an issue for foreseeable future.
+        sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id)
+    response = flask.jsonify({'status': 'OK'})
+    response.status_code = 200
+    return response
 
 
 @app.route("/revoke_auth", methods=["DELETE"])
@@ -308,24 +305,25 @@ def verify_auth_status():
         response = flask.jsonify({'status': 'no auth'})
         response.status_code = 402
         return response
-    nylas_client = APIClient(
-        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
-        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
-        access_token=access_token,
-    )
-    sync_state = nylas_client.account.sync_state
-    logging.info(f'Current syncing status is {sync_state}')
-    if sync_state == 'running':
+    try:
+        nylas_client = APIClient(
+            app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+            app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+            access_token=access_token,
+        )
+        sync_state = nylas_client.account.sync_state
+        logging.info(f'Current syncing status is {sync_state}')
         logging.info(f'The account {uid} is in sync')
         response = flask.jsonify('OK')
         response.status_code = 200
         return response
-    else:
+    except Exception as e:
+
         # Here we simplify the status into binary cases.
         # for more statuses, check https://docs.nylas.com/reference#account-sync-status
         logging.warning(f'The account {uid} need resync')
         response = flask.jsonify({'status': 'Need resync'})
-        response.status_code = 402
+        response.status_code = 200
         return response
 
 
