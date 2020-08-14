@@ -4,5 +4,9 @@
   "brand_name": "arthur_shop",
   "first_name": "Arthur",
   "last_name": "Meng",
-  "password": "password"
+  "password": "password",
+  "address1": "123 fake st",
+  "city": "False city",
+  "state": "California",
+  "country": "USA"
 }

@@ -704,15 +704,13 @@ app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next
             console.debug('get brand campaign results', result);
             const brand_campaigns = result[0];
             const discovered_infs = result[1];
-            let shop_info = null;
+            let shop_info = {};
             await db.collection('brands').doc(brand_campaigns.brand_id)
                 .get()
                 .then(snapShot => {
-
-                    // TODO: FIX bug!!!
-                    // TODO: FIX bug!!!
-                    // TODO: FIX bug!!!
-                    shop_info = snapShot.data().shop;
+                    if(snapShot.data().shop){
+                        shop_info = snapShot.data().shop;
+                    }
                     console.log('Getting shop info:', shop_info);
                     return shop_info;
                 });
@@ -1287,9 +1285,10 @@ app.post('/am/register_brand', (req, res, next)=>{
         console.warn('password can not be empty');
         res.status(412).send({status: 'password empty'});
     }
-    return reporting.registerBrandAccount(email, password, from_amazon, brand_name, first_name, last_name)
+    return reporting.registerBrandAccount(email, password, from_amazon, brand_name, first_name, last_name, data)
         .then(results => {
             res.status(200).send({status: 'OK'});
+
             return results;
         })
         .catch(next);

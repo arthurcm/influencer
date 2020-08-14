@@ -148,7 +148,7 @@ function campaignDashboard(uid){
 }
 
 
-function registerBrandAccount(email, password, from_amazon, brand_name, first_name, last_name){
+function registerBrandAccount(email, password, from_amazon, brand_name, first_name, last_name, data){
     const customClaims = {
         store_account: true,
         from_shopify:false,
@@ -166,8 +166,23 @@ function registerBrandAccount(email, password, from_amazon, brand_name, first_na
         .then(userRecord => {
             // See the UserRecord reference doc for the contents of userRecord.
             console.log('Successfully created new user:', userRecord.uid);
+            const shop_data =  {
+                email,
+                domain: data.domain || '',
+                contact_name: `${first_name} ${last_name}` || '',
+                address1 : data.address1 || '',
+                address2 : data.address2 || '',
+                city : data.city || '',
+                state : data.province || '',
+                country : data.country || '',
+            };
+            console.info('Registering brand with following information:', shop_data);
             return admin.auth().setCustomUserClaims(userRecord.uid, customClaims).then(() => {
                 console.info('Successfully registered brand account', brand_name);
+                return db.collection('brands').doc(brand_name)
+                    .set({
+                        shop: shop_data,
+                    });
             });
         });
 }
