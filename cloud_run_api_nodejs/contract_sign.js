@@ -183,7 +183,6 @@ function saveSignatureResponsedata(signature_info, response, brand_campaign_id, 
         signature_request_id,
         inf_signature_id,
         brand_signature_id,
-        am_signature_id,
     }, {merge: true});
     return {
         am_signature_id,
@@ -209,37 +208,22 @@ function findSignatureIdWithEmailAndRole(signatures, email, role){
     return signature_id;
 }
 
-function getSignatureID(email, brand_campaign_id, inf_email){
-    return db.collection(CONTRACTS_COLLECTION_NAME)
-        .where('brand_campaign_id', '==', brand_campaign_id)
+function getSignatureIDNew(brand_campaign_id, inf_email, cur_role){
+    return campaign.access_influencer_subcollection(brand_campaign_id)
+        .where('email', '==', inf_email)
         .get()
         .then(snapshot => {
             let signature_id = null;
             snapshot.docs.forEach(doc => {
-                const doc_snap = doc.data();
-                const signatures = doc_snap.signatures;
-                let cur_role = INFLUENCER_ROLE;
-
-                // if inf_email is not None, then we are finding the proper signature id for the brand-inf pair.
-                // so we will need to go through all contracts and find the correct contract first.
-                let found_contract = true;
-                if(inf_email){
-
-                    // when inf_email is present, current use has to be Brand.
-                    cur_role = BRAND_ROLE;
-                    found_contract = false;
-                    const inf_sig_id = findSignatureIdWithEmailAndRole(signatures, inf_email, INFLUENCER_ROLE);
-                    if(inf_sig_id){
-                        found_contract= true;
-                    }
+                const data = doc.data();
+                console.info('found contract data', data);
+                if (cur_role === BRAND_ROLE) {
+                    signature_id = data.brand_signature_id;
+                } else {
+                    signature_id = data.inf_signature_id;
                 }
-                if(!found_contract){
-                    return;
-                }
-                signature_id = findSignatureIdWithEmailAndRole(signatures, email, cur_role);
-                if(!signature_id){
-                    console.warn('No signer was found to match the email', email);
-                }
+                console.info('found signature id for', inf_email, ' id is ', signature_id);
+                return signature_id;
             });
             return signature_id;
         });
@@ -311,8 +295,8 @@ function getAllContractsBrand(brand_campaign_id){
         });
 };
 
-function getEmbeddedSignUrl(email, brand_campaign_id, inf_email){
-    return getSignatureID(email, brand_campaign_id, inf_email)
+function getEmbeddedSignUrl(brand_campaign_id, inf_email, role){
+    return getSignatureIDNew(brand_campaign_id, inf_email, role)
         .then(signature_id =>{
             if(!signature_id){
                 return new functions.https.HttpsError('failed-precondition', 'signature not found.');
@@ -514,7 +498,7 @@ function get_influencer_view(brand_campaign_id, account_id){
             const data = snapshot.data();
             const influencer_public_profile = {
                 inf_name : data.inf_name || '',
-                inf_email : data.inf_email,
+                inf_email : data.email,
                 inf_phone: data.inf_phone || '',
                 influencer_address1: data.influencer_address1 || '',
                 influencer_address2: data.influencer_address2 || '',
@@ -563,4 +547,6 @@ module.exports = {
     update_product_message,
     update_comp_message,
     hellosign,
+    INFLUENCER_ROLE,
+    BRAND_ROLE,
 };

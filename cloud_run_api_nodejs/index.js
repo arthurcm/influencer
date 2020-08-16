@@ -795,9 +795,9 @@ app.post('/signature_request/create_embedded_with_template', (req, res, next) =>
 // return the respective sign_url based on the current user
 app.get('/share/embedded/sign_url/brand_campaign_id/:brand_campaign_id/email/:email', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
-    const email = req.params.email;
-    console.debug(`/embedded/sign_url/brand_campaign_id received a brand_campaign_id ${brand_campaign_id}`);
-    return contract_sign.getEmbeddedSignUrl(email, brand_campaign_id, null)
+    const inf_mail = req.params.email;
+    console.debug(`/embedded/sign_url/brand_campaign_id received a brand_campaign_id ${brand_campaign_id} with email ${inf_mail}`);
+    return contract_sign.getEmbeddedSignUrl(brand_campaign_id, inf_mail, contract_sign.INFLUENCER_ROLE)
         .then(result => {
             res.status(200).send(result);
             return result;
@@ -819,7 +819,7 @@ app.get('/brand/embedded/sign_url/brand_campaign_id/:brand_campaign_id/inf_email
             .catch(next);
     }
     console.debug(`/embedded/sign_url/ received a brand_campaign_id ${brand_campaign_id} with inf_email ${inf_email}`);
-    return contract_sign.getEmbeddedSignUrl(email, brand_campaign_id, inf_email)
+    return contract_sign.getEmbeddedSignUrl(brand_campaign_id, inf_email, contract_sign.BRAND_ROLE)
         .then(result => {
             res.status(200).send(result);
             return result;

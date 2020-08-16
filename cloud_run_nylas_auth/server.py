@@ -660,7 +660,7 @@ def send_single_email_with_template():
             }
         """
         inf_account_id = data.get('account_id')
-        if inf_account_id != 'lifo' and data.get('to_name') != 'lifo':
+        if inf_account_id != 'lifo' and data.get('to_name') != 'lifo' and 'lifo.ai' not in data.get('to_email'):
             influencer_ref = db.document(BRAND_CAMPAIGN_COLLECTIONS,
                                          brand_campaign_id,
                                          INFLUENCER_COLLECTIONS,
