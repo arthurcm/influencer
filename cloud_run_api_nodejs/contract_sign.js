@@ -30,7 +30,7 @@ const bucket = admin.storage().bucket(BUCKET_NAME);
 // evolve into multiple ones
 const contract_type = contract_pb.ContractType.US_FIXED_COMMISSION;
 const TEMPLATE_ID = {};
-TEMPLATE_ID[contract_type] = 'da0b474680382655db0ba8f7be9739f936288602';
+TEMPLATE_ID[contract_type] = 'c90e59dd7b6deebe20f7af643ed43076742a8625';
 
 function timestampToString(ts){
     return moment.unix(ts/1000).format('MM/DD/YYYY');
@@ -47,9 +47,13 @@ function createContractFromCampaignData(data, campaign_data){
     if(data.start_date){
         start_date = data.start_date;
     }
-    const campaign_start_date = timestampToString(start_date);
     const campaignEndDateTs = data.end_time || campaign_data.end_time;
-    const campaign_end_date = timestampToString(campaignEndDateTs);
+    let campaign_start_date = timestampToString(start_date);
+    let campaign_end_date = timestampToString(campaignEndDateTs);
+    if(typeof start_date =='string'){
+        campaign_start_date = start_date;
+        campaign_end_date =  data.end_time;
+    }
     const fixed_commission = data.fixed_commission;
     const percentage_commission = data.percentage_commission;
     data.platform = platform;
@@ -76,7 +80,7 @@ function createContractFromCampaignData(data, campaign_data){
             {name: 'deliverable2', value: data.deliverable2, editor: SENDER_ROLE, required: false},
             {name: 'deliverable3', value: data.deliverable3, editor: SENDER_ROLE, required: false},
             {name: 'campaign_name', value: campaign_name, editor: SENDER_ROLE, required: false},
-            {name: 'campaign_start_date', value: campaign_start_date, editor: SENDER_ROLE, required: true},
+            // {name: 'campaign_start_date', value: campaign_start_date, editor: SENDER_ROLE, required: true},
             {name: 'campaign_end_date', value: campaign_end_date, editor: SENDER_ROLE, required: true},
             {name: 'fixed_commission', value: fixed_commission, editor: SENDER_ROLE, required: false},
             {name: 'percentage_commission', value: percentage_commission, editor: SENDER_ROLE, required: false},
@@ -249,7 +253,7 @@ function signatureRequest(data){
             const contract_data = results.contract_data;
             const inf_subcollection_ref = campaign.access_influencer_subcollection(contract_data.brand_campaign_id)
                 .doc(contract_data.account_id);
-            const contract_promise = inf_subcollection_ref.set(contract_data, {merge:true});
+            const contract_promise = inf_subcollection_ref.set({contract_data}, {merge:true});
             console.debug('Signature request options are:', opts, 'and shop email', shop_email);
             const response = await hellosign.signatureRequest.createEmbeddedWithTemplate(opts);
             return {

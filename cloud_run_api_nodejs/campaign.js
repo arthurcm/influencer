@@ -279,10 +279,10 @@ function updateCampaign(campaign_id, data, uid){
     batch.set(campaignHistoryRef, newCamp);
 
     // get the updated campaign information, and add it to influencer's profile.
-    const influencerCamRef = db.collection()
+    const influencerCamRef = db.collection(INFLUENCER_CAMPAIGN_COLLECTIONS)
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
-    batch.update(influencerCamRef, {campaign_data: newCamp});
+    batch.set(influencerCamRef, {campaign_data: newCamp}, {merge: true});
     return {
         history_id,
         batch_promise: batch,

@@ -571,10 +571,10 @@ app.post('/brand/campaign', (req, res, next) => {
     if (from_shopify){
         data.website = uid;
     }
-    if (!isValidDomain(data.website) && !validUrl.isUri(data.website)){
-        console.warn(`${req.path} Illegal website format received ${data.website} for Shopify? ${from_shopify}, with request ${data}`);
-        res.status(422).send({status: 'Illegal website format'});
-    }
+    // if (!isValidDomain(data.website) && !validUrl.isUri(data.website)){
+    //     console.warn(`${req.path} Illegal website format received ${data.website} for Shopify? ${from_shopify}, with request ${data}`);
+    //     res.status(422).send({status: 'Illegal website format'});
+    // }
     const results = campaign.createBrandCampaign(data, uid);
     const campaign_id = results.campaign_id;
     const batch = results.batch_promise;
