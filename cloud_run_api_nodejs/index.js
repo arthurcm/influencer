@@ -1137,6 +1137,18 @@ app.put('/share/influencer', (req, res, next) => {
 });
 
 
+app.get('/share/offer_avail/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    return contract_sign.get_influencer_offer_status(brand_campaign_id, account_id)
+        .then(results => {
+            res.status(200).send({status: results});
+            return results;
+        })
+        .catch(next);
+});
+
+
 // this is to allow influencers to accept/decline the campaign offer.
 app.put('/share/influencer_offer', (req, res, next) => {
     const data = req.body;

@@ -513,6 +513,19 @@ function get_influencer_view(brand_campaign_id, account_id){
 }
 
 
+function get_influencer_offer_status(brand_campaign_id, account_id){
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .get()
+        .then(snapshot => {
+            const data = snapshot.data();
+            if(data.inf_signing_status === campaign.BRAND_CHOSEN){
+                return true;
+            }
+            return false;
+        });
+}
+
+
 function update_product_message(brand_campaign_id, account_id, product_message, product_image_list){
     return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
         .set({
@@ -544,6 +557,7 @@ module.exports = {
     check_contract_signing_status,
     get_inf_status,
     get_influencer_view,
+    get_influencer_offer_status,
     update_product_message,
     update_comp_message,
     hellosign,

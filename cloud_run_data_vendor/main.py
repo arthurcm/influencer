@@ -336,7 +336,7 @@ def brand_shop_product_info():
     return shopify_products()
 
 
-def get_single_product():
+def get_single_product(external_facing=True):
     shop = flask.request.args.get('shop')
     product_id = flask.request.args.get('product_id')
     logging.info(f'Retrieving product information from shop {shop}')
@@ -353,7 +353,10 @@ def get_single_product():
     else:
         res = {'status': 'product not found'}
         response = flask.jsonify(res)
-        response.status_code = 404
+        if external_facing:
+            response.status_code = 200
+        else:
+            response.status_code = 404
     return response
 
 
@@ -362,7 +365,7 @@ def am_get_product_info():
     """
     This endpoint is called upon AM to access Shopify shop products for access_token
     """
-    return get_single_product()
+    return get_single_product(external_facing=False)
 
 
 @app.route('/brand/shopify_single_product', methods=['GET'])
