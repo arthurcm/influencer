@@ -187,9 +187,25 @@ function registerBrandAccount(email, password, from_amazon, brand_name, first_na
         });
 }
 
+function assign_affiliate_link(data){
+    return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
+        .update({affiliate_link: data.affiliate_link});
+}
+
+function get_affiliate_link(brand_campaign_id, account_id){
+    return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
+        .get()
+        .then(snapshot => {
+            const data = snapshot.data();
+            return data.affiliate_link;
+        });
+}
+
 module.exports = {
     reportPostingPerformance,
     campaignPerformance,
     campaignDashboard,
     registerBrandAccount,
+    assign_affiliate_link,
+    get_affiliate_link,
 };

@@ -1174,9 +1174,15 @@ app.put('/share/influencer_offer', (req, res, next) => {
         decline_type : data.decline_type,
         decline_text_reason : data.decline_text_reason,
     };
+
+    // this is a hack to avoid unwanted bugs during test phase.
+    let internal_test = false;
+    if(data.account_id === 'lifo' || data.account_id === 'Lifo'){
+        internal_test = true;
+    }
     return contract_sign.check_contract_signing_status(data.brand_campaign_id, data.account_id)
         .then(in_contract_status => {
-            if(!in_contract_status){
+            if(!in_contract_status && !internal_test){
                 return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
                     .set(influencer_profile, {merge:true});
             }
@@ -1302,6 +1308,51 @@ app.post('/am/register_brand', (req, res, next)=>{
             res.status(200).send({status: 'OK'});
 
             return results;
+        })
+        .catch(next);
+});
+
+
+// This is for brand and AM side to assign affiliate link to each influencer
+app.post('/brand/affiliate_link', (req, res, next) => {
+    const data = req.body;
+    if(!data.affiliate_link){
+        console.warn('affiliate_link can not be empty');
+        res.status(412).send({status: 'affiliate_link empty'});
+    }
+    if(!data.account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    if(!data.brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return reporting.assign_affiliate_link(data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
+// This is for all three sides to retrieve the affiliate link
+app.get('/common/affiliate_link/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return reporting.get_affiliate_link(brand_campaign_id, account_id)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
         })
         .catch(next);
 });
