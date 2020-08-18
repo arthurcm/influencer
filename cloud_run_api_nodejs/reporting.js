@@ -173,7 +173,7 @@ function registerBrandAccount(email, password, from_amazon, brand_name, first_na
                 address1 : data.address1 || '',
                 address2 : data.address2 || '',
                 city : data.city || '',
-                province : data.state || '',
+                province : data.province || '',
                 country : data.country || '',
                 profile_image: data.profile_image || '',
             };

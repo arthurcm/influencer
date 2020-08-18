@@ -722,7 +722,7 @@ app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next
                 address1 : shop_info.address1,
                 address2 : shop_info.address2,
                 city : shop_info.city,
-                state : shop_info.province,
+                province : shop_info.province,
                 country : shop_info.country,
             }
             brand_campaigns.shop_address = shop_address;
