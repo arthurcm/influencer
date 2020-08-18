@@ -80,7 +80,7 @@ function createContractFromCampaignData(data, campaign_data){
             {name: 'deliverable2', value: data.deliverable2, editor: SENDER_ROLE, required: false},
             {name: 'deliverable3', value: data.deliverable3, editor: SENDER_ROLE, required: false},
             {name: 'campaign_name', value: campaign_name, editor: SENDER_ROLE, required: false},
-            // {name: 'campaign_start_date', value: campaign_start_date, editor: SENDER_ROLE, required: true},
+            {name: 'campaign_start_date', value: campaign_start_date, editor: SENDER_ROLE, required: true},
             {name: 'campaign_end_date', value: campaign_end_date, editor: SENDER_ROLE, required: true},
             {name: 'fixed_commission', value: fixed_commission, editor: SENDER_ROLE, required: false},
             {name: 'percentage_commission', value: percentage_commission, editor: SENDER_ROLE, required: false},
