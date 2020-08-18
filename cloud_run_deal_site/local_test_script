@@ -1,0 +1,15 @@
+build container:
+gcloud builds submit --tag gcr.io/influencer-272204/dealsite
+
+Local testing container:
+PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/dealsite
+
+
+To deploy api-nodejs with service account access to secret manager:
+gcloud run deploy dealsite --image gcr.io/influencer-272204/dealsite --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
+
+
+get refreshed idToken:
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-NfSCj8Q0HxPuPncWv0G6W41cWLpJz_MOFZn4IRjM3JTSKduKuoZ7dz9jM1rIJcEFq1_OloUll_IPQH3k9PMMVl1HB0RQ-rQIOtO3JcAItz5-w4rtOuXZZTsi5oK8UXsRWcSGJLBrJPEifPL4066kQGNK2UQTUU6RbrktgZyxdjbLRLeMTcUEuldnKramto7xjfmR8VEFxku7Xq7_lKKnQacy6yMdg'
+
+curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd-J72Tyy6x-Oy474EXGplZYW6Q8rCd2vvMmvvpjaNYjgbsIpjYQsyAvAWppZf2EFaAMBXqPYwxzZ86sXJQWrDXkPE66_9KCP8LvJ17NJUwCg6C4S5QWhHL7ntUWkg8LxHNxy3NziCApIV9ElcE1j7TGKF4P3Iy-91TyABJUdLnnGxk-Tgg7It4UDT5FFok_Yb4Hex86JchsO7VmxSpSBnzwRMN0A'
