@@ -334,7 +334,7 @@ async function create_campaign_for_inf(brand_campaign_id, account_id) {
     await inf_ref.get()
         .then(snapshot => {
             if (snapshot) {
-                contract_data = snapshot.data();
+                contract_data = snapshot.data().contract_data;
             }
             return contract_data;
         });

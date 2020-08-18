@@ -233,6 +233,11 @@ function createCampaign(data, uid, is_new_campaign=true){
     const infCampaignRef = db.collection(INFLUENCER_COLLECTIONS)
         .doc(uid).collection('campaigns')
         .doc(campaign_id);
+    batch.set(campaignRef, {
+        uid,
+        brand_campaign_id: data.brand_campaign_id || '',
+        brand: data.brand || '',
+    });
     batch.set(infCampaignRef, {
         campaign_ref: docref.path,
         campaign_id,
