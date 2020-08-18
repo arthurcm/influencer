@@ -121,9 +121,8 @@ function prepareSignatureRequestData(data){
             const custom_fields = brand_contract.custom_fields;
             const contract_data = brand_contract.data;
             console.log('Got contract data', contract_data);
-            // TODO: remove the hardcode here for test_mode.
             const opts = {
-                test_mode: 1,
+                test_mode: data.test_mode || 0,
                 clientId: HELLO_SIGN_CLIENT_ID,
                 // requester_email_address: 'arthur.meng@lifo.ai',
                 template_id,
