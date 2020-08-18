@@ -668,9 +668,12 @@ app.get('/brand/influencers', (req, res, next) => {
 
 
 app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
-    const uid = res.locals.uid;
-    console.debug('/brand/campaign received campaign id', req.params.brand_campaign_id);
-    return campaign.deleteBrandCampaign(req.params, uid)
+    const brand_campaign_id = req.params.brand_campaign_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return campaign.deleteBrandCampaign(brand_campaign_id)
         .then(result => {
             res.status(200).send({status : 'OK'});
             return result;
@@ -1171,8 +1174,7 @@ app.put('/share/influencer_offer', (req, res, next) => {
     }
     const influencer_profile = {
         inf_signing_status,
-        decline_type : data.decline_type,
-        decline_text_reason : data.decline_text_reason,
+        offer_response : data,
     };
 
     // this is a hack to avoid unwanted bugs during test phase.
