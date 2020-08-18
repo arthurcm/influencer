@@ -894,19 +894,14 @@ function updateBrandCampaign(data, uid, brand_campaign_id){
 }
 
 
-function deleteBrandCampaign(data, uid){
-    if(!data.brand_campaign_id){
-        return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
-            'with a specific campaign_id.');
-    }
+function deleteBrandCampaign(brand_campaign_id, uid){
     const batch = db.batch();
-
     const brand_campaign_ref = db.collection('brands')
         .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
-        .doc(data.brand_campaign_id);
+        .doc(brand_campaign_id);
     batch.update(brand_campaign_ref, {deleted: true});
     const camapign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS)
-        .doc(data.brand_campaign_id);
+        .doc(brand_campaign_id);
     batch.update(camapign_ref, {deleted: true});
     return batch.commit();
 }

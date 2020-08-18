@@ -669,11 +669,12 @@ app.get('/brand/influencers', (req, res, next) => {
 
 app.delete('/brand/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
     const brand_campaign_id = req.params.brand_campaign_id;
+    const uid = res.locals.uid;
     if(!brand_campaign_id){
         console.warn('brand_campaign_id can not be empty');
         res.status(412).send({status: 'brand_campaign_id empty'});
     }
-    return campaign.deleteBrandCampaign(brand_campaign_id)
+    return campaign.deleteBrandCampaign(brand_campaign_id, uid)
         .then(result => {
             res.status(200).send({status : 'OK'});
             return result;
