@@ -577,8 +577,8 @@ app.post('/brand/campaign', (req, res, next) => {
     // }
     const results = campaign.createBrandCampaign(data, uid);
     const campaign_id = results.campaign_id;
-    const batch = results.batch_promise;
-    return batch.commit()
+    const promise = results.promise;
+    return promise
         .then(result => {
             res.status(200).send({campaign_id});
             return result;
@@ -1360,6 +1360,20 @@ app.get('/common/affiliate_link/brand_campaign_id/:brand_campaign_id/account_id/
         .catch(next);
 });
 
+
+app.get('/brand/brand_campaign_status/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return campaign.getBrandCampaignStatus(brand_campaign_id)
+        .then(result => {
+            res.status(200).send({status: result});
+            return result;
+        })
+        .catch(next);
+});
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

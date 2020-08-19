@@ -8,10 +8,17 @@ const campaign = require('./campaign');
 const path = require('path');
 
 function reportPostingPerformance(data){
+    const batch = db.batch();
     const influencer_ref = campaign.access_influencer_subcollection(data.brand_campaign_id)
         .doc(data.account_id);
     data.time_stamp = FieldValue.serverTimestamp();
-    return influencer_ref.set({post_perf: data}, {merge: true});
+    batch.set(influencer_ref, {post_perf: data}, {merge: true});
+    const campaign_ref = db.collection(campaign.BRAND_CAMPAIGN_COLLECTIONS).doc(data.brand_campaign_id);
+    // Atomically add a new region to the "regions" array field.
+    batch.update(campaign_ref,{
+        inf_posted: admin.firestore.FieldValue.arrayUnion(data.account_id),
+    });
+    return batch.commit();
 };
 
 function calculatePerformance(campaign_data, all_inf_perfs){

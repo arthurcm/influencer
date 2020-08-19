@@ -796,17 +796,13 @@ function createBrandCampaignData(brand_campaign_id, uid, data, is_new_camp=false
 
 
 function createBrandCampaign(data, uid){
-    const batch = db.batch();
-    const brandCampaignRef = db.collection('brands')
-        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
-        .doc();
-    const brand_campaign_data = createBrandCampaignData(brandCampaignRef.id, uid, data, true);
-    batch.set(brandCampaignRef, brand_campaign_data);
-    const allBrandCampaignRef = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brandCampaignRef.id);
-    batch.set(allBrandCampaignRef, brand_campaign_data);
+    const brandCampaignRef = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc()
+    const brand_campaign_id = brandCampaignRef.id;
+    const brand_campaign_data = createBrandCampaignData(brand_campaign_id, uid, data, true);
+    const promise = brandCampaignRef.set(brand_campaign_data);
     return {
         campaign_id: brandCampaignRef.id,
-        batch_promise: batch,
+        promise,
     };
 }
 
@@ -829,6 +825,7 @@ function listBrandCampaignForBrand(uid){
             return brand_campaigns;
         });
 }
+
 
 function totalInfCount(uid){
     return listBrandCampaignForBrand(uid)
@@ -994,6 +991,25 @@ function add_recommended_influencers(brand_campaign_id, data){
     return batch.commit();
 };
 
+
+function getBrandCampaignStatus(brand_campaign_id){
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
+        .then(snapshot => {
+            const campaign_data = snapshot.data();
+            const inf_campaign_dict = campaign_data.inf_campaign_dict;
+
+            // this field is generated during campaign performance posting
+            const inf_posted = campaign_data.inf_posted;
+            if(!inf_campaign_dict && !inf_posted){
+                return 'In negotiation';
+            }else if(inf_campaign_dict && !inf_posted){
+                return 'Content production';
+            }else{
+                return 'Campaign completed';
+            }
+        });
+};
+
 module.exports = {
     getCampaign,
     getAllCampaign,
@@ -1031,6 +1047,7 @@ module.exports = {
     register_tracking_url,
     saveTargetingInfo,
     getTargetingInfo,
+    getBrandCampaignStatus,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,
