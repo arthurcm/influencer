@@ -2,11 +2,18 @@ build container:
 gcloud builds submit --tag gcr.io/influencer-272204/dealsite
 
 Local testing container:
+docker build . --tag gcr.io/influencer-272204/dealsite
 PORT=8080 && docker run -p 9090:${PORT} -e PORT=${PORT} -e K_SERVICE=dev -e K_CONFIGURATION=dev -e K_REVISION=dev-00001 -e GOOGLE_APPLICATION_CREDENTIALS=/tmp/keys/service_account.json -v $GOOGLE_APPLICATION_CREDENTIALS:/tmp/keys/service_account.json:ro gcr.io/influencer-272204/dealsite
 
 
 To deploy api-nodejs with service account access to secret manager:
+docker build . --tag gcr.io/influencer-272204/dealsite
+docker push gcr.io/influencer-272204/dealsite
 gcloud run deploy dealsite --image gcr.io/influencer-272204/dealsite --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
+
+
+Test on cloud run:
+curl  -H "Content-Type: application/json" -H "Authorization:<idToken>" -X PUT http://localhost:9090/finalize_media_draft/campaign_id/Hi4ZBC0bofNhjSc9uoUG/history_id/JgxTvni4tUKsM34oAU1W
 
 
 get refreshed idToken:
