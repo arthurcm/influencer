@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const axios = require("axios");
 const functions = require('firebase-functions');
 const app = express();
 app.use(express.json());
@@ -15,6 +16,8 @@ admin.initializeApp({
     databaseURL: 'https://influencer-272204.firebaseio.com',
 });
 const db = admin.firestore();
+
+const DEAL_COLLECTIONS = 'deals';
 
 // middleware for token verification
 app.use((req, res, next) => {
@@ -78,6 +81,61 @@ app.use((err, req, res, next) => {
     }
     res.status(500).send({ error: err });
     return res;
+});
+
+app.get('/share/health', (req, res) => {
+    res.send({'status': 'ok'});
+});
+
+app.post('/share/create_deal', (req, res, next) => {
+
+    console.debug(`${req.path} received  ${req.body}`);
+
+    const dealsRef = db.collection(DEAL_COLLECTIONS).doc();
+    return dealsRef.set(req.body)
+        .then(result => {
+            res.status(200).send(req.body);
+            return result;
+        })
+        .catch(next);
+
+});
+
+app.get('/share/list_deal', (req, res, next) => {
+    console.debug(`${req.path} received  ${req.body}`);
+    return db.collection(DEAL_COLLECTIONS).get()
+        .then(querySnapshot => {
+            const deals = [];
+            querySnapshot.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                deals.push(doc_snap);
+            });
+            console.debug('Found', deals.length, 'deals in /campaign GET');
+            res.status(200).send(deals);
+        })
+        .catch(next);
+});
+
+app.get('/share/item_info', (req, res, next) => {
+    axios(
+        {
+            "method":"GET",
+            "url":"https://amazon-product-search.p.rapidapi.com/amazon-search/product.php",
+            "headers":{
+                "content-type":"application/octet-stream",
+                "x-rapidapi-host":"amazon-product-search.p.rapidapi.com",
+                "x-rapidapi-key":"87ce9b7202msh2cd25930b9a3f3bp16bf78jsnec59bcf7cfae",
+                "useQueryString":true
+            },
+            "params":{
+                "asin":"B081Q5RCMV",
+                "region":"com"
+            }
+        }
+    ).then((response)=>{
+        console.log(response)
+        res.send(response.data);
+    }).catch(next);
 });
 
 const port = process.env.PORT || 8080;
