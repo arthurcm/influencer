@@ -27,7 +27,7 @@ const CLIENT_ONBOARDING_EMAILS = ['arthur.meng@lifo.ai', 'alex.niu@lifo.ai', 'sh
 app.use((req, res, next) => {
 
     // all /share/* endpoints require no authorization
-    if (req.path.startsWith('/share')){
+    if (req.path.startsWith('/share') && !req.headers.authorization){
         return next();
     }
 
@@ -79,21 +79,22 @@ app.use((req, res, next) => {
 });
 
 
-app.post('/create_campaign', (req, res, next) => {
-    console.debug('/create_campaign received a request', req.body);
-    const data = req.body;
-    const uid = res.locals.uid;
-    const results = campaign.createCampaign(data, uid, campaign.GENERIC_INF_CREATED_CAMPAIGN);
-    const campaign_id = results.campaign_id;
-    const history_id = results.history_id;
-    const batch = results.batch_promise;
-    return batch.commit()
-        .then(result => {
-            res.status(200).send({campaign_id, history_id});
-            return result;
-        })
-        .catch(next);
-});
+// As of 08-19-2020, this endpoint is deprecated.
+// app.post('/create_campaign', (req, res, next) => {
+//     console.debug('/create_campaign received a request', req.body);
+//     const data = req.body;
+//     const uid = res.locals.uid;
+//     const results = campaign.createCampaign(data, uid, campaign.GENERIC_INF_CREATED_CAMPAIGN);
+//     const campaign_id = results.campaign_id;
+//     const history_id = results.history_id;
+//     const batch = results.batch_promise;
+//     return batch.commit()
+//         .then(result => {
+//             res.status(200).send({campaign_id, history_id});
+//             return result;
+//         })
+//         .catch(next);
+// });
 
 
 app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
@@ -136,15 +137,17 @@ app.get('/common/campaign/campaign_id/:campaign_id', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/get_campaign', (req, res, next) => {
-    const uid = res.locals.uid;
-    return campaign.getAllCampaign(uid)
-        .then(result => {
-            res.status(200).send(result);
-            return result;
-        })
-        .catch(next);
-});
+
+// TODO: Fix this API endpoint
+// app.get('/get_campaign', (req, res, next) => {
+//     const uid = res.locals.uid;
+//     return campaign.getAllCampaign(uid)
+//         .then(result => {
+//             res.status(200).send(result);
+//             return result;
+//         })
+//         .catch(next);
+// });
 
 app.get('/media/campaign_type/:campaign_type/campaign_id/:campaign_id', (req, res, next) => {
     // const uid = res.locals.uid;
@@ -205,9 +208,8 @@ app.post('/payment_info', (req, res, next) => {
 app.put('/update_campaign/campaign_id/:campaign_id', (req, res, next) => {
     console.debug('/update_campaign received a request', req.body);
     const data = req.body;
-    const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
-    const results = campaign.updateCampaign(campaign_id, data, uid);
+    const results = campaign.updateCampaign(campaign_id, data);
     const history_id = results.history_id;
     const batch = results.batch_promise;
     return batch.commit()
@@ -335,6 +337,7 @@ app.post('/share/create_feedback_thread', (req, res, next)=>{
     const data = req.body;
     const uid = res.locals.uid;
     let name = res.locals.name;
+    console.log('Request is sent by ', name);
     if(!name){
         name = 'Anonymous';
     }

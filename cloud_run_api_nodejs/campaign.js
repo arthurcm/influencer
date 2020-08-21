@@ -198,9 +198,8 @@ function getCampaign(data, uid, res) {
     return Promise.all([latest_history_ref, final_campaign_ref]);
 }
 
-function updateCampaignData(uid, campaign_id, data, history_id){
+function updateCampaignData(campaign_id, data, history_id){
     const FieldValue = admin.firestore.FieldValue;
-    data.influencer_id = uid;
     data.time_stamp = FieldValue.serverTimestamp();
     data.campaign_id = campaign_id;
     data.history_id = history_id;
@@ -224,26 +223,18 @@ function createCampaign(data, uid, is_new_campaign=true){
     const batch = db.batch();
     const historyRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = historyRef.id;
-    data = updateCampaignData(uid, campaign_id, data, history_id);
+    data.uid = uid;
+    data = updateCampaignData(campaign_id, data, history_id);
 
     const campaignDocRef = db.collection('campaigns').doc(campaign_id)
         .collection('campaignHistory').doc(history_id);
     batch.set(campaignDocRef, data);
-    const docref = db.collection('campaigns').doc(campaign_id);
-    const infCampaignRef = db.collection(INFLUENCER_COLLECTIONS)
-        .doc(uid).collection('campaigns')
-        .doc(campaign_id);
     batch.set(campaignRef, {
         uid,
+        campaign_id,
         brand_campaign_id: data.brand_campaign_id || '',
         brand: data.brand || '',
-    });
-    batch.set(infCampaignRef, {
-        campaign_ref: docref.path,
-        campaign_id,
-        campaign_name: String(data.campaign_name),
-        campaign_data: data,
-    });
+    }, {merge: true});
     console.info('creating campaign with id', campaign_id);
     return {
         campaign_id,
@@ -261,33 +252,20 @@ function completeCampaign(campaign_id, uid){
 
     const campaignRef = db.collection('campaigns').doc(campaign_id);
     batch.set(campaignRef, {completed: true}, {merge: true});
-
-    // get the updated campaign information, and add it to influencer's profile.
-    const influencerCamRef = db.collection(INFLUENCER_COLLECTIONS)
-        .doc(uid).collection('campaigns')
-        .doc(campaign_id);
-    batch.set(influencerCamRef, {completed: true}, {merge: true});
     return batch.commit();
 }
 
 // called when an existing campaign gets updated, this include anything that campaign data touches on.
 // the data is expected to have the same schema (subset) of campaign data.
-function updateCampaign(campaign_id, data, uid){
+function updateCampaign(campaign_id, data){
     console.debug('input data is', data, 'updating campaign', campaign_id);
     // Get a new write batch
     const batch = db.batch();
-
     const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc();
     const history_id = campaignHistoryRef.id;
-    const newCamp = updateCampaignData(uid, campaign_id, data, history_id);
+    const newCamp = updateCampaignData(campaign_id, data, history_id);
     console.debug('Created new campaign data:', newCamp);
     batch.set(campaignHistoryRef, newCamp);
-
-    // get the updated campaign information, and add it to influencer's profile.
-    const influencerCamRef = db.collection(INFLUENCER_CAMPAIGN_COLLECTIONS)
-        .doc(uid).collection('campaigns')
-        .doc(campaign_id);
-    batch.set(influencerCamRef, {campaign_data: newCamp}, {merge: true});
     return {
         history_id,
         batch_promise: batch,
@@ -495,15 +473,6 @@ function feedback(data, uid, campaign_id, history_id){
     const batch = db.batch();
     const campaignHistoryRef = db.collection('campaigns').doc(campaign_id).collection('campaignHistory').doc(history_id);
     batch.set(campaignHistoryRef, {feed_back: data.feed_back}, {merge: true});
-
-    const influencerCamRef = db.collection(INFLUENCER_COLLECTIONS)
-        .doc(uid).collection('campaigns')
-        .doc(campaign_id);
-    if (uid === 'no_uid'){
-        batch.set(influencerCamRef, {'campaign_data.brand_feed_back': data.feed_back}, {merge: true});
-    }else {
-        batch.set(influencerCamRef, {'campaign_data.feed_back': data.feed_back}, {merge: true});
-    }
     return batch.commit();
 }
 
@@ -891,16 +860,10 @@ function updateBrandCampaign(data, uid, brand_campaign_id){
 }
 
 
-function deleteBrandCampaign(brand_campaign_id, uid){
-    const batch = db.batch();
-    const brand_campaign_ref = db.collection('brands')
-        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
-        .doc(brand_campaign_id);
-    batch.update(brand_campaign_ref, {deleted: true});
+function deleteBrandCampaign(brand_campaign_id){
     const camapign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(brand_campaign_id);
-    batch.update(camapign_ref, {deleted: true});
-    return batch.commit();
+    return camapign_ref.update({deleted: true});
 }
 
 function endBrandCampaign(data, uid){
