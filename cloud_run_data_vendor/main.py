@@ -45,6 +45,19 @@ FROM_SHOPIFY = 'from_shopify'
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
+FIELD_DELIMITER = "\u0001"
+
+
+SEARCHABLE_AUDIENCE_LANGUAGE_PREFIX = 'languages'
+SEARCHABLE_AUDIENCE_ETH_PREFIX = 'ethnicities'
+SEARCHABLE_AUDIENCE_GENDER_PREFIX = 'genders'
+SEARCHABLE_AUDIENCE_CITIES_PREFIX = 'geocities'
+SEARCHABLE_AUDIENCE_COUNTRIES_PREFIX = 'geocountries'
+SEARCHABLE_AUDIENCE_AGES_PREFIX = 'ages'
+SEARCHABLE_AUDIENCE_INTERESTS_PREFIX = 'audience_interests'
+
+
+
 DEFFAULT_DATE_RANGE = 90
 MAX_SHOPIFY_RESULTS_LIMIT = 200
 
@@ -156,6 +169,87 @@ def instagram_search():
     return response
 
 
+def process_modash_profile(profile_ref, profile, platform='instagram'):
+    account_profile = profile.get('profile')
+
+    interests = profile.get('interests')
+    interests_flattened = [pair.get('name') for pair in interests]
+
+    # hashtags are in an array with tuple format, flatten it to collections so that we can sort and filter.
+    hashtags = profile.get('hashtags')
+    hashtags_flattened = convert_tuple_to_map(hashtags, 'hashtag', 'tag')
+
+    mentions = profile.get('mentions')
+    mentions_flattened = convert_tuple_to_map(mentions, 'mention', 'tag')
+
+    # the following three are single valued numerics
+    avg_likes = profile.get('stats').get('avgLikes').get('value')
+    followers = profile.get('stats').get('followers').get('value')
+    paidPostPerformance = profile.get('stats').get('paidPostPerformance')
+
+    # the following audience data needs to be flattened so that it can be easier to query.
+    audience = profile.get('audience')
+    audience_language = audience.get('languages')
+    audience_language_dict = convert_tuple_to_map(audience_language, SEARCHABLE_AUDIENCE_LANGUAGE_PREFIX, 'name')
+
+    audience_ethnicities = audience.get('ethnicities')
+    audience_ethnicities_dict = convert_tuple_to_map(audience_ethnicities, SEARCHABLE_AUDIENCE_ETH_PREFIX, 'code')
+
+    audience_credibility = audience.get('credibility')
+
+    audience_genders = audience.get('genders')
+    audience_genders_dict = convert_tuple_to_map(audience_genders, 'genders', 'code')
+
+    audience_geoCities = audience.get('geoCities')
+    audience_geoCities_dict = convert_tuple_to_map(audience_geoCities, SEARCHABLE_AUDIENCE_CITIES_PREFIX, 'name')
+
+    audience_geoCountries = audience.get('geoCountries')
+    audience_geoCountries_dict = convert_tuple_to_map(audience_geoCountries, SEARCHABLE_AUDIENCE_COUNTRIES_PREFIX, 'code')
+
+    # audience_gendersPerAge = audience.get('gendersPerAge')
+
+    audience_ages = audience.get('ages')
+    audience_ages_dict = convert_tuple_to_map(audience_ages, SEARCHABLE_AUDIENCE_AGES_PREFIX, 'code')
+
+    audience_interests = audience.get('interests')
+    audience_interests_dict = convert_tuple_to_map(audience_interests, SEARCHABLE_AUDIENCE_INTERESTS_PREFIX, 'name')
+
+    trans = db.transaction()
+
+    trans.set(profile_ref, account_profile, merge=True)
+    trans.set(profile_ref, hashtags_flattened, merge=True)
+    trans.set(profile_ref, mentions_flattened, merge=True)
+    trans.set(profile_ref, audience_language_dict, merge=True)
+    trans.set(profile_ref, audience_ethnicities_dict, merge=True)
+    trans.set(profile_ref, audience_genders_dict, merge=True)
+    trans.set(profile_ref, audience_geoCities_dict, merge=True)
+    trans.set(profile_ref, audience_geoCountries_dict, merge=True)
+    trans.set(profile_ref, audience_ages_dict, merge=True)
+    trans.set(profile_ref, audience_interests_dict, merge=True)
+    profile_processed = {
+        "profile_json": profile,
+        "platform": platform,
+        "avg_likes": avg_likes,
+        "followers": followers,
+        "paidPostPerformance": paidPostPerformance,
+        "interests": interests_flattened,
+        "credibility": audience_credibility
+    }
+
+    trans.set(profile_ref, profile_processed, merge=True)
+    trans.commit()
+    return profile_processed
+
+
+def convert_tuple_to_map(tag_tuple_list, field_prefix, field_name):
+    return dict({f'{field_prefix}{FIELD_DELIMITER}{pair.get(field_name)}': pair.get('weight') for pair in tag_tuple_list})
+
+
+def save_modash_profile_firebase(user_id, profile, platform='instagram'):
+    profile_ref = db.document('modash', user_id)
+    profile_processed = process_modash_profile(profile_ref, profile, platform)
+    logging.info(f'{user_id} saving processed profile {profile_processed}')
+
 @app.route("/am/instagram/profile", methods=["GET"])
 def instagram_report():
     """
@@ -190,6 +284,7 @@ def instagram_report():
             logging.info(f'Modash instagram profile response is: {profile_res.json()}')
             profile = profile_json.get('profile')
             if profile:
+                save_modash_profile_firebase(userId, profile)
                 sql_handler.save_profile(userId, 'instagram', profile)
                 break
             else:

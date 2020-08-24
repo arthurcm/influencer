@@ -2,7 +2,7 @@ build container remotely on GCP cloud build:
 gcloud builds submit --tag gcr.io/influencer-272204/data_vendor
 
 The following deploys the remotely built docker image to cloud run:
-gcloud run deploy data-vendor  --image gcr.io/influencer-272204/api_general --service-account=65044462485-compute@developer.gserviceaccount.com --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
+gcloud run deploy data-vendor  --image gcr.io/influencer-272204/data_vendor --service-account=65044462485-compute@developer.gserviceaccount.com --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
 
 Backup command to update existing services with access to cloudsql:
 gcloud run services update data-vendor --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
