@@ -45,7 +45,7 @@ FROM_SHOPIFY = 'from_shopify'
 
 VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
-FIELD_DELIMITER = "\u0001"
+FIELD_DELIMITER = "_"
 
 
 SEARCHABLE_AUDIENCE_LANGUAGE_PREFIX = 'languages'
@@ -56,6 +56,23 @@ SEARCHABLE_AUDIENCE_COUNTRIES_PREFIX = 'geocountries'
 SEARCHABLE_AUDIENCE_AGES_PREFIX = 'ages'
 SEARCHABLE_AUDIENCE_INTERESTS_PREFIX = 'audience_interests'
 
+SUPPORTED_FIELDS_RANGE_FILTERS = {
+    "followers", "engagementRate", "paidPostPerformance"
+}
+
+SUPPORTED_FIELDS_CONTAINS_FILTERS = {
+    "gender", "interests"
+}
+
+SUPPORTED_FILTER_PREFIXES = {
+    SEARCHABLE_AUDIENCE_LANGUAGE_PREFIX,
+    SEARCHABLE_AUDIENCE_ETH_PREFIX,
+    # SEARCHABLE_AUDIENCE_GENDER_PREFIX,
+    SEARCHABLE_AUDIENCE_CITIES_PREFIX,
+    # SEARCHABLE_AUDIENCE_COUNTRIES_PREFIX,
+    # SEARCHABLE_AUDIENCE_AGES_PREFIX,
+    # SEARCHABLE_AUDIENCE_INTERESTS_PREFIX
+}
 
 
 DEFFAULT_DATE_RANGE = 90
@@ -249,6 +266,68 @@ def save_modash_profile_firebase(user_id, profile, platform='instagram'):
     profile_ref = db.document('modash', user_id)
     profile_processed = process_modash_profile(profile_ref, profile, platform)
     logging.info(f'{user_id} saving processed profile {profile_processed}')
+
+
+def field_range_filter_handler(modash_profile_ref, field_range_filters):
+    pass
+
+
+def field_contain_filter_handler(modash_profile_ref, field_contain_filters):
+    pass
+
+
+def prefix_filters_handler(modash_profile_ref, prefix_filters):
+    """
+    The prefix filters have to be supported in SUPPORTED_FILTER_PREFIXES, and only one will be applied
+    :param modash_profile_ref:
+    :param prefix_filters:
+          "prefix_filters": [
+                {
+                  "prefix": "languages",
+                  "value": "Chinese",
+                  "min": 0,
+                  "max": 0.10
+                }
+              ]
+    :return:
+    """
+    for filter in prefix_filters:
+        cur_prefix = filter.get('prefix')
+        cur_value = filter.get('value')
+        if not cur_prefix or cur_prefix not in SUPPORTED_FILTER_PREFIXES or not cur_value:
+            continue
+        field_name = f'{cur_prefix}{FIELD_DELIMITER}{cur_value}'
+        logging.info(f'filtering on field: {field_name}')
+        cur_min = filter.get('min') or 0
+        cur_max = filter.get('max') or 1
+        if cur_max > 1:
+            cur_max = cur_max/100
+        prefix_query = modash_profile_ref.where(field_name, u'>=', cur_min).where(field_name, u'<=', cur_max)
+        return prefix_query
+    return modash_profile_ref
+
+
+@app.route("/am/modash/match", methods=["POST"])
+def modash_match():
+    filters = flask.request.json
+    if not filters:
+        response = flask.jsonify({"error": "None empty post body required!"})
+        response.status_code = 412
+        return response
+    field_range_filters = filters.get('field_range_filters')
+    field_contain_filters = filters.get('field_contain_filters')
+    prefix_filters = filters.get('prefix_filters')
+
+    modash_profile_ref = db.collection('modash')
+    if field_range_filters:
+        logging.warning('Field range filters are not supported in server side')
+    modash_profile_ref = prefix_filters_handler(modash_profile_ref, prefix_filters)
+    snap_list = modash_profile_ref.limit(1000).get()
+    results = [doc.to_dict().get('profile_json') for doc in snap_list]
+    response = flask.jsonify(results)
+    response.status_code = 200
+    return response
+
 
 @app.route("/am/instagram/profile", methods=["GET"])
 def instagram_report():

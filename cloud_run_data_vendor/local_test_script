@@ -22,6 +22,10 @@ curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0s
 Test fetching instagram profile:
 curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/profile?userId=instagram&force_update=true" -X GET
 
+Test filter modash profile:
+curl -H "Content-Type: application/json"  -H "Authorization:<id_token>" -X POST "https://discover.lifo.ai/am/modash/match" -d @modash_filtering.json
+
+
 Test search instagram profile:
 curl -H "Content-Type: application/json" -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/search" -X POST -d @modash_ins_search.json
 
