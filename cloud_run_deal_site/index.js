@@ -154,7 +154,7 @@ app.post('/share/affiliate', (req, res, next) => {
             affiliate_id,
         })
         .then(result => {
-            res.status(422).send({status: 'OK'});
+            res.status(200).send({status: 'OK'});
         })
         .catch(next);
 });
@@ -191,7 +191,7 @@ app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
             if(snapshot){
                 const data = snapshot.data();
                 const affiliate_id = data.affiliate_id;
-                const affiliate_link = `https://www.amazon.com/dp/${asin}}/?tag=${affiliate_id}`;
+                const affiliate_link = `https://www.amazon.com/dp/${asin}/?tag=${affiliate_id}`;
                 console.log('Created affiliate link', affiliate_link);
                 res.status(200).send({affiliate_link});
                 return affiliate_link;
@@ -201,6 +201,38 @@ app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
         .catch(next);
 });
 
+
+app.post('/share/apply/email/:email/deal_id/:deal_id', (req, res, next) => {
+    const email = req.params.email;
+    if(!email){
+        res.status(422).send({status: 'Require a valid email'});
+    }
+    const deal_id = req.params.deal_id;
+    if(!deal_id){
+        res.status(422).send({status: 'Require a valid deal_id'});
+    }
+    const batch = db.batch();
+    const deal_ref = db.collection(DEAL_COLLECTIONS).doc(deal_id).collection(AFFILIATE_COLLECTIONS).doc(email);
+    const affiliate_ref = db.collection(AFFILIATE_COLLECTIONS).doc(email).collection(DEAL_COLLECTIONS).doc(deal_id);
+    return db.collection(AFFILIATE_COLLECTIONS).doc(email).get()
+        .then(snapshot => {
+            if(snapshot){
+                return snapshot.data();
+            }
+            res.status(200).send({status: 'not found'});
+        })
+        .then(data => {
+            const affiliate_id = data.affiliate_id;
+            batch.set(deal_ref, {email, affiliate_id});
+            batch.set(affiliate_ref, {deal_id});
+            return batch.commit();
+        })
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
 
 
 const port = process.env.PORT || 8080;
