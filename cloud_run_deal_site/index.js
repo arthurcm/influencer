@@ -18,6 +18,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const DEAL_COLLECTIONS = 'deals';
+const AFFILIATE_COLLECTIONS = 'affiliates';
 
 // middleware for token verification
 app.use((req, res, next) => {
@@ -137,6 +138,70 @@ app.get('/share/item_info', (req, res, next) => {
         res.send(response.data);
     }).catch(next);
 });
+
+app.post('/share/affiliate', (req, res, next) => {
+    const data = req.body;
+    const email = data.email;
+    const affiliate_id = data.affiliate_id;
+    if(!email){
+        res.status(422).send({status: 'Require a valid email'});
+    }
+    if(!affiliate_id){
+        res.status(422).send({status: 'Require a valid affiliate_id'});
+    }
+    return db.collection(AFFILIATE_COLLECTIONS).doc(email).set({
+            email,
+            affiliate_id,
+        })
+        .then(result => {
+            res.status(422).send({status: 'OK'});
+        })
+        .catch(next);
+});
+
+app.get('/share/affiliate/email/:email', (req, res, next) => {
+    const email = req.params.email;
+    if(!email){
+        res.status(422).send({status: 'Require a valid email'});
+    }
+    return db.collection(AFFILIATE_COLLECTIONS).doc(email).get()
+        .then(snapshot => {
+            if(snapshot){
+                res.status(200).send(snapshot.data());
+                return snapshot.data();
+            }
+            res.status(200).send({status: 'not found'});
+        })
+        .catch(next);
+});
+
+
+app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
+    const email = req.params.email;
+    const asin = req.params.asin;
+    if(!email){
+        res.status(422).send({status: 'Require a valid email'});
+    }
+    if(!asin){
+        res.status(422).send({status: 'Require a valid asin'});
+    }
+
+    return db.collection(AFFILIATE_COLLECTIONS).doc(email).get()
+        .then(snapshot => {
+            if(snapshot){
+                const data = snapshot.data();
+                const affiliate_id = data.affiliate_id;
+                const affiliate_link = `https://www.amazon.com/dp/${asin}}/?tag=${affiliate_id}`;
+                console.log('Created affiliate link', affiliate_link);
+                res.status(200).send({affiliate_link});
+                return affiliate_link;
+            }
+            res.status(200).send({status: 'not found'});
+        })
+        .catch(next);
+});
+
+
 
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
