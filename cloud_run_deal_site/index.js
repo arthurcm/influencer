@@ -89,8 +89,16 @@ app.get('/share/health', (req, res) => {
 });
 
 app.post('/share/create_deal', (req, res, next) => {
-
     console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    if (!data.product_name) {
+        console.warn('Missing product_name from deal');
+        res.status(412).send({status: 'Missing product name'});
+    }
+    if (!data.url) {
+        console.warn('Missing url from deal');
+        res.status(412).send({status: 'Missing product url'});
+    }
 
     const dealsRef = db.collection(DEAL_COLLECTIONS).doc();
     return dealsRef.set(req.body)
@@ -99,7 +107,6 @@ app.post('/share/create_deal', (req, res, next) => {
             return result;
         })
         .catch(next);
-
 });
 
 app.get('/share/list_deal', (req, res, next) => {
@@ -117,20 +124,26 @@ app.get('/share/list_deal', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/share/item_info', (req, res, next) => {
+app.get('/share/get_item_info/:asin', (req, res, next) => {
+    const asin = req.params.asin;
+    console.debug('Receiving asin for get item', asin);
+    if (!asin) {
+        console.warn(`request to ${req.path} did not provide asin`);
+        res.status(422).send('Missing a valid asin');
+    }
     axios(
         {
             "method":"GET",
-            "url":"https://amazon-product-search.p.rapidapi.com/amazon-search/product.php",
+            "url": "https://amazon-product-search.p.rapidapi.com/amazon-search/product",
             "headers":{
-                "content-type":"application/octet-stream",
-                "x-rapidapi-host":"amazon-product-search.p.rapidapi.com",
-                "x-rapidapi-key":"87ce9b7202msh2cd25930b9a3f3bp16bf78jsnec59bcf7cfae",
-                "useQueryString":true
+                "content-type": "application/octet-stream",
+                "x-rapidapi-host": "amazon-product-search.p.rapidapi.com",
+                "x-rapidapi-key": "87ce9b7202msh2cd25930b9a3f3bp16bf78jsnec59bcf7cfae",
+                "useQueryString": true
             },
             "params":{
-                "asin":"B081Q5RCMV",
-                "region":"com"
+                "asin": asin,
+                "region": "com"
             }
         }
     ).then((response)=>{
