@@ -676,6 +676,14 @@ def send_single_email_with_template():
                                        INFLUENCER_COLLECTIONS,
                                        inf_account_id,
                                        EMAILS_COLLECTIONS)
+            same_email_list = emails_ref.where('subject', u'==', draft.subject).where('body', u'==', draft.body).get()
+            logging.info(f'Found repeated email list {same_email_list}')
+            if len(same_email_list) > 0:
+                logging.info('Repeatedly sending the same emails!')
+                response = flask.jsonify({'status': 'Repeated emails'})
+                response.status_code = 429
+                return response
+
             email_history = {
                 'ts': firestore.SERVER_TIMESTAMP,
                 'body': draft.body,
