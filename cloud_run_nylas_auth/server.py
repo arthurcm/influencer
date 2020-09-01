@@ -4,6 +4,7 @@ import os
 import sys
 import textwrap
 import datetime
+import hashlib
 
 import firebase_admin
 from firebase_admin import auth, exceptions
@@ -604,9 +605,9 @@ def send_single_email_with_template():
     """
     from cloud_sql import sql_handler
     uid = flask.session.get('uid')
-    sender_name = flask.session.get('name')
-    sender_email = flask.session.get('email')
     data = flask.request.json
+    sender_name = flask.session.get('name') or data.get('sender_name')
+    sender_email = flask.session.get('email')
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
@@ -676,7 +677,8 @@ def send_single_email_with_template():
                                        INFLUENCER_COLLECTIONS,
                                        inf_account_id,
                                        EMAILS_COLLECTIONS)
-            same_email_list = emails_ref.where('subject', u'==', draft.subject).where('body', u'==', draft.body).get()
+            hash_value = hashlib.sha256(body.encode('utf-8')).hexdigest()
+            same_email_list = emails_ref.where('subject', u'==', draft.subject).where('body_hash', u'==', hash_value).get()
             logging.info(f'Found repeated email list {same_email_list}')
             if len(same_email_list) > 0:
                 logging.info('Repeatedly sending the same emails!')
@@ -687,6 +689,7 @@ def send_single_email_with_template():
             email_history = {
                 'ts': firestore.SERVER_TIMESTAMP,
                 'body': draft.body,
+                'body_hash': hash_value,
                 'subject': draft.subject,
                 'to': draft.to,
                 'file_id': data.get('file_id')
