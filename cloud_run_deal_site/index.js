@@ -110,18 +110,89 @@ app.post('/share/create_deal', (req, res, next) => {
 });
 
 app.get('/share/list_deal', (req, res, next) => {
-    console.debug(`${req.path} received  ${req.body}`);
+    console.debug(`${req.path} received`);
     return db.collection(DEAL_COLLECTIONS).get()
         .then(querySnapshot => {
             const deals = [];
             querySnapshot.docs.forEach(doc => {
                 const doc_snap = doc.data();
+                doc_snap.id = doc.id;
                 deals.push(doc_snap);
             });
             console.debug('Found', deals.length, 'deals in /campaign GET');
             res.status(200).send(deals);
         })
         .catch(next);
+});
+
+app.put('/share/update_deal/:id', (req, res, next) => {
+    console.debug(`${req.path} received`);
+    const docId = req.params.id;
+    if(!docId){
+        res.status(422).send({status: 'Require a valid doc ID'});
+    }
+    return db.collection(DEAL_COLLECTIONS).doc(docId).update(req.body).then(
+        result => {
+            res.status(200).send({'status': 'updated'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.delete('/share/delete_deal/:id', (req, res, next) => {
+    const docId = req.params.id;
+    if(!docId){
+        res.status(422).send({status: 'Require a valid doc ID'});
+    }
+
+    console.info(`Deleting doc ${docId}`);
+    return db.collection(DEAL_COLLECTIONS).doc(docId).delete().then(
+        result => {
+            res.status(200).send({'status': 'deleted'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.delete('/am/delete_deal/:id', (req, res, next) => {
+    const docId = req.params.id;
+    if(!docId){
+        res.status(422).send({status: 'Require a valid doc ID'});
+    }
+
+    console.info(`Deleting doc ${docId}`);
+    return db.collection(DEAL_COLLECTIONS).doc(docId).delete().then(
+        result => {
+            res.status(200).send({'status': 'deleted'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.post('/share/unshorten_url', (req, res, next) => {
+    console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    if (!data.link) {
+        console.warn('Missing link');
+        res.status(412).send({status: 'Missing link'});
+    }
+    const link = data.link;
+    axios(
+        {
+            method: "get",
+            url: data.link,
+            maxRedirects: 0
+        }
+    ).then((response)=>{
+        res.send({'status': 'ok'});
+    }).catch(error => {
+        if (Math.trunc(error.response.status / 100) === 3) {
+            console.log(error.response.headers.location);
+            res.status(200).send({'fullurl': error.response.headers.location});
+        } else {
+            res.status(400).send({'error': 'failed to find full url'});
+        }
+    });
 });
 
 app.get('/share/get_item_info/:asin', (req, res, next) => {
@@ -188,7 +259,6 @@ app.get('/share/affiliate/email/:email', (req, res, next) => {
         .catch(next);
 });
 
-
 app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
     const email = req.params.email;
     const asin = req.params.asin;
@@ -213,7 +283,6 @@ app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
         })
         .catch(next);
 });
-
 
 app.post('/share/apply/email/:email/deal_id/:deal_id', (req, res, next) => {
     const email = req.params.email;
