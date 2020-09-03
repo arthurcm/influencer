@@ -219,12 +219,9 @@ app.get('/share/get_item_info/:asin', (req, res, next) => {
 app.post('/share/affiliate', (req, res, next) => {
     const data = req.body;
     const email = data.email;
-    const affiliate_id = data.affiliate_id;
+    const affiliate_id = data.affiliate_id || '';
     if(!email){
         res.status(422).send({status: 'Require a valid email'});
-    }
-    if(!affiliate_id){
-        res.status(422).send({status: 'Require a valid affiliate_id'});
     }
     return db.collection(AFFILIATE_COLLECTIONS).doc(email).set({
             email,
@@ -294,10 +291,13 @@ app.post('/share/apply/email/:email/deal_id/:deal_id', (req, res, next) => {
             if(snapshot){
                 return snapshot.data();
             }
-            res.status(200).send({status: 'not found'});
+            return snapshot
         })
         .then(data => {
-            const affiliate_id = data.affiliate_id;
+            let affiliate_id = '';
+            if(data){
+                affiliate_id = data.affiliate_id || '';
+            }
             batch.set(deal_ref, {email, affiliate_id});
             batch.set(affiliate_ref, {deal_id});
             return batch.commit();
