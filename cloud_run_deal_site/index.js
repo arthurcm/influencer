@@ -6,16 +6,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 require('isomorphic-fetch');
+const { db, DealModel} = require('./models');
 
 const isValidDomain = require('is-valid-domain');
 const validUrl = require('valid-url');
-
-const admin = require('firebase-admin');
-admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    databaseURL: 'https://influencer-272204.firebaseio.com',
-});
-const db = admin.firestore();
 
 const DEAL_COLLECTIONS = 'deals';
 const AFFILIATE_COLLECTIONS = 'affiliates';
@@ -99,9 +93,7 @@ app.post('/share/create_deal', (req, res, next) => {
         console.warn('Missing url from deal');
         res.status(412).send({status: 'Missing product url'});
     }
-
-    const dealsRef = db.collection(DEAL_COLLECTIONS).doc();
-    return dealsRef.set(req.body)
+    return DealModel.createDoc(req.body)
         .then(result => {
             res.status(200).send(req.body);
             return result;
@@ -111,7 +103,7 @@ app.post('/share/create_deal', (req, res, next) => {
 
 app.get('/share/list_deal', (req, res, next) => {
     console.debug(`${req.path} received`);
-    return db.collection(DEAL_COLLECTIONS).get()
+    return DealModel.get()
         .then(querySnapshot => {
             const deals = [];
             querySnapshot.docs.forEach(doc => {
@@ -128,14 +120,15 @@ app.get('/share/list_deal', (req, res, next) => {
 app.put('/share/update_deal/:id', (req, res, next) => {
     console.debug(`${req.path} received`);
     const docId = req.params.id;
-    if(!docId){
+    if (!docId) {
         res.status(422).send({status: 'Require a valid doc ID'});
     }
-    return db.collection(DEAL_COLLECTIONS).doc(docId).update(req.body).then(
-        result => {
-            res.status(200).send({'status': 'updated'});
-            return result;
-        })
+    return DealModel.updateDocById(docId, req.body)
+        .then(
+            result => {
+                res.status(200).send({'status': 'updated'});
+                return result;
+            })
         .catch(next);
 });
 
@@ -146,7 +139,7 @@ app.delete('/share/delete_deal/:id', (req, res, next) => {
     }
 
     console.info(`Deleting doc ${docId}`);
-    return db.collection(DEAL_COLLECTIONS).doc(docId).delete().then(
+    return DealModel.deleteDocById(docId).then(
         result => {
             res.status(200).send({'status': 'deleted'});
             return result;
@@ -161,7 +154,7 @@ app.delete('/am/delete_deal/:id', (req, res, next) => {
     }
 
     console.info(`Deleting doc ${docId}`);
-    return db.collection(DEAL_COLLECTIONS).doc(docId).delete().then(
+    return DealModel.deleteDocById(docId).then(
         result => {
             res.status(200).send({'status': 'deleted'});
             return result;
