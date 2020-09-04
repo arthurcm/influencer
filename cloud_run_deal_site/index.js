@@ -7,6 +7,7 @@ app.use(express.json());
 app.use(cors());
 require('isomorphic-fetch');
 const { db, DealModel} = require('./models');
+const {Bitly} = require('./lib');
 
 const isValidDomain = require('is-valid-domain');
 const validUrl = require('valid-url');
@@ -275,15 +276,18 @@ app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
 
     return db.collection(AFFILIATE_COLLECTIONS).doc(email).get()
         .then(snapshot => {
-            if(snapshot){
+            if(snapshot) {
                 const data = snapshot.data();
                 const affiliate_id = data.affiliate_id;
                 const affiliate_link = `https://www.amazon.com/dp/${asin}/?tag=${affiliate_id}`;
-                console.log('Created affiliate link', affiliate_link);
-                res.status(200).send({affiliate_link});
-                return affiliate_link;
+                return Bitly.generateShortLink(affiliate_link);
             }
             res.status(200).send({status: 'not found'});
+        })
+        .then(shortAffiliateLinkObject => {
+            console.log('Created affiliate link', shortAffiliateLinkObject.link);
+            res.status(200).send({affiliate_link: shortAffiliateLinkObject.link});
+            return shortAffiliateLinkObject;
         })
         .catch(next);
 });
