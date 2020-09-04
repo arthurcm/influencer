@@ -15,5 +15,4 @@ class DealModel extends GenericModel {
 module.exports = new DealModel({
     includeCreatedAt: true,
     includeUpdatedAt: true,
-    includeDeletedAt: true,
 });

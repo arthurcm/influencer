@@ -117,6 +117,20 @@ app.get('/share/list_deal', (req, res, next) => {
         .catch(next);
 });
 
+app.get('/share/deal/:id', (req, res, next) => {
+    console.debug(`${req.path} received`);
+    const dealId = req.params.id;
+    if (!dealId) {
+        res.status(422).send({status: 'Require a valid doc ID'});
+    }
+    return DealModel.getDocById(dealId)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
 app.put('/share/update_deal/:id', (req, res, next) => {
     console.debug(`${req.path} received`);
     const docId = req.params.id;

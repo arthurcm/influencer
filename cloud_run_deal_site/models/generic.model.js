@@ -31,8 +31,9 @@ class GenericModel {
          */
         this.getDocById = (id) => {
             return this.ref
+                .doc(id)
                 .get()
-                .doc(id);
+                .then(docRef => docRef.data());
         };
 
         /**
@@ -72,11 +73,6 @@ class GenericModel {
         this.deleteDocById = (id) => {
             return this.ref
                 .doc(id)
-                .set({
-                    deleted_at: moment().utc().unix(),
-                }, {
-                    merge: true,
-                })
                 .delete();
         };
     }
