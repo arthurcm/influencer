@@ -56,12 +56,13 @@ server
     .use(session({ sameSite: 'none', secure: true }, server))
     .use(cors({credentials:true}))
     .use(
-        // by default, the access scope is for offline
+        // by default, the access scope is for online for @shopify/koa-shopify-auth!!!
         createShopifyAuth({
             apiKey: SHOPIFY_API_KEY,
             secret: SHOPIFY_API_SECRET_KEY,
             scopes: ['read_orders', 'write_orders', 'write_script_tags', 'read_script_tags',
                 'read_products', 'read_customers', 'read_locations'],
+            accessMode: 'offline',
             nonce,
             async afterAuth(ctx) {
                 const { shop, accessToken } = ctx.session;
