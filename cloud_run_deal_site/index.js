@@ -264,22 +264,23 @@ app.get('/share/affiliate/email/:email', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
+app.get('/share/affiliate_link/email/:email/asin/:asin/deal_id/:deal_id', (req, res, next) => {
     const email = req.params.email;
     const asin = req.params.asin;
+    const deal_id = req.params.deal_id;
     if(!email){
         res.status(422).send({status: 'Require a valid email'});
     }
     if(!asin){
         res.status(422).send({status: 'Require a valid asin'});
     }
-
     return db.collection(AFFILIATE_COLLECTIONS).doc(email).get()
         .then(snapshot => {
             if(snapshot) {
                 const data = snapshot.data();
                 const affiliate_id = data.affiliate_id;
                 const affiliate_link = `https://www.amazon.com/dp/${asin}/?tag=${affiliate_id}`;
+                console.log('Created affiliate link', affiliate_link);
                 return Bitly.generateShortLink(affiliate_link);
             }
             res.status(200).send({status: 'not found'});
@@ -287,6 +288,16 @@ app.get('/share/affiliate_link/email/:email/asin/:asin', (req, res, next) => {
         .then(shortAffiliateLinkObject => {
             console.log('Created affiliate link', shortAffiliateLinkObject.link);
             res.status(200).send({affiliate_link: shortAffiliateLinkObject.link});
+
+            // TODO (@Alex): I updated the endpoint to add deal_id param so that we can record the shortened url for
+            // each affiliate. Once you update the client side, there's no need to check the validity of the deal_id
+            // here. The deal_id is referred to as the document id for each deal.
+            if(deal_id){
+                const promise = db.collection(DEAL_COLLECTIONS).doc(deal_id)
+                    .collection(AFFILIATE_COLLECTIONS).doc(email)
+                    .set({short_link: shortAffiliateLinkObject.link}, {merge: true});
+                return promise;
+            }
             return shortAffiliateLinkObject;
         })
         .catch(next);
