@@ -75,6 +75,13 @@ class GenericModel {
                 .doc(id)
                 .delete();
         };
+
+
+        this.listCollectionsById= (id) => {
+            return this.ref
+            .doc(id).collection('affiliates')
+            .get();
+        }
     }
 }
 

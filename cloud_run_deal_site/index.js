@@ -118,6 +118,36 @@ app.get('/share/list_deal', (req, res, next) => {
         .catch(next);
 });
 
+app.get('/share/deal/:id/list_affliates', (req, res, next) => {
+    console.debug(`${req.path} received`);
+    const docId = req.params.id;
+    if (!docId) {
+        res.status(422).send({status: 'Require a valid doc ID'});
+    }
+
+    const deal_ref =  DealModel.getDocById(docId)
+        .then(result => {
+            return result;
+        });
+    const deal_inf_ref = DealModel.listCollectionsById(docId)
+        .then(querySnapshot => {
+            const discovered_influencers = [];
+            querySnapshot.docs.forEach(doc => {
+                discovered_influencers.push(doc.data());
+            });
+            console.debug('Found', discovered_influencers.length, 'affiliates');
+            return discovered_influencers;
+        });
+    return Promise.all([deal_ref, deal_inf_ref])
+        .then(result => {
+            const [deal, affiliates] = result;
+            deal.affiliates = affiliates;
+            res.status(200).send(deal);
+            return deal;
+        })
+        .catch(next);
+});
+
 app.get('/share/deal/:id', (req, res, next) => {
     console.debug(`${req.path} received`);
     const dealId = req.params.id;
@@ -324,10 +354,13 @@ app.post('/share/apply/email/:email/deal_id/:deal_id', (req, res, next) => {
         })
         .then(data => {
             let affiliate_id = '';
-            if(data){
+            if (data) {
                 affiliate_id = data.affiliate_id || '';
             }
-            batch.set(deal_ref, {email, affiliate_id});
+            const request_body = req.body;
+            request_body.email = email;
+            request_body.affiliate_id = affiliate_id
+            batch.set(deal_ref, request_body);
             batch.set(affiliate_ref, {deal_id});
             return batch.commit();
         })
