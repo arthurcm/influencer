@@ -19,7 +19,7 @@ class Bitly {
 
         return new Promise((resolve, reject) => {
             request(requestOptions, (error, response, body) => {
-                if (!error && response.statusCode === 200) {
+                if (!error) {
                     resolve(JSON.parse(body));
                 }
                 reject(error)
