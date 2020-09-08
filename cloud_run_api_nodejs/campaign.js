@@ -21,6 +21,10 @@ const INFLUENCER_ACCEPT = 'Influencer accepted offer';
 const INFLUENCER_DECLINE = 'Influencer declined offer';
 const INFLUENCER_SIGNEDUP = 'Influencer signed up';
 
+const NEWLY_DISCOVERED = 'New influencers discovered';
+const NEED_MORE_INFLUENCERS = 'Need more influencers';
+const RESULTS_VIEWED = 'Results viewed';
+
 function uriParse(media_name){
     const tokens = media_name.split('/');
     const results = {
@@ -923,7 +927,6 @@ function gen_influencer_doc_id(platform, account_id){
 }
 
 
-// TODO: Add more details including commission, Modash profile etc.
 function add_recommended_influencers(brand_campaign_id, data){
     const batch = db.batch();
     const skip_brand_selected = data.skip_brand;
@@ -948,11 +951,40 @@ function add_recommended_influencers(brand_campaign_id, data){
                 inf_signing_status: signing_status,
             }, {merge: true});
         };
+        const campaign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
+
+        // Note: for each recommendation, we update discovery_status to NEWLY_DISCOVERED.
+        // The discovery_status changes when user views the results, or click the "discover more" button.
+        batch.update(campaign_ref, {discovery_status: NEWLY_DISCOVERED});
     }else{
         console.warn('Incoming data does not have influencer profiles');
     };
     return batch.commit();
 };
+
+
+function discover_more_influencers(brand_campaign_id){
+    const campaign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
+    return campaign_ref.update({discovery_status: NEED_MORE_INFLUENCERS});
+}
+
+
+function view_influencer_discovery_results(brand_campaign_id) {
+    const campaign_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
+    campaign_ref.update({discovery_status: RESULTS_VIEWED});
+    const influencer_ref = access_influencer_subcollection(brand_campaign_id);
+    return influencer_ref.get()
+        .then(snapshots => {
+            const influencers = [];
+            snapshots.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                if (doc_snap) {
+                    influencers.push(doc_snap);
+                }
+            });
+            return influencers;
+        });
+}
 
 
 function getBrandCampaignStatus(brand_campaign_id){
@@ -1006,6 +1038,8 @@ module.exports = {
     endBrandCampaign,
     totalInfCount,
     add_recommended_influencers,
+    discover_more_influencers,
+    view_influencer_discovery_results,
     access_influencer_subcollection,
     register_tracking_url,
     saveTargetingInfo,

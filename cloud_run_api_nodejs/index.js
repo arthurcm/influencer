@@ -21,6 +21,7 @@ const contract_sign = require('./contract_sign');
 const reporting = require('./reporting')
 
 const CLIENT_ONBOARDING_EMAILS = ['arthur.meng@lifo.ai', 'alex.niu@lifo.ai', 'shuo.shan@lifo.ai', 'claire.zhou@lifo.ai', 'test@lifo.ai'];
+const SUPPORTED_BRAND_TEMPLATES = ['email_temp_library', 'offer_detail_temp'];
 
 
 // middleware for token verification
@@ -845,6 +846,8 @@ app.get('/brand/contracts/brand_campaign_id/:brand_campaign_id', (req, res, next
         .catch(next);
 });
 
+
+// Note: this will update the campaign's discovery_status to NEWLY_DISCOVERED
 app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req, res, next) =>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const data = req.body;
@@ -852,6 +855,28 @@ app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req,
     return campaign.add_recommended_influencers(brand_campaign_id, data)
         .then(result => {
             res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+// Note: this will update the campaign's discovery_status to NEED_MORE_INFLUENCERS
+app.put('/brand/discover_more_influencers/brand_campaign_id/:brand_campaign_id', (req, res, next) =>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    return campaign.discover_more_influencers(brand_campaign_id)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+// Note: this will update the campaign's discovery_status to RESULTS_VIEWED
+app.get('/brand/view_discovery_results/brand_campaign_id/:brand_campaign_id', (req, res, next) =>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    return campaign.view_influencer_discovery_results(brand_campaign_id)
+        .then(result => {
+            res.status(200).send(result);
             return result;
         })
         .catch(next);
@@ -911,6 +936,8 @@ app.put('/brand/choose_influencer/brand_campaign_id/:brand_campaign_id/account_i
         .catch(next);
 });
 
+
+// This is to tweak influencer status from "email sent" to "no response"
 app.put('/am/deactivate_inf/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
@@ -990,6 +1017,30 @@ app.get('/am/template/template_type/:template_type', (req, res, next) => {
     const template_type = req.params.template_type;
     if(!template_type){
         console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    return contract_sign.get_all_templates(template_type)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
+// Note: this is used for brand to access read-only pre-defined types of templates as defined in the const below.
+// The full CRUD operation should be supported on the AM side, not brand side.
+// SUPPORTED_BRAND_TEMPLATES = ['email_temp_library', 'offer_detail_temp'];
+// email_temp_library: hosts a few built-in email templates
+// offer_detail_temp: hosts a few built-in offer details templates
+app.get('/brand/template/template_type/:template_type', (req, res, next) => {
+    const template_type = req.params.template_type;
+    if(!template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    if(!SUPPORTED_BRAND_TEMPLATES.includes(template_type)){
+        console.warn('template_type not supported');
         res.status(412).send({status: 'template_type empty'});
     }
     return contract_sign.get_all_templates(template_type)

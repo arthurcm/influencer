@@ -259,8 +259,9 @@ def process_modash_profile(profile_ref, profile, platform='instagram'):
 
 
 def convert_tuple_to_map(tag_tuple_list, field_prefix, field_name):
-    return dict({f'{field_prefix}{FIELD_DELIMITER}{pair.get(field_name)}': pair.get('weight') for pair in tag_tuple_list})
-
+    if tag_tuple_list:
+        return dict({f'{field_prefix}{FIELD_DELIMITER}{pair.get(field_name)}': pair.get('weight') for pair in tag_tuple_list})
+    return {}
 
 def save_modash_profile_firebase(user_id, profile, platform='instagram'):
     profile_ref = db.document('modash', user_id)

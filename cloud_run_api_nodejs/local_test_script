@@ -27,6 +27,13 @@ curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0s
 
 curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0sBHik23XH_ergA' -H 'Content-Type: application/x-www-form-urlencoded' --data 'grant_type=refresh_token&refresh_token=AE0u-Nd-J72Tyy6x-Oy474EXGplZYW6Q8rCd2vvMmvvpjaNYjgbsIpjYQsyAvAWppZf2EFaAMBXqPYwxzZ86sXJQWrDXkPE66_9KCP8LvJ17NJUwCg6C4S5QWhHL7ntUWkg8LxHNxy3NziCApIV9ElcE1j7TGKF4P3Iy-91TyABJUdLnnGxk-Tgg7It4UDT5FFok_Yb4Hex86JchsO7VmxSpSBnzwRMN0A'
 
+
+Download signed contract:
+curl  -H "Content-Type: application/json" -H "Authorization:<id_token>" -X GET https://campaign.lifo.ai/common/signature_request/files/signature_request_id/c1831d2f8fd90a37e6694a6cae227270c65cf328 --output test_contract.pdf
+
+
+
+
 !!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!
