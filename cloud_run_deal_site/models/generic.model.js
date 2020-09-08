@@ -151,6 +151,17 @@ class GenericModel {
                 .doc(id)
                 .delete();
         };
+
+        /**
+         *
+         * @param query {[string, string, any]}
+         * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
+         */
+        this.searchDoc = (query) => {
+            return this.ref
+                .where(query[0], query[1], query[2])
+                .get();
+        };
     }
 }
 

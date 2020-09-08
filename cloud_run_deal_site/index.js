@@ -9,9 +9,7 @@ require('isomorphic-fetch');
 const { db, AVAILABLE_COLLECTIONS, DealModel, AffiliateModel} = require('./models');
 const { IRelation } = require('./typings');
 const {Bitly} = require('./lib');
-
-const isValidDomain = require('is-valid-domain');
-const validUrl = require('valid-url');
+const moment = require('moment-timezone');
 
 const DEAL_COLLECTIONS = 'deals';
 const AFFILIATE_COLLECTIONS = 'affiliates';
@@ -96,12 +94,28 @@ app.post('/share/create_deal', (req, res, next) => {
         console.warn('Missing url from deal');
         res.status(412).send({status: 'Missing product url'});
     }
-    return DealModel.createDoc(req.body)
-        .then(result => {
-            res.status(200).send(req.body);
-            return result;
-        })
-        .catch(next);
+    if (!data.expiration_time) {
+        console.warn('Missing expiration_time from deal');
+        res.status(412).send({status: 'Missing expiration_time'});
+    }
+
+    // Here we use China Time for deal id
+    const dateStr = moment().tz('Asia/Shanghai').format('YYYYMMDD');
+    // We need to count how many deals are created since 12AM China time
+    const dateLong = Math.round(moment().utc().unix() / 86400) * 86400 - 28800;
+
+    return DealModel.searchDoc(['created_at', '>=', dateLong])
+        .then(querySnapshot => {
+            console.log('There are',  querySnapshot.docs.length, 'deals generated afer', dateLong);
+            return querySnapshot.docs.length;
+        }).then((deal_count) => {
+            req.body.deal_id = `${dateStr}_${deal_count + 1001}`
+            return DealModel.createDoc(req.body)
+                .then(result => {
+                    res.status(200).send(req.body);
+                    return result;
+                })
+        }).catch(next);
 });
 
 app.get('/share/list_deal', (req, res, next) => {
