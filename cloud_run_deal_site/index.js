@@ -6,7 +6,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 require('isomorphic-fetch');
-const { db, DealModel} = require('./models');
+const { db, AVAILABLE_COLLECTIONS, DealModel, AffiliateModel} = require('./models');
+const { IRelation } = require('./typings');
 const {Bitly} = require('./lib');
 
 const isValidDomain = require('is-valid-domain');
@@ -14,6 +15,7 @@ const validUrl = require('valid-url');
 
 const DEAL_COLLECTIONS = 'deals';
 const AFFILIATE_COLLECTIONS = 'affiliates';
+const RECOMMENDED_DEALS_COLLECTIONS = 'recommended_deals';
 
 // middleware for token verification
 app.use((req, res, next) => {
@@ -129,7 +131,7 @@ app.get('/share/deal/:id/list_affliates', (req, res, next) => {
         .then(result => {
             return result;
         });
-    const deal_inf_ref = DealModel.listCollectionsById(docId)
+    const deal_inf_ref = DealModel.listCollectionsById(docId, "affiliates")
         .then(querySnapshot => {
             const discovered_influencers = [];
             querySnapshot.docs.forEach(doc => {
@@ -278,18 +280,48 @@ app.post('/share/affiliate', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/share/affiliate/email/:email', (req, res, next) => {
+app.get('/share/affiliate/email/:email/date/:date', (req, res, next) => {
     const email = req.params.email;
-    if(!email){
+    const date = req.params.date;
+    if (!email) {
         res.status(422).send({status: 'Require a valid email'});
     }
-    return db.collection(AFFILIATE_COLLECTIONS).doc(email).get()
-        .then(snapshot => {
-            if(snapshot){
-                res.status(200).send(snapshot.data());
-                return snapshot.data();
+
+    if (!date) {
+        res.status(422).send({status: 'Require a valid date string'});
+    }
+
+    /**
+     *
+     * @type {IRelation[]}
+     */
+    const affiliateRelations = [
+        {
+            relationName: AVAILABLE_COLLECTIONS.recommended_deals,
+            relationId: date
+        }
+    ]
+
+    return AffiliateModel.getDocById(email, {relations: affiliateRelations})
+        .then(async doc => {
+            if (doc) {
+                if (doc[AVAILABLE_COLLECTIONS.recommended_deals].length) {
+                    doc[AVAILABLE_COLLECTIONS.recommended_deals] = await Promise.all(
+                        doc[AVAILABLE_COLLECTIONS.recommended_deals].map(async recommendedDeals => {
+                            if (recommendedDeals.deal_list.length) {
+                                recommendedDeals.deal_list = (await Promise.all(
+                                    recommendedDeals.deal_list.map(async dealId => await DealModel.getDocById(dealId))
+                                )).filter(deal => deal);
+                            }
+                            return recommendedDeals
+                        })
+                    );
+                }
+
+                res.status(200).send(doc);
+                return doc;
             }
-            res.status(200).send({status: 'not found'});
+            res.status(200).send({status: 'Affiliate not found'});
         })
         .catch(next);
 });

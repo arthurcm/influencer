@@ -1,40 +1,116 @@
-const db = require('./db');
-const {IModelOptions} = require('../typings/interfaces');
+const {db} = require('./db');
+const {IModelOptions, IModelConfiguration} = require('../typings');
 const moment = require('moment');
+const {IRelation} = require('../typings')
 
 class GenericModel {
-    getDocById(){};
-    createDoc(){};
-    updateDocById(){};
-    deleteDocById(){};
+    /**
+     *
+     * @type {string[]}
+     */
+    relations = [];
+
+    /**
+     *
+     * @param docRef {FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>}
+     * @param relations {IRelation[]}
+     * @returns {Promise<{
+     *     id: string
+     *     ...
+     * }[]>}
+     */
+    async getRelatedDocs(docRef, relations) {
+        let docRelations = {};
+        for (let relation of relations) {
+            if (relation.relationName && typeof relation.relationName === 'string') {
+                docRelations[relation.relationName] = [];
+                if (relation.relationId) {
+                    const subqueryString = `/${docRef.id}/${relation.relationName}/${relation.relationId}`;
+                    const subDocRef = await this.ref.doc(subqueryString).get();
+                    if (subDocRef.data()) {
+                        docRelations[relation.relationName] = [{
+                            id: subDocRef.id,
+                            ...subDocRef.data()
+                        }];
+                    }
+                } else {
+                    const relationSubquery = await docRef.ref.collection(relation.relationName).get();
+                    docRelations[relation.relationName] = [];
+                    relationSubquery.forEach(subDocRef => {
+                        if (subDocRef.data()) {
+                            docRelations[relation.relationName].push({
+                                id: subDocRef.id,
+                                ...subDocRef.data()
+                            });
+                        }
+                    })
+                }
+            }
+        }
+        return docRelations;
+    }
+
+
+    /**
+     *
+     * @param id {string}
+     * @param params {
+     *  {
+     *      relations: IRelation[]
+     *  }
+     * }
+     * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
+     */
+    async getDocById(id, params = {}) {
+        return this.ref
+            .doc(id)
+            .get()
+            .then(async docRef => {
+                let docData = docRef.data();
+                if (params.relations && Array.isArray(params.relations) && params.relations.length) {
+                    docData = Object.assign(docData, await this.getRelatedDocs(docRef, params.relations));
+                }
+                return docData;
+            });
+    };
+
+    createDoc() {
+    };
+
+    updateDocById() {
+    };
+
+    deleteDocById() {
+    };
+
+    /**
+     *
+     * @param id{string}
+     * @param collection {('deals' | 'affiliates' | 'recommended_deals')}
+     * @returns {Promise<FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>>}
+     */
+    listCollectionsById(id, collection) {
+        return this.ref
+            .doc(id).collection(collection)
+            .get();
+    }
 
     /**
      *
      * @returns {Promise<FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>>}
      */
-    get(){
+    get() {
         return this.ref.get();
     };
 
     /**
      *
-     * @param collectionName {string}
+     * @param collection {IModelConfiguration}
      * @param options {IModelOptions}
      */
-    constructor(collectionName, options = {}) {
-        this.ref = db.collection(collectionName);
-
-        /**
-         *
-         * @param id {string}
-         * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
-         */
-        this.getDocById = (id) => {
-            return this.ref
-                .doc(id)
-                .get()
-                .then(docRef => docRef.data());
-        };
+    constructor(collection, options = {}) {
+        this.ref = db.collection(collection.collectionName);
+        this.relations = collection.relations
 
         /**
          *
@@ -75,13 +151,6 @@ class GenericModel {
                 .doc(id)
                 .delete();
         };
-
-
-        this.listCollectionsById= (id) => {
-            return this.ref
-            .doc(id).collection('affiliates')
-            .get();
-        }
     }
 }
 
