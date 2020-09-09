@@ -102,12 +102,18 @@ app.post('/share/create_deal', (req, res, next) => {
     // Here we use China Time for deal id
     const dateStr = moment().tz('Asia/Shanghai').format('YYYYMMDD');
     // We need to count how many deals are created since 12AM China time
-    const dateLong = Math.round(moment().utc().unix() / 86400) * 86400 - 28800;
+    const dateLong = Math.round((moment().utc().unix() - 28800)/ 86400) * 86400 - 28800;
 
     return DealModel.searchDoc(['created_at', '>=', dateLong])
         .then(querySnapshot => {
             console.log('There are',  querySnapshot.docs.length, 'deals generated afer', dateLong);
-            return querySnapshot.docs.length;
+            let maxId = 0;
+            querySnapshot.docs.forEach(doc => {
+                if (doc.data().deal_id) {
+                    maxId = Math.max(maxId, Number(doc.data().deal_id.substring(9)) - 1000);
+                }
+            })
+            return maxId;
         }).then((deal_count) => {
             req.body.deal_id = `${dateStr}_${deal_count + 1001}`
             return DealModel.createDoc(req.body)
