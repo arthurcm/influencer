@@ -1051,6 +1051,35 @@ app.get('/brand/template/template_type/:template_type', (req, res, next) => {
         .catch(next);
 });
 
+
+// Note: this is used for brand to access read-only pre-defined types of templates as defined in the const below.
+// The full CRUD operation should be supported on the AM side, not brand side.
+// SUPPORTED_BRAND_TEMPLATES = ['email_temp_library', 'offer_detail_temp'];
+// email_temp_library: hosts a few built-in email templates
+// offer_detail_temp: hosts a few built-in offer details templates
+app.get('/brand/template/template_type/:template_type/template_name/:template_name', (req, res, next) => {
+    const template_name = req.params.template_name;
+    if(!template_name){
+        console.warn('template_name can not be empty');
+        res.status(412).send({status: 'template_name empty'});
+    }
+    const template_type = req.params.template_type;
+    if(!template_type){
+        console.warn('template_type can not be empty');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    if(!SUPPORTED_BRAND_TEMPLATES.includes(template_type)){
+        console.warn('template_type not supported');
+        res.status(412).send({status: 'template_type empty'});
+    }
+    return contract_sign.get_message_template(template_type, template_name)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
 app.get('/am/template/template_type/:template_type/template_name/:template_name', (req, res, next) => {
     const template_name = req.params.template_name;
     if(!template_name){

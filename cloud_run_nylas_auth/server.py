@@ -731,10 +731,11 @@ def files():
     if flask.request.method == 'POST':
         try:
             # check if the post request has the file part
-            if 'file' not in flask.request.files:
+            logging.info(f'{[key for key in flask.request.files.keys()]}')
+            if 'file' not in flask.request.files and 'UploadFiles' not in flask.request.files:
                 logging.info('No file part')
                 return flask.redirect(flask.request.url)
-            file = flask.request.files['file']
+            file = flask.request.files['UploadFiles'] or flask.request.files['file']
             # if user does not select file, browser also
             # submit an empty part without filename
             if file.filename == '':
@@ -742,6 +743,7 @@ def files():
                 return flask.redirect(flask.request.url)
             if file:
                 filename = secure_filename(file.filename)
+                logging.info(f'receiving file name {filename}')
                 # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
                 nylas_file = nylas.files.create()
