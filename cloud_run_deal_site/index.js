@@ -283,6 +283,26 @@ app.get('/share/get_item_info/:asin', (req, res, next) => {
     }).catch(next);
 });
 
+app.get('/share/deal/:id/list_affiliate', (req, res, next) => {
+    const dealId = req.params.id;
+    return AffiliateModel.getAffiliatesWithActualDateByDealId(dealId)
+        .then(affiliates => {
+            res.status(200).send(affiliates);
+        })
+        .catch(next);
+});
+
+app.put('/share/deal/:id/affiliate', (req, res, next) => {
+    const dealId = req.params.id;
+    const affiliatesToUpdate = req.body;
+    return AffiliateModel.updateAffiliatesDates(dealId, affiliatesToUpdate)
+        .then(() => {
+            // console.debug('Found', affiliates.length, 'affiliates in /campaign GET');
+            res.status(200).send([]);
+        })
+        .catch(next);
+});
+
 app.post('/share/affiliate', (req, res, next) => {
     const data = req.body;
     const email = data.email;

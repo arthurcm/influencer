@@ -105,6 +105,28 @@ class GenericModel {
 
     /**
      *
+     * @param id {string}
+     * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
+     */
+    deleteDocById (id) {
+        return this.ref
+            .doc(id)
+            .delete();
+    };
+
+    /**
+     *
+     * @param query {[string, string, any]}
+     * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
+     */
+    searchDoc (query) {
+        return this.ref
+            .where(query[0], query[1], query[2])
+            .get();
+    };
+
+    /**
+     *
      * @param collection {IModelConfiguration}
      * @param options {IModelOptions}
      */
@@ -139,28 +161,6 @@ class GenericModel {
             return this.ref
                 .doc(id)
                 .update(object);
-        };
-
-        /**
-         *
-         * @param id {string}
-         * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
-         */
-        this.deleteDocById = (id) => {
-            return this.ref
-                .doc(id)
-                .delete();
-        };
-
-        /**
-         *
-         * @param query {[string, string, any]}
-         * @returns {FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>}
-         */
-        this.searchDoc = (query) => {
-            return this.ref
-                .where(query[0], query[1], query[2])
-                .get();
         };
     }
 }
