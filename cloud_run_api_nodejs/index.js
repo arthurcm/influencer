@@ -764,8 +764,8 @@ app.get('/common/influencer_profile/uid/:uid', (req, res, next) => {
 
 
 // This is to create signature resquest, which returns signature related information.
-app.post('/signature_request/create_embedded_with_template', (req, res, next) => {
-    console.debug('/signature_request/create_embedded_with_template received a request', req.body);
+app.post('/brand/signature_request/create_embedded_with_template', (req, res, next) => {
+    console.debug('/brand/signature_request/create_embedded_with_template received a request', req.body);
     const data = req.body;
     const uid = res.locals.uid;
     if (!data.brand_campaign_id) {
@@ -1149,7 +1149,7 @@ app.get('/share/influencer/brand_campaign_id/:brand_campaign_id/account_id/:acco
 
 // Corresponds to a html editor results
 // this is to allow AM to fill in detailed information for campaign for influencers to review.
-app.post('/am/inf_product_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+app.post('/brand/inf_product_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
     const data = req.body;
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
@@ -1172,7 +1172,7 @@ app.post('/am/inf_product_message/brand_campaign_id/:brand_campaign_id/account_i
 
 // Corresponds to a html editor results
 // this is to allow AM to fill in detailed information for campaign for influencers to review.
-app.post('/am/inf_comp_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+app.post('/brand/inf_comp_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
     const data = req.body;
     const brand_campaign_id = req.params.brand_campaign_id;
     const account_id = req.params.account_id;
