@@ -458,7 +458,7 @@ def shopify_products():
     if not res:
         res = {'status': 'access token not found'}
         response = flask.jsonify(res)
-        response.status_code = 404
+        response.status_code = 204
         return response
     shop_access_token = res
 
