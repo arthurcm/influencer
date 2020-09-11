@@ -13,7 +13,7 @@ const moment = require('moment-timezone');
 
 const DEAL_COLLECTIONS = 'deals';
 const AFFILIATE_COLLECTIONS = 'affiliates';
-const RECOMMENDED_DEALS_COLLECTIONS = 'recommended_deals';
+const logger = require('morgan');
 
 // middleware for token verification
 app.use((req, res, next) => {
@@ -78,6 +78,11 @@ app.use((err, req, res, next) => {
     res.status(500).send({ error: err });
     return res;
 });
+
+console.log('Parameter USE_REQUEST_LOGGER:', process.env.USE_REQUEST_LOGGER);
+if (process.env.USE_REQUEST_LOGGER === 'true') {
+    app.use(logger('dev'));
+}
 
 app.get('/share/health', (req, res) => {
     res.send({'status': 'ok'});
@@ -281,6 +286,42 @@ app.get('/share/get_item_info/:asin', (req, res, next) => {
         console.log(response)
         res.send(response.data);
     }).catch(next);
+});
+
+app.get('/share/list_affiliate', (req, res, next) => {
+    return AffiliateModel.get()
+        .then(querySnapshot => {
+            const affiliates = [];
+            querySnapshot.docs.forEach(doc => {
+                const doc_snap = doc.data();
+                doc_snap.id = doc.id;
+                affiliates.push(doc_snap);
+            });
+            res.status(200).send(affiliates);
+        })
+        .catch(next);
+});
+
+app.put('/share/affiliate/:id', (req, res, next) => {
+    const affiliateId = req.params.id;
+    const affiliateToUpdate = req.body;
+    return AffiliateModel.updateDocById(affiliateId, affiliateToUpdate)
+        .then(result => {
+                res.status(200).send({'status': 'updated'});
+                return result;
+            })
+        .catch(next);
+});
+
+app.post('/share/new/affiliate/', (req, res, next) => {
+    const affiliateToUpdate = req.body;
+    return AffiliateModel.createDocWithId(affiliateToUpdate.email, affiliateToUpdate)
+        .then(result => {
+            affiliateToUpdate.id = affiliateToUpdate.email;
+            res.status(200).send(affiliateToUpdate);
+            return result;
+        })
+        .catch(next);
 });
 
 app.get('/share/deal/:id/list_affiliate', (req, res, next) => {

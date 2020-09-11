@@ -77,10 +77,10 @@ class GenericModel {
     createDoc() {
     };
 
-    updateDocById() {
+    createDocWithId() {
     };
 
-    deleteDocById() {
+    updateDocById() {
     };
 
     /**
@@ -145,6 +145,21 @@ class GenericModel {
             }
             return this.ref
                 .doc()
+                .set(object);
+        };
+
+        /**
+         *
+         * @param id {string}
+         * @param object
+         * @returns {Promise<FirebaseFirestore.WriteResult>}
+         */
+        this.createDocWithId = (id, object) => {
+            if (options.includeCreatedAt) {
+                object.created_at = moment().utc().unix();
+            }
+            return this.ref
+                .doc(id)
                 .set(object);
         };
 
