@@ -265,16 +265,16 @@ app.get('/share/get_item_info/:asin', (req, res, next) => {
     axios(
         {
             "method":"GET",
-            "url": "https://amazon-product-search.p.rapidapi.com/amazon-search/product",
-            "headers":{
-                "content-type": "application/octet-stream",
-                "x-rapidapi-host": "amazon-product-search.p.rapidapi.com",
-                "x-rapidapi-key": "87ce9b7202msh2cd25930b9a3f3bp16bf78jsnec59bcf7cfae",
-                "useQueryString": true
+            "url":"https://amazon-products1.p.rapidapi.com/product",
+            "headers": {
+                "content-type":"application/octet-stream",
+                "x-rapidapi-host":"amazon-products1.p.rapidapi.com",
+                "x-rapidapi-key":"87ce9b7202msh2cd25930b9a3f3bp16bf78jsnec59bcf7cfae",
+                "useQueryString":true
             },
-            "params":{
-                "asin": asin,
-                "region": "com"
+            "params": {
+                "country": "US",
+                "asin": asin
             }
         }
     ).then((response)=>{
