@@ -785,6 +785,29 @@ app.post('/brand/signature_request/create_embedded_with_template', (req, res, ne
 });
 
 
+// TODO: remove the following once client side is updated.
+// This is to create signature resquest, which returns signature related information.
+app.post('/signature_request/create_embedded_with_template', (req, res, next) => {
+    console.debug('/signature_request/create_embedded_with_template received a request', req.body);
+    const data = req.body;
+    const uid = res.locals.uid;
+    if (!data.brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if (!data.inf_name && !data.account_id) {
+        console.warn('inf_name or account_id can not be empty');
+        res.status(412).send({status: 'inf_name and account_id both empty'});
+    }
+    return contract_sign.signatureRequest(data)
+        .then(result => {
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+
 // // Currently the json body only requires a valid brand_campaign_id
 // // Note: don't use this one for now. (July 7th, 2020)
 // app.post('/unclaimed_draft/create_embedded_with_template', (req, res, next) => {
