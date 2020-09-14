@@ -1170,6 +1170,31 @@ app.get('/share/influencer/brand_campaign_id/:brand_campaign_id/account_id/:acco
 });
 
 
+// TODO: remove the following once client side is updated.
+// Corresponds to a html editor results
+// this is to allow AM to fill in detailed information for campaign for influencers to review.
+app.post('/am/inf_product_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const data = req.body;
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    return contract_sign.update_product_message(brand_campaign_id, account_id, data.product_message, data.product_image_list)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
+
+
+
 // Corresponds to a html editor results
 // this is to allow AM to fill in detailed information for campaign for influencers to review.
 app.post('/brand/inf_product_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
@@ -1185,6 +1210,28 @@ app.post('/brand/inf_product_message/brand_campaign_id/:brand_campaign_id/accoun
         res.status(412).send({status: 'account_id empty'});
     }
     return contract_sign.update_product_message(brand_campaign_id, account_id, data.product_message, data.product_image_list)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
+
+
+// TODO: remove the following once client side is updated.
+app.post('/am/inf_comp_message/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
+    const data = req.body;
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    if(!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if(!account_id){
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    return contract_sign.update_comp_message(brand_campaign_id, account_id, data.compensation_message)
         .then(results => {
             res.status(200).send({status: 'OK'});
             return results;
