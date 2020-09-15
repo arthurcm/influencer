@@ -14,6 +14,7 @@ const moment = require('moment-timezone');
 const DEAL_COLLECTIONS = 'deals';
 const AFFILIATE_COLLECTIONS = 'affiliates';
 const logger = require('morgan');
+const admin = require('firebase-admin');
 
 // middleware for token verification
 app.use((req, res, next) => {
@@ -337,6 +338,17 @@ app.put('/share/deal/:id/affiliate', (req, res, next) => {
     const dealId = req.params.id;
     const affiliatesToUpdate = req.body;
     return AffiliateModel.updateAffiliatesDates(dealId, affiliatesToUpdate)
+        .then(() => {
+            // console.debug('Found', affiliates.length, 'affiliates in /campaign GET');
+            res.status(200).send([]);
+        })
+        .catch(next);
+});
+
+app.put('/share/batch-promotion', (req, res, next) => {
+    const dealIds = req.body.dealIds;
+    const affiliatesToUpdate = req.body.affiliatesToUpdate;
+    return AffiliateModel.updateAffiliatesDates(dealIds, affiliatesToUpdate)
         .then(() => {
             // console.debug('Found', affiliates.length, 'affiliates in /campaign GET');
             res.status(200).send([]);

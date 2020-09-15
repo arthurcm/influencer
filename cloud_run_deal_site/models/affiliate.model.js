@@ -59,7 +59,13 @@ class AffiliateModel extends GenericModel {
         )
     }
 
-    async updateAffiliatesDates(dealId, affiliatesToUpdate) {
+    /**
+     *
+     * @param dealIds {string | string[]}
+     * @param affiliatesToUpdate
+     * @returns {Promise<unknown[]>}
+     */
+    async updateAffiliatesDates(dealIds, affiliatesToUpdate) {
         return Promise.all(affiliatesToUpdate.map(async affiliate => {
             const affiliateRef = await this.ref.doc(affiliate.id);
             const recommendedDealsRef = affiliateRef.collection(AVAILABLE_COLLECTIONS.recommended_deals);
@@ -69,29 +75,34 @@ class AffiliateModel extends GenericModel {
             });
 
             // we need Promise.all here for prevent storing the deal more than once for one affiliate
-            await Promise.all(dealsList.map(dealList => {
-            // removing previous date
-                if (dealList && dealList.deal_list.indexOf(dealId) !== -1) {
-                    dealList.deal_list.splice(dealList.deal_list.indexOf(dealId), 1);
-                    if (dealList.deal_list.length) {
-                        return recommendedDealsRef.doc(dealList.id).set({deal_list: dealList.deal_list})
-                    } else {
-                        return recommendedDealsRef.doc(dealList.id).delete();
-
+            const promises = [];
+            let dealIdsArray = Array.isArray(dealIds) ? dealIds : [dealIds]
+            dealsList.forEach(dealList => {
+                // removing previous dates
+                dealIdsArray.forEach(deal => {
+                    if (dealList && dealList.deal_list.indexOf(deal) !== -1) {
+                        dealList.deal_list.splice(dealList.deal_list.indexOf(deal), 1);
                     }
+                })
+                if (dealList.deal_list.length) {
+                    promises.push(recommendedDealsRef.doc(dealList.id).set({deal_list: dealList.deal_list}))
+                } else {
+                    promises.push(recommendedDealsRef.doc(dealList.id).delete());
+
                 }
-            }))
+            })
+            await Promise.all(promises)
 
             if (affiliate.start_date) {
-                // adding new date
-                const newDateDocObj = recommendedDealsSnapshot.docs.find(doc => doc.id === affiliate.start_date);
-                if (newDateDocObj) {
-                    await newDateDocObj.ref.update({
-                        deal_list: admin.firestore.FieldValue.arrayUnion(dealId)
+                // adding new dates
+                const dateDocObj = recommendedDealsSnapshot.docs.find(doc => doc.id === affiliate.start_date);
+                if (dateDocObj) {
+                    await dateDocObj.ref.update({
+                        deal_list: admin.firestore.FieldValue.arrayUnion(...dealIdsArray)
                     });
                 } else {
                     await recommendedDealsRef.doc(affiliate.start_date).set({
-                        deal_list: [dealId]
+                        deal_list: dealIdsArray
                     });
                 }
             }
