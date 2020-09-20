@@ -12,7 +12,7 @@ from sqlalchemy import MetaData, Table, Column, String, select
 # // Uncomment and set the following variables depending on your specific instance and database:
 class Sqlhandler:
     def __init__(self):
-        self.connection_name = "influencer-272204:us-central1:influencersql"#"gcf"
+        self.connection_name = "influencer-272204:us-central1:influencersql" #"gcf"
         self.table_name = "authentication"
         self.table_field = ""
         self.table_field_value = ""

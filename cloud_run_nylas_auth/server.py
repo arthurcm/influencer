@@ -315,7 +315,7 @@ def verify_auth_status():
         sync_state = nylas_client.account.sync_state
         logging.info(f'Current syncing status is {sync_state}')
         logging.info(f'The account {uid} is in sync')
-        response = flask.jsonify('OK')
+        response = flask.jsonify({'email': flask.session['email']})
         response.status_code = 200
         return response
     except Exception as e:
@@ -536,6 +536,9 @@ def send_email_to_brand():
     uid = flask.session.get('uid')
     sender_name = flask.session.get('name')
     sender_email = flask.session.get('email')
+    # Some user does not have 'name' field, add a temp hack here
+    if not sender_name:
+        sender_name = sender_email
     data = flask.request.json
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
@@ -608,6 +611,8 @@ def send_single_email_with_template():
     data = flask.request.json
     sender_name = flask.session.get('name') or data.get('sender_name')
     sender_email = flask.session.get('email')
+    if not sender_name:
+        sender_name = sender_email
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
@@ -645,6 +650,10 @@ def send_single_email_with_template():
             file = nylas.files.get(data.get('file_id'))
             draft.attach(file)
             body = body.replace("$(file_id)", file.id)
+
+        # when reply a thread
+        if data.get('reply_to_message_id'):
+            draft.reply_to_message_id = data.get('reply_to_message_id')
         draft.body = body
         draft.tracking = {'links': 'true',
                           'opens': 'true',
@@ -662,16 +671,6 @@ def send_single_email_with_template():
         """
         inf_account_id = data.get('account_id')
         if inf_account_id != 'lifo' and data.get('to_name') != 'lifo' and 'lifo.ai' not in data.get('to_email'):
-            influencer_ref = db.document(BRAND_CAMPAIGN_COLLECTIONS,
-                                         brand_campaign_id,
-                                         INFLUENCER_COLLECTIONS,
-                                         inf_account_id)
-            influencer_ref.set(
-                {
-                    'inf_contacting_status': 'Email sent'
-                },
-                merge=True
-            )
             emails_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS,
                                        brand_campaign_id,
                                        INFLUENCER_COLLECTIONS,
@@ -695,9 +694,29 @@ def send_single_email_with_template():
                 'file_id': data.get('file_id')
             }
             emails_ref.document().set(email_history)
-        draft.send()
+        send_result = draft.send()
+        logging.info(send_result)
+        # Update influencer status
+        influencer_ref = db.document(BRAND_CAMPAIGN_COLLECTIONS,
+                                         brand_campaign_id,
+                                         INFLUENCER_COLLECTIONS,
+                                         inf_account_id)
+        influcner_update_body = {}
+        if data.get('for_contract'):
+            influcner_update_body['inf_contract_status'] = 'Email sent'
+            if not data.get('reply_to_message_id'):
+                influcner_update_body['inf_contract_thread'] = send_result['thread_id']
+        else:
+            influcner_update_body['inf_contacting_status'] = 'Email sent'
+            if not data.get('reply_to_message_id'):
+                influcner_update_body['inf_offer_thread'] = send_result['thread_id']
+        influencer_ref.set(
+            influcner_update_body,
+            merge=True
+        )
+
         logging.info('email sent successfully')
-        response = flask.jsonify('email sent successfully')
+        response = flask.jsonify(send_result)
         response.status_code = 200
         return response
     except Exception as e:
@@ -769,6 +788,161 @@ def files():
         response.status_code = 200
         return response
 
+@app.route("/get_thread_by_id", methods=["GET"])
+def get_thread_by_id():
+    from cloud_sql import sql_handler
+    uid = flask.session.get('uid')
+    data = flask.request.json
+    logging.info(f'Receiving request {data} for session uid {uid}')
+
+    thread_id = flask.request.args.get('thread_id')
+    if not thread_id:
+        response = flask.jsonify({'error': 'need valid thread_id query param'})
+        response.status_code = 412
+        return response
+
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
+    logging.info(f'Retrieved Nylas access token {access_token}')
+    nylas = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+
+    try:
+        full_message = []
+        messages = nylas.messages.where(thread_id=thread_id)
+        for m in messages:
+            message = message_to_dict(m)
+            full_message.append(message)
+        full_message.sort(key=lambda x: x['received_at'])
+        response = flask.jsonify(full_message)
+        response.status_code = 200
+        return response
+    except Exception as e:
+        logging.error(f'Sending email failed! Error message is {str(e)}')
+        response = flask.jsonify(str(e))
+        response.status_code = 400
+        return response
+
+@app.route("/email_thread", methods=["GET"])
+def get_email_thread():
+    from cloud_sql import sql_handler
+    uid = flask.session.get('uid')
+    data = flask.request.json
+    logging.info(f'Receiving request {data} for session uid {uid}')
+
+    search_email = flask.request.args.get('email')
+    sender_email = flask.session.get('email')
+    if not search_email:
+        response = flask.jsonify({'error': 'need valid search_email query param'})
+        response.status_code = 412
+        return response
+
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
+    logging.info(f'Retrieved Nylas access token {access_token}')
+    nylas = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+    try:
+        # Return all messages found in the user's inbox
+        full_message = []
+        messages_to = nylas.messages.where(to=search_email)
+        for m in messages_to:
+            message = message_to_dict(m)
+            if len(message['from']) > 0 and message['from'][0]['email'] == sender_email:
+                full_message.append(message)
+
+        messages_from = nylas.messages.where(from_=search_email)
+        for m in messages_from:
+            message = message_to_dict(m)
+            if len(message['to']) > 0 and message['to'][0]['email'] == sender_email:
+                full_message.append(message)
+        full_message.sort(key=lambda x: x['received_at'], reverse=True)
+        response = flask.jsonify(full_message[0:50])
+        response.status_code = 200
+        return response
+    except Exception as e:
+        logging.error(f'Sending email failed! Error message is {str(e)}')
+        response = flask.jsonify(str(e))
+        response.status_code = 400
+        return response
+
+def clean_email_body(body):
+    new_body = ''
+    index = 0
+    while index < len(body):
+        if body[index:index+5] == '<head':
+            for j in range(index, len(body)):
+                if body[j:j+7] == '</head>':
+                    index = j + 7
+                    break
+        if body[index:index+7] == '<script':
+            for j in range(index, len(body)):
+                if body[j:j+9] == '</script>':
+                    index = j + 9
+                    break
+        elif body[index:index+6] == '<style':
+            for j in range(index, len(body)):
+                if body[j:j+8] == '</style>':
+                    index = j + 8
+                    break
+        else: 
+            new_body += body[index]
+            index += 1
+                    
+    if not new_body.startswith('<div'):
+        return new_body
+    div = 0
+    for i in range(len(new_body)):
+        if new_body[i:i+4] == '<div':
+            div += 1
+        if new_body[i:i+5] == '</div':
+            div -= 1
+        
+        if div == 0:
+            return body[0:i+6]
+    return body
+
+def message_to_dict(message):
+    return {    
+        'id': message.id,
+        # message.object
+        'account_id': message.account_id,
+        'thread_id': message.thread_id,
+        'subject': message.subject,
+        'from': message.from_,
+        'to': message.to,
+        'cc': message.cc,
+        'bcc': message.bcc,
+        'date': message.date,
+        'unread': message.unread,
+        # message.starred
+        # message.snippet
+        'full_body': message.body,
+        'body': clean_email_body(message.body),
+        'files': message.files,
+        'events': message.events,
+        # message.folder
+        # message.labels
+        'received_at': message.received_at
+    }
+
+@app.route("/health", methods=["GET"])
+def health():
+    response = flask.jsonify({'status': 'ok'})
+    response.status_code = 200
+    return response
 
 def ngrok_url():
     """

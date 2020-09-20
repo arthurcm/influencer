@@ -2,7 +2,7 @@ import flask
 from flask_dance.contrib.nylas import make_nylas_blueprint, nylas
 from nylas import APIClient
 
-access_token = '0ZHAruH0KDdJFU7Eugl2YeUrVFN8eS'
+access_token = 'N7gIdhGCaCnk9NXvI2iH0TSFkLOkbx'
 NYLAS_OAUTH_CLIENT_ID = 'eb2syukweshnr62eiovmkqsgb'
 NYLAS_OAUTH_CLIENT_SECRET = '83ttw20jzg5vzo4jlk0086lav'
 
@@ -49,7 +49,7 @@ def message_to_dict(message):
         'account_id': message.account_id,
         'thread_id': message.thread_id,
         'subject': message.subject,
-        'from_': message.from_,
+        'from': message.from_,
         'to': message.to,
         'cc': message.cc,
         'bcc': message.bcc,
@@ -82,8 +82,8 @@ def test_nylas():
     messages_to = nylas.messages.where(to=search_email)
     for m in messages_to:
         message = message_to_dict(m)
-        print(message['from_'])
-        if len(message['from_']) > 0 and message['from_'][0]['email'] == sender_email:
+        print(message['from'])
+        if len(message['from']) > 0 and message['from'][0]['email'] == sender_email:
             full_message.append(message)
 
     messages_from = nylas.messages.where(from_=search_email)
@@ -101,5 +101,24 @@ def test_nylas():
     # response = flask.jsonify([message_to_dict(message) for message in messages])
     # print response
 
+def test_nylas_thread():
+    nylas = APIClient(
+        app_id=NYLAS_OAUTH_CLIENT_ID,
+        app_secret=NYLAS_OAUTH_CLIENT_SECRET,
+        access_token=access_token
+    )
 
-test_nylas()
+    thread_id ='cxptjh84tmq1ass239jsno0ij'
+
+    full_message = []
+    messages = nylas.messages.where(thread_id=thread_id)
+    for m in messages:
+        message = message_to_dict(m)
+        full_message.append(message)
+    full_message.sort(key=lambda x: x['received_at'])
+
+    for message in full_message:
+        print(message['body'])
+        print('====================')
+        
+test_nylas_thread()
