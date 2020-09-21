@@ -1064,6 +1064,33 @@ function infDisocverNotificaitons(brand_campaign_id, idToken, endpoint){
 };
 
 
+function getBrandCampaignDataFromInfCampaign(inf_campaign_id){
+    return db.collection(INFLUENCER_CAMPAIGN_COLLECTIONS).doc(inf_campaign_id).get()
+        .then(snapshot => {
+            const campaign_data = snapshot.data();
+            const brand_campaign_id = campaign_data.brand_campaign_id;
+            const uid = campaign_data.uid;
+            return {
+                brand_campaign_id,
+                uid,
+            };
+        })
+};
+
+
+function approveContent(inf_campaign_id, history_id){
+    return getBrandCampaignDataFromInfCampaign(inf_campaign_id)
+        .then(data => {
+            if(!data.brand_campaign_id || !data.uid){
+                return null;
+            }
+            return access_influencer_subcollection(data.brand_campaign_id).doc(data.uid)
+                .update({
+                    content_approval_version: history_id
+                })
+        })
+}
+
 
 module.exports = {
     getCampaign,
@@ -1108,6 +1135,7 @@ module.exports = {
     getBrandContactInfo,
     discoveredInfNotificaitons,
     discoveredMoreNotificaitons,
+    approveContent,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

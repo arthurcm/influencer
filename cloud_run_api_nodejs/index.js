@@ -80,24 +80,6 @@ app.use((req, res, next) => {
 });
 
 
-// As of 08-19-2020, this endpoint is deprecated.
-// app.post('/create_campaign', (req, res, next) => {
-//     console.debug('/create_campaign received a request', req.body);
-//     const data = req.body;
-//     const uid = res.locals.uid;
-//     const results = campaign.createCampaign(data, uid, campaign.GENERIC_INF_CREATED_CAMPAIGN);
-//     const campaign_id = results.campaign_id;
-//     const history_id = results.history_id;
-//     const batch = results.batch_promise;
-//     return batch.commit()
-//         .then(result => {
-//             res.status(200).send({campaign_id, history_id});
-//             return result;
-//         })
-//         .catch(next);
-// });
-
-
 app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
     const campaign_id = req.params.campaign_id;
@@ -138,17 +120,6 @@ app.get('/common/campaign/campaign_id/:campaign_id', (req, res, next) => {
         .catch(next);
 });
 
-
-// TODO: Fix this API endpoint
-// app.get('/get_campaign', (req, res, next) => {
-//     const uid = res.locals.uid;
-//     return campaign.getAllCampaign(uid)
-//         .then(result => {
-//             res.status(200).send(result);
-//             return result;
-//         })
-//         .catch(next);
-// });
 
 app.get('/media/campaign_type/:campaign_type/campaign_id/:campaign_id', (req, res, next) => {
     // const uid = res.locals.uid;
@@ -298,6 +269,31 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
         return next();
     }
     return campaign.finalizeCampaign('no_uid', campaign_id, history_id)
+        .then(result => {
+            res.status(200).send({status : 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
+app.put('/brand/approve/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
+    const campaign_id = req.params.campaign_id;
+    const history_id = req.params.history_id;
+    console.debug(`${req.path} received  ${campaign_id} and ${history_id}`);
+    if(!campaign_id){
+        res.status(422).send('Require a valid campaign_id');
+    }
+    if(!history_id){
+        res.status(422).send('Require a valid history_id');
+    }
+    if (res.headersSent){
+        return next();
+    }
+    return campaign.finalizeCampaign('no_uid', campaign_id, history_id)
+        .then(result => {
+            return campaign.approveContent(campaign_id, history_id)
+        })
         .then(result => {
             res.status(200).send({status : 'OK'});
             return result;
