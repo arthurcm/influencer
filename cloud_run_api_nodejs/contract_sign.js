@@ -490,7 +490,15 @@ function get_inf_status(brand_campaign_id, account_id){
 }
 
 
-function get_influencer_view(brand_campaign_id, account_id){
+async function get_influencer_view(brand_campaign_id, account_id){
+    const brand_campaigns_ref = db.collection(campaign.BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
+    let offer_detail = null;
+    await brand_campaigns_ref.get()
+        .then((snapshot) => {
+            const brand_campaign_data = snapshot.data();
+            offer_detail = brand_campaign_data.offer_detail;
+        });
+    
     return campaign.access_influencer_subcollection(brand_campaign_id).doc(account_id)
         .get()
         .then(snapshot => {
@@ -504,6 +512,7 @@ function get_influencer_view(brand_campaign_id, account_id){
                 product_message: data.product_message || '',
                 product_image_list: data.product_image_list || [],
                 compensation_message: data.compensation_message || '',
+                offer_detail: offer_detail || {},
             };
             return {
                 influencer_public_profile,

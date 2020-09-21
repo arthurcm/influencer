@@ -20,6 +20,10 @@ const EMAIL_SENT = 'Email sent. Waiting for response.';
 const INFLUENCER_ACCEPT = 'Influencer accepted offer';
 const INFLUENCER_DECLINE = 'Influencer declined offer';
 const INFLUENCER_SIGNEDUP = 'Influencer signed up';
+const SKIP_OFFER = 'Skip Offer';
+const OFFER_CANCELLED = 'Offer Cancelled';
+const IN_CONTENT_REVIEW = 'In Content Review';
+const CONTENT_APPROVED = 'Content Approved';
 
 const NEWLY_DISCOVERED = 'New influencers discovered';
 const NEED_MORE_INFLUENCERS = 'Need more influencers';
@@ -1115,4 +1119,8 @@ module.exports = {
     INFLUENCER_DECLINE,
     INFLUENCER_SIGNEDUP,
     EMAIL_SENT,
+    SKIP_OFFER,
+    OFFER_CANCELLED,
+    IN_CONTENT_REVIEW,
+    CONTENT_APPROVED,
 };
