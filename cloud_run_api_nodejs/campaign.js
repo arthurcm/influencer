@@ -1005,6 +1005,62 @@ function getBrandCampaignStatus(brand_campaign_id){
         });
 };
 
+
+function getBrandContactInfo(brand_campaign_id){
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
+        .then(snapshot => {
+            const campaign_data = snapshot.data();
+            const brand = campaign_data.brand_id || campaign_data.brand;
+            const contact_name = campaign_data.contact_name;
+            const contact_email = campaign_data.contact_email;
+            return {
+                brand,
+                brand_contact_name: contact_name,
+                brand_email: contact_email,
+                brand_campaign_name: campaign_data.campaign_name,
+            };
+        });
+};
+
+// Util for email notifications for both brand and AM side.
+function sendSystemNotifications(endpoint, jsonBody, idToken){
+    return fetch(`https://auth.lifo.ai/${endpoint}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: idToken,
+        },
+        body: JSON.stringify(jsonBody),
+    });
+};
+
+// wrapper for influencer discovery notifications
+function discoveredInfNotificaitons(brand_campaign_id, idToken){
+    return infDisocverNotificaitons(brand_campaign_id, idToken, '/am/discovered_notifications');
+};
+
+// wrapper for influencer discovery notifications
+function discoveredMoreNotificaitons(brand_campaign_id, idToken){
+    return infDisocverNotificaitons(brand_campaign_id, idToken, '/discover_more_notifications');
+};
+
+// Util for influencer discovery notifications
+function infDisocverNotificaitons(brand_campaign_id, idToken, endpoint){
+    return getBrandContactInfo(brand_campaign_id)
+        .then(results =>{
+            const payload = {
+                brand: results.brand,
+                brand_contact_name: results.brand_contact_name,
+                brand_email: results.brand_email,
+                brand_campaign_name: results.brand_campaign_name,
+            };
+            console.log('Found brand contact info', payload);
+            return sendSystemNotifications(endpoint, payload, idToken);
+        });
+};
+
+
+
 module.exports = {
     getCampaign,
     getAllCampaign,
@@ -1045,6 +1101,9 @@ module.exports = {
     saveTargetingInfo,
     getTargetingInfo,
     getBrandCampaignStatus,
+    getBrandContactInfo,
+    discoveredInfNotificaitons,
+    discoveredMoreNotificaitons,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

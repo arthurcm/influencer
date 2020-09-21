@@ -874,11 +874,15 @@ app.get('/brand/contracts/brand_campaign_id/:brand_campaign_id', (req, res, next
 app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req, res, next) =>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const data = req.body;
+    const idToken = req.headers.authorization;
     console.debug(`/am/recommend_influencers received brand_campaign_id ${brand_campaign_id} with json body ${data}`);
     return campaign.add_recommended_influencers(brand_campaign_id, data)
         .then(result => {
+            return campaign.discoveredInfNotificaitons(brand_campaign_id, idToken);
+        })
+        .then(result=> {
+            console.log('email notification results are', result);
             res.status(200).send({status: 'OK'});
-            return result;
         })
         .catch(next);
 });
@@ -886,10 +890,14 @@ app.post('/am/recommend_influencers/brand_campaign_id/:brand_campaign_id', (req,
 // Note: this will update the campaign's discovery_status to NEED_MORE_INFLUENCERS
 app.put('/brand/discover_more_influencers/brand_campaign_id/:brand_campaign_id', (req, res, next) =>{
     const brand_campaign_id = req.params.brand_campaign_id;
+    const idToken = req.headers.authorization;
     return campaign.discover_more_influencers(brand_campaign_id)
         .then(result => {
+            return campaign.discoveredMoreNotificaitons(brand_campaign_id, idToken);
+        })
+        .then(result => {
+            console.log('email notification results are', result);
             res.status(200).send({status: 'OK'});
-            return result;
         })
         .catch(next);
 });

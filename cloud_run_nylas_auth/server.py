@@ -619,7 +619,7 @@ def send_single_email_with_template():
         response = flask.jsonify({'status': 'no auth'})
         response.status_code = 402
         return response
-    logging.info(f'Retrieved nylas access token {access_token}')
+    logging.info(f'Retrieved nylas access token')
     nylas = APIClient(
         app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
         app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
@@ -724,6 +724,184 @@ def send_single_email_with_template():
         response = flask.jsonify(str(e))
         response.status_code = 400
         return response
+
+
+def send_email_util(subject, body, to_email, to_name,
+               bcc_email='customer@lifo.ai', bcc_name='lifo customer support',
+               uid=None):
+    """
+    This method is a generic email sending util without attachments.
+    """
+    from cloud_sql import sql_handler
+    if not uid:
+        uid = flask.session.get('uid')
+    access_token = sql_handler.get_nylas_access_token(uid)
+    if not access_token:
+        response = flask.jsonify({'status': 'no auth'})
+        response.status_code = 402
+        return response
+    logging.info(f'Retrieved Nylas access token')
+    nylas = APIClient(
+        app_id=app.config["NYLAS_OAUTH_CLIENT_ID"],
+        app_secret=app.config["NYLAS_OAUTH_CLIENT_SECRET"],
+        access_token=access_token
+    )
+    try:
+        draft = nylas.drafts.create()
+        draft.subject = subject
+        draft.to = [{'email': to_email, 'name': to_name}]
+
+        # bcc our Lifo's internal support account to allow better tracking.
+        draft.bcc = [{'email': bcc_email, 'name': bcc_name}]
+        draft.body = body
+        draft.tracking = {'links': 'true',
+                          'opens': 'true',
+                          'thread_replies': 'true',
+                          }
+        draft.send()
+        logging.info('email sent successfully')
+        response = flask.jsonify('email sent successfully')
+        response.status_code = 200
+        return response
+    except Exception as e:
+        logging.error(f'Sending email failed! Error message is {str(e)}')
+        response = flask.jsonify(str(e))
+        response.status_code = 400
+        return response
+
+
+def send_email_notifications(subject, body, to_email, to_name,
+                             bcc_email='customer@lifo.ai', bcc_name='lifo customer support'):
+    """
+    A wrapper for system email notification sending.
+    This is used for any user triggered events to notify another side with email. Some use cases include:
+    1. customer interaction notifies Account managers
+    2. brand interactions to notify influencers (NOT outreach)
+    3. system notifications to influencers.
+    The from_email is hardcoded with notifications@lifo.ai account (through uid).
+
+    Note: don't change the hardcoded UID here.
+    """
+    return send_email_util(subject=subject, body=body, to_email=to_email, to_name=to_name,
+                           bcc_email=bcc_email, bcc_name=bcc_name, uid='9VMVBILF51aQI33FsJheBlbd5F33')
+
+
+@app.route("/am/system_notifications", methods=['POST'])
+def system_notifications():
+    """
+    Generic endpoint for AM access control. It is designed to send email notifications to customers.
+    """
+    data = flask.request.json
+    subject = data.get('subject')
+    body = data.get('body')
+    to_email = data.get('to_email')
+    to_name = data.get('to_name')
+    return system_notification_util(subject, body, to_email, to_name)
+
+
+def system_notification_util(subject, body, to_email, to_name):
+    """
+    Generic util method for sending email notifications to AM
+    """
+    if not subject or not body:
+        logging.error('Illegal call to /am/system_notifications with empty email subject or body')
+        response = flask.jsonify({'status': 'empty email subject or body'})
+        response.status_code = 200
+        return response
+    if not to_email or not to_name:
+        logging.error('Illegal call to /am/system_notifications with empty to_email or to_name')
+        response = flask.jsonify({'status': 'empty to_email or to_name'})
+        response.status_code = 200
+        return response
+    return send_email_notifications(subject=subject, body=body, to_email=to_email, to_name=to_name)
+
+
+@app.route("/am/discovered_notifications", methods=["POST"])
+def discovered_notifications():
+    """
+    Called when AM team has pushed influencers to brand side to complete the influencer discovery request.
+    The "Discover more" icon in the influencer discovery section will recover to clickable.
+    """
+    data = flask.request.json
+    brand_contact_name = data.get('brand_contact_name')
+    brand_email = data.get('brand_email')
+    brand_campaign_name = data.get('brand_campaign_name') or 'unknown'
+    if not brand_contact_name or not brand_email:
+        logging.error('Illegal call to /am/discovered_influencers_notifications with empty brand information')
+        response = flask.jsonify({'status': 'empty brand information'})
+        response.status_code = 200
+        return response
+
+    subject = f'Lifo has matched more influencers for campaign: {brand_campaign_name}'
+    body = 'You can check it out by log back into login.lifo.ai'
+    return system_notification_util(subject, body, to_email=brand_email, to_name=brand_contact_name)
+
+
+@app.route("/am/shipping_notifications", methods=["POST"])
+def shipping_notifications():
+    """
+    When a tracking number is created for a particular campaign, send out email with tracking information to influencers.
+    """
+    data = flask.request.json
+    inf_name = data.get('inf_name')
+    inf_email = data.get('inf_email')
+    campaign_name = data.get('campaign_name') or 'unknown'
+    tracking_number = data.get('tracking_number')
+    product_name = data.get('product_name')
+    carrier = data.get('carrier')
+    if not tracking_number or not product_name:
+        logging.error('Illegal call to /am/shipping_notifications with tracking information or product name')
+        response = flask.jsonify({'status': 'empty product information'})
+        response.status_code = 200
+        return response
+
+    subject = f'Lifo has shipped product {product_name} for your campaign: {campaign_name}'
+    body = f'Your tracking number is through {carrier}: {tracking_number}'
+    return system_notification_util(subject, body, to_email=inf_email, to_name=inf_name)
+
+
+@app.route("/customer_request_notifications", methods=['POST'])
+def customer_request_notifications():
+    """
+    This generic endpoint is designed to send email notifications to lifo's am support group.
+    As such, the receiving end is always lif-am@lifo.ai
+    Subject and body have to be valid.
+    """
+    data = flask.request.json
+    subject = data.get('subject')
+    body = data.get('body')
+    return customer_request_util(subject, body)
+
+
+def customer_request_util(subject, body):
+    if not subject or not body:
+        logging.error('Illegal call to customer requests with empty subject or body')
+        response = flask.jsonify({'status': 'empty subject or body'})
+        response.status_code = 200
+    return send_email_notifications(subject, body, to_email='lifo-am@lifo.ai', to_name='Lifo Account Managers')
+
+
+@app.route("/discover_more_notifications", methods=["POST"])
+def discover_more_notifications():
+    """
+    Called when brand customers click on the "Discover more" button in the influencer discovery section.
+    It sends the meta data to AM support group email.
+    """
+    data = flask.request.json
+    brand = data.get('brand')
+    brand_contact_name = data.get('brand_contact_name')
+    brand_email = data.get('brand_email')
+    brand_campaign_name = data.get('brand_campaign_name') or 'unknown'
+    logging.info(f'/discover_more_notifications receiving {data}')
+    if not brand:
+        logging.error('Illegal call to /discover_more_notifications with empty brand name')
+        response = flask.jsonify({'status': 'empty brand name'})
+        response.status_code = 200
+        return response
+
+    subject = f'{brand} {brand_contact_name} with email {brand_email} is requesting more influencers for campaign: {brand_campaign_name}'
+    body = 'Please log into AM tool and push them more influencers'
+    return customer_request_util(subject, body)
 
 
 @app.route("/files", methods=["POST", "GET"])
