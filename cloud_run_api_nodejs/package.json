@@ -3,7 +3,8 @@
   "description": "Cloud run for nodejs api",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "develop": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json nodemon ./index.js"
   },
   "engines": {
     "node": "8"

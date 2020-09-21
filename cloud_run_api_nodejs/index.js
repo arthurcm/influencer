@@ -17,6 +17,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const campaign = require('./campaign');
+const influencer = require('./influencer');
 const contract_sign = require('./contract_sign');
 const reporting = require('./reporting')
 
@@ -1566,4 +1567,53 @@ const port = process.env.PORT || 8080;
 app.listen(port, () => {
     console.info('Nodejs API server listening on port', port);
 });
+
+// Influencer part
+app.post('/influencer/sign-up/influencer', (req, res, next) => {
+    console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    return influencer.updateInfluencerUserById(res.locals.uid,data)
+        .then(user => res.status(200).send(user))
+        .catch(next);
+})
+
+app.get('/influencer/current-profile', (req, res, next) => {
+    return influencer.getInfluencerUserByUid(res.locals.uid)
+        .then(user => {
+            if (!user) {
+                const userData = {
+                    email: res.locals.email,
+                    user_id: res.locals.uid
+                }
+                return influencer.createInfluencerUser(userData)
+                    .then(newUser => res.status(200).send(newUser))
+            } else {
+                res.status(200).send(user);
+            }
+        })
+        .catch(next);
+
+})
+
+app.get('/influencer/check-instagram', (req, res, next) => {
+    return influencer.getInstagramProfileFromModash(res.locals.uid, req.headers.authorization)
+        .then(modashResults => {
+            if (modashResults) {
+                return influencer.updateInfluencerUserById(res.locals.uid, {is_instagram_checked: true});
+            }
+        })
+        .catch(next);
+
+})
+
+app.put('/influencer/complete-sign-up', (req, res, next) => {
+    console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    const userUid = res.locals.uid;
+    return influencer.updateInfluencerUserById(userUid, data)
+        .then(user => res.status(200).send(user))
+        .catch(next);
+
+})
+
 
