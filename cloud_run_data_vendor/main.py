@@ -380,54 +380,53 @@ def instagram_report():
 
 
 @app.route("/influencer/instagram/profile", methods=["GET"])
-def instagram_report():
-        """
-        We need this endpoint to check if influencer has an Instagram account.
-
-        This API pulls instagram full report from Modash
-        https://api.modash.io/v1/instagram/profile/{userId}/report
-        The default behavior is to use a cached version of report stored in Lifo's SQL server.
-        If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
-        """
-        userId = flask.request.args.get('userId')
-        if not userId:
-            response = flask.jsonify({"error": "Valid userId param required!"})
-            response.status_code = 412
-            return response
-
-        force_update = flask.request.args.get('force_update')
-        if not force_update:
-            force_update = False
-
-        profile = None
-
-        if not force_update:
-            profile, update_time = sql_handler.get_profile(userId, platform='instagram')
-            logging.info(f'Not forcing profile update, and obtained profile {profile}')
-        if not profile or len(profile) == 0:
-            for i in range(0, 5):
-                logging.info(f'Fetching profile from Modash for userid {userId}: # {i+1}th try')
-                url = f'{MODASH_API_ENDPINT}/instagram/profile/{userId}/report'
-                logging.info(f'Receiving request for url {url}')
-                headers = {'Authorization': MODASH_AUTH_HEADER}
-                profile_res = requests.get(url, headers=headers)
-                profile_json = profile_res.json()
-                logging.info(f'Modash instagram profile response is: {profile_res.json()}')
-                profile = profile_json.get('profile')
-                if profile:
-                    save_modash_profile_firebase(userId, profile)
-                    sql_handler.save_profile(userId, 'instagram', profile)
-                    break
-                else:
-                    logging.warning('Modash API not responding, retrying')
-                    time.sleep(1)
-        if profile:
-            response = flask.jsonify(profile)
-            response.status_code = 200
-        else:
-            response = flask.jsonify({"error": "Failed to obtain instagram profile"})
-            response.status_code = 400
+def instagram_report_influencer():
+    """
+    We need this endpoint to check if influencer has an Instagram account.
+    This API pulls instagram full report from Modash
+    https://api.modash.io/v1/instagram/profile/{userId}/report
+    The default behavior is to use a cached version of report stored in Lifo's SQL server.
+    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
+    """
+    userId = flask.request.args.get('userId')
+    if not userId:
+        response = flask.jsonify({"error": "Valid userId param required!"})
+        response.status_code = 412
         return response
+
+    force_update = flask.request.args.get('force_update')
+    if not force_update:
+        force_update = False
+
+    profile = None
+
+    if not force_update:
+        profile, update_time = sql_handler.get_profile(userId, platform='instagram')
+        logging.info(f'Not forcing profile update, and obtained profile {profile}')
+    if not profile or len(profile) == 0:
+        for i in range(0, 5):
+            logging.info(f'Fetching profile from Modash for userid {userId}: # {i+1}th try')
+            url = f'{MODASH_API_ENDPINT}/instagram/profile/{userId}/report'
+            logging.info(f'Receiving request for url {url}')
+            headers = {'Authorization': MODASH_AUTH_HEADER}
+            profile_res = requests.get(url, headers=headers)
+            profile_json = profile_res.json()
+            logging.info(f'Modash instagram profile response is: {profile_res.json()}')
+            profile = profile_json.get('profile')
+            if profile:
+                save_modash_profile_firebase(userId, profile)
+                sql_handler.save_profile(userId, 'instagram', profile)
+                break
+            else:
+                logging.warning('Modash API not responding, retrying')
+                time.sleep(1)
+    if profile:
+        response = flask.jsonify(profile)
+        response.status_code = 200
+    else:
+        response = flask.jsonify({"error": "Failed to obtain instagram profile"})
+        response.status_code = 400
+    return response
 
 
 @app.route("/brand/instagram/interests", methods=["GET"])

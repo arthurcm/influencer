@@ -986,6 +986,18 @@ app.put('/brand/cancel_offer/brand_campaign_id/:brand_campaign_id/account_id/:ac
         .catch(next);
 });
 
+app.put('/brand/add_note/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    const data = req.body;
+    return campaign.addNote(brand_campaign_id, account_id, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
 // This is to tweak influencer status from "email sent" to "no response"
 app.put('/am/deactivate_inf/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;

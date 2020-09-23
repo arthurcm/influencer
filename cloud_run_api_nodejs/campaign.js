@@ -1091,6 +1091,11 @@ function approveContent(inf_campaign_id, history_id){
         })
 }
 
+function addNote(brand_campaign_id, influencer_id, note) {
+    return access_influencer_subcollection(brand_campaign_id).doc(influencer_id)
+        .update(note);
+}
+
 
 module.exports = {
     getCampaign,
@@ -1136,6 +1141,7 @@ module.exports = {
     discoveredInfNotificaitons,
     discoveredMoreNotificaitons,
     approveContent,
+    addNote,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

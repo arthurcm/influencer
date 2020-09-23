@@ -513,6 +513,7 @@ async function get_influencer_view(brand_campaign_id, account_id){
                 product_image_list: data.product_image_list || [],
                 compensation_message: data.compensation_message || '',
                 offer_detail: offer_detail || {},
+                status: data.inf_signing_status,
             };
             return {
                 influencer_public_profile,
