@@ -131,10 +131,10 @@ class Sqlhandler:
             conn = self.db.connect()
             result = conn.execute(select_query).fetchall()
             logging.info(f'Getting nylas sql results: {result}')
-            return result[0][0],result[0][1]
+            return result[0][0], result[0][1]
         except Exception as e:
             logging.error(f'Error getting access code for uid {uid}, the error is' + str(e))
-            return ''
+            return '', ''
 
     def save_nylas_token(self, uid, nylas_access_token, nylas_account_id, email):
 
