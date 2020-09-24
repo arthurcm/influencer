@@ -5,6 +5,7 @@ import sys
 import textwrap
 import datetime
 import hashlib
+import time
 
 import firebase_admin
 from firebase_admin import auth, exceptions
@@ -194,8 +195,8 @@ def hook():
     flask.session[FROM_SHOPIFY] = decoded_token.get(FROM_SHOPIFY)
     flask.session[STORE_ACCOUNT] = decoded_token.get(STORE_ACCOUNT)
     flask.session[ACCOUNT_MANAGER_FLAG] = decoded_token.get(ACCOUNT_MANAGER_FLAG)
-    flask.session['name'] = decoded_token.get('name')
-    flask.session['email'] = decoded_token.get('email')
+    flask.session['name'] = decoded_token.get('name') or decoded_token.get('store_name')
+    flask.session['email'] = decoded_token.get('email') or decoded_token.get('store_email')
 
 
 @app.route("/authorize")
@@ -252,6 +253,7 @@ def authorize():
 
         account = nylas_client.account
         nylas_account_id = account.id
+        nylas_email = account.email_address
 
         uid = flask.session['uid']
         scope = flask.session['scope']
@@ -260,10 +262,8 @@ def authorize():
         # Note: here we automatically handle the Nylas id changing case, as each user is recognized by their firebase
         # uid, and any new Nylas ids will be overwritten. This does bring in limitations: a user can only authorize one
         # Calendar account, which is not an issue for foreseeable future.
-        sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id)
-    response = flask.jsonify({'status': 'OK'})
-    response.status_code = 200
-    return response
+        sql_handler.save_nylas_token(uid, nylas_access_token=access_token, nylas_account_id=nylas_account_id, email=nylas_email)
+    return render_template("authorize_succeed.html")
 
 
 @app.route("/revoke_auth", methods=["DELETE"])
@@ -300,7 +300,7 @@ def verify_auth_status():
     from cloud_sql import sql_handler
     uid = flask.session['uid']
     logging.info(f'verifying auth sync status for uid {uid}')
-    access_token = sql_handler.get_nylas_access_token(uid)
+    access_token, email = sql_handler.get_nylas_authorize_info(uid)
     if not access_token:
         logging.info(f'The account {uid} has not authorized yet')
         response = flask.jsonify({'status': 'no auth'})
@@ -315,7 +315,7 @@ def verify_auth_status():
         sync_state = nylas_client.account.sync_state
         logging.info(f'Current syncing status is {sync_state}')
         logging.info(f'The account {uid} is in sync')
-        response = flask.jsonify({'email': flask.session['email']})
+        response = flask.jsonify({'email': email or flask.session['email']})
         response.status_code = 200
         return response
     except Exception as e:
@@ -609,10 +609,6 @@ def send_single_email_with_template():
     from cloud_sql import sql_handler
     uid = flask.session.get('uid')
     data = flask.request.json
-    sender_name = flask.session.get('name') or data.get('sender_name')
-    sender_email = flask.session.get('email')
-    if not sender_name:
-        sender_name = sender_email
     logging.info(f'Receiving request {data} for session uid {uid}')
     access_token = sql_handler.get_nylas_access_token(uid)
     if not access_token:
@@ -635,7 +631,6 @@ def send_single_email_with_template():
 
         #Note: should to_name be account_id instead?
         body = body.replace("$(receiver_name)", data.get('to_name'))
-        body = body.replace("$(sender_name)", sender_name)
 
         # note: need to anonymize the email for external url usage.
         body = body.replace("$(inf_email)", data.get('to_email'))
@@ -658,7 +653,7 @@ def send_single_email_with_template():
         draft.tracking = {'links': 'true',
                           'opens': 'true',
                           'thread_replies': 'true',
-                          'payload': data.get('campaign_name') or f'{sender_name} <{sender_email}>'
+                          'payload': data.get('campaign_name') or f'<{sender_email}>'
                           }
 
         """
@@ -701,17 +696,19 @@ def send_single_email_with_template():
                                          brand_campaign_id,
                                          INFLUENCER_COLLECTIONS,
                                          inf_account_id)
-        influcner_update_body = {}
+        influencer_update_body = {}
         if data.get('for_contract'):
-            influcner_update_body['inf_contract_status'] = 'Email sent'
+            influencer_update_body['inf_contract_status'] = 'Email sent'
             if not data.get('reply_to_message_id'):
-                influcner_update_body['inf_contract_thread'] = send_result['thread_id']
+                influencer_update_body['inf_contract_thread'] = send_result['thread_id']
+                influencer_update_body['contract_received_time'] = time.time()
         else:
-            influcner_update_body['inf_contacting_status'] = 'Email sent'
+            influencer_update_body['inf_contacting_status'] = 'Email sent'
             if not data.get('reply_to_message_id'):
-                influcner_update_body['inf_offer_thread'] = send_result['thread_id']
+                influencer_update_body['inf_offer_thread'] = send_result['thread_id']
+                influencer_update_body['offer_received_time'] = time.time()
         influencer_ref.set(
-            influcner_update_body,
+            influencer_update_body,
             merge=True
         )
 

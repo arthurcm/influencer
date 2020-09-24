@@ -5,6 +5,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 require('isomorphic-fetch');
+const moment = require('moment');
 
 const isValidDomain = require('is-valid-domain');
 const validUrl = require('valid-url');
@@ -998,6 +999,36 @@ app.put('/brand/add_note/brand_campaign_id/:brand_campaign_id/account_id/:accoun
         .catch(next);
 });
 
+app.put('/brand/add_shipping_info/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    const data = req.body;
+    // Shipping Info Should Includes Tracking Number / Carrier and we can look for a delivery time
+    if(!data.tracking_number || !data.carrier){
+        console.warn('tracking number and carrier can not be empty');
+        res.status(412).send({status: 'tracking information is empty'});
+    }
+    return campaign.addShippingInfo(brand_campaign_id, account_id, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/brand/receive_shipping/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const account_id = req.params.account_id;
+    const data = req.body;
+    // TODO: This is still manual work, need to check how to automate this.
+    return campaign.receiveShipping(brand_campaign_id, account_id, data)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
 // This is to tweak influencer status from "email sent" to "no response"
 app.put('/am/deactivate_inf/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
@@ -1359,15 +1390,22 @@ app.put('/share/influencer_offer', (req, res, next) => {
         console.warn('have to either accept or decline can not be empty');
         return res.status(412).send({status: 'choose either accept or decline'});
     }
-    let inf_signing_status = campaign.INFLUENCER_ACCEPT;
-    if(!data.accept){
+
+    let influencer_profile;
+    if (data.accpet) {
+        influencer_profile = {
+            inf_signing_status: campaign.INFLUENCER_ACCEPT,
+            offer_response : data,
+            offer_accept_time: moment().utc().unix(),
+        };
+    } else {
         console.log('Influencer declined the offer');
-        inf_signing_status = campaign.INFLUENCER_DECLINE;
+        influencer_profile = {
+            inf_signing_status: campaign.INFLUENCER_DECLINE,
+            offer_response: data,
+            offer_decline_time: moment().utc().unix(),
+        };
     }
-    const influencer_profile = {
-        inf_signing_status,
-        offer_response : data,
-    };
 
     // this is a hack to avoid unwanted bugs during test phase.
     let internal_test = false;

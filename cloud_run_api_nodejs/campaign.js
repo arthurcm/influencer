@@ -1096,6 +1096,23 @@ function addNote(brand_campaign_id, influencer_id, note) {
         .update(note);
 }
 
+function addShippingInfo(brand_campaign_id, influencer_id, shipping_info) {
+    // Get more Shipping Info here
+    return access_influencer_subcollection(brand_campaign_id).doc(influencer_id)
+        .update({
+            shipping_info,
+            product_ship_time: moment.utc().unix()
+        });
+}
+
+function receiveShipping(brand_campaign_id, influencer_id) {
+    // Need to get information here.
+    return access_influencer_subcollection(brand_campaign_id).doc(influencer_id)
+        .update({
+            product_received_time: moment.utc().unix()
+        });
+}
+
 
 module.exports = {
     getCampaign,
@@ -1142,6 +1159,8 @@ module.exports = {
     discoveredMoreNotificaitons,
     approveContent,
     addNote,
+    addShippingInfo,
+    receiveShipping,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,
