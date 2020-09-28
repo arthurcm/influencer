@@ -714,7 +714,7 @@ app.get('/common/campaign/brand_campaign_id/:brand_campaign_id', (req, res, next
             await db.collection('brands').doc(brand_campaigns.brand_id)
                 .get()
                 .then(snapShot => {
-                    if(snapShot.data().shop){
+                    if(snapShot.data() && snapShot.data().shop){
                         shop_info = snapShot.data().shop;
                     }
                     console.log('Getting shop info:', shop_info);
