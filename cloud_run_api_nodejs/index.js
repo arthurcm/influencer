@@ -1604,6 +1604,93 @@ app.get('/brand/brand_campaign_status/brand_campaign_id/:brand_campaign_id', (re
         .catch(next);
 });
 
+app.get('/am/campaign_configuration/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    if (!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return db.collection('configuration').doc(brand_campaign_id).get()
+        .then(result => {
+            res.status(200).send(result.data());
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/am/campaign_configuration/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    if (!brand_campaign_id){
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    return db.collection('configuration').doc(brand_campaign_id).set(req.body, {merge: true})
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.get('/brand/faq', (req, res, next) => {
+    return db.collection('faq').get()
+        .then(snapshot => {
+            const result = [];
+            snapshot.forEach(doc => {
+                result.push({
+                    id: doc.id,
+                    ...doc.data(),
+                })
+            });
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+app.get('/brand/faq/:id', (req, res, next) => {
+    const faq_id = req.params.id;
+    return db.collection('faq').doc(faq_id).get()
+        .then(result => {
+            res.status(200).send({
+                id: result.id,
+                ...result.data(),
+            });
+            return result;
+        })
+        .catch(next);
+});
+
+app.post('/am/faq', (req, res, next) => {
+    return db.collection('faq').add(req.body)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/am/faq/:id', (req, res, next) => {
+    const faq_id = req.params.id;
+    return db.collection('faq').doc(faq_id).set(req.body)
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.delete('/am/faq/:id', (req, res, next) => {
+    const faq_id = req.params.id;
+    return db.collection('faq').doc(faq_id).delete()
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     if (res.headersSent) {

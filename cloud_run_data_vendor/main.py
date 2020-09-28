@@ -759,7 +759,7 @@ def create_campaign_payment():
     app.logger.info(f'paylod {json.dumps(payload)}')
     res = requests.post(url, json=payload, headers=headers)
     logging.info(f'Create application charge for {shop}: {res.json()}')
-    campaign_ref.set(res.json())
+    campaign_ref.set(res.json(), merge=True)
     response = flask.jsonify(res.json())
     response.status_code = 200
     return response
