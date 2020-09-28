@@ -41,6 +41,7 @@ class Sqlhandler:
                 username=self.db_user,
                 password=self.db_password,
                 database=self.db_name,
+                # host='34.70.211.131'
                 query={'unix_sock': '/cloudsql/{}/.s.PGSQL.5432'.format(self.connection_name)}
             ),
             # ... Specify additional properties here.

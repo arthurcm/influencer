@@ -24,11 +24,11 @@ client = google.cloud.logging.Client()
 # Connects the logger to the root logging handler; by default this captures
 # all logs at INFO level and higher
 client.setup_logging()
+logging.basicConfig(level=logging.INFO)
 
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
 CLIENT_SECRETS_FILE = "/tmp/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
-
 
 # This is taken from https://marketer.modash.io/developer
 MODASH_API_ACCESS_KEY = "Xuomvq8poz8x9PdJNvKVadzUyO7xuj1X"
@@ -80,14 +80,15 @@ MAX_SHOPIFY_RESULTS_LIMIT = 200
 
 import firebase_admin
 from firebase_admin import auth
+from firebase_admin import credentials
 from firebase_admin import exceptions
-from google.cloud import firestore
+from firebase_admin import firestore
 
 
 firebase_app = firebase_admin.initialize_app()
 
 # here the db variable is a firestore client. We name it as "db" just to be consistent with JS side.
-db = firestore.Client()
+db = firestore.client()
 
 app = flask.Flask(__name__)
 CORS(app)
@@ -688,6 +689,105 @@ def shop_customer_info():
             cur_res['location_cnt'] = row[2]
             data.append(cur_res)
     response = flask.jsonify(data)
+    response.status_code = 200
+    return response
+
+
+def get_shopify_shop_info(shop):
+    shop_info_ref = db.document('brands', shop).get()
+    if shop_info_ref.to_dict():
+        logging.info('Shop info exists. Skip pulling it from Shopify API.')
+        return shop_info_ref.to_dict()
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+    url = f'https://{shop}/admin/api/{API_VERSION}/shop.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    res = requests.get(url, headers=headers)
+    logging.info(f'Obtained shop information for shop {shop}: {res.json()}')
+    brand_ref = db.collection('brands')
+    brand_ref.document(shop).set(res.json())
+    sql_handler.save_shop_info(shop, res.json())
+    return res.json()
+
+
+@app.route('/brand/create_campaign_payment', methods=['POST'])
+def create_campaign_payment():
+    """
+    This endpoint is called when brand create a commission based campaign.
+    He/she will need to complete payment before 
+    """
+    campaign_info = flask.request.json
+    # TODO: Idealy we get shop from token
+    shop = campaign_info['shop']
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    campaign_id = campaign_info['campaign_id']
+    campaign_ref = db.collection('brand_campaigns').document(campaign_id)
+    campaign = campaign_ref.get()
+    if not campaign.exists:
+        res = {'status': 'campaign not found'}
+        response = flask.jsonify(res)
+        response.status_code = 400
+        return response
+    campaign_data = campaign.to_dict()
+    campaign_name = campaign_data.get('campaign_name')
+
+    url = f'https://{shop}/admin/api/{API_VERSION}/application_charges.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    payload = {
+        'application_charge': {
+            'name': f'Upfront Payment for Campaign {campaign_name}',
+            'price': campaign_info['due_amount'],
+            'return_url': f"http://login.lifo.ai/app/complete-campaign-payment/{campaign_id}",
+            'test': True
+        }
+    }
+
+    app.logger.info(f'paylod {json.dumps(payload)}')
+    res = requests.post(url, json=payload, headers=headers)
+    logging.info(f'Create application charge for {shop}: {res.json()}')
+    campaign_ref.set(res.json())
+    response = flask.jsonify(res.json())
+    response.status_code = 200
+    return response
+
+
+@app.route('/brand/retrieve_campaign_charge', methods=['GET'])
+def retrieve_campaign_payment():
+    """
+    This endpoint is called to 
+    """
+    # TODO: Idealy we get shop from token
+    shop = flask.request.args.get('shop')
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    charge_id = flask.request.args.get('charge_id')
+    url = f'https://{shop}/admin/api/{API_VERSION}/application_charges/{charge_id}.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    res = requests.get(url, headers=headers)
+    logging.info(f'Retrieve charge id for {shop}: {res.json()}')
+    # Status could be pending, accepted, declined
+    response = flask.jsonify(res.json())
     response.status_code = 200
     return response
 
