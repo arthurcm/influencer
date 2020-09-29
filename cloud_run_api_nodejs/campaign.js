@@ -1353,6 +1353,65 @@ function declineInvitation(brand_campaign_id, inf_id, uid) {
 }
 
 
+// Currently this pricing rul is hardcoded. But should be relatively easy to change to configurations.
+function commissisonRule(follower_cnts, product_cost, cpm, bonus_rate, max_commission){
+    if(typeof follower_cnts != 'number'){
+        // by default, commission is $80
+        return 80;
+    }
+
+    let cpm_tier;
+    const follower_5k_mod = Math.floor(follower_cnts / 5000);
+
+    if(follower_cnts <= 30000){
+        cpm_tier = cpm;
+    }else if(follower_cnts > 30000 && follower_cnts <= 50000){
+        cpm_tier = cpm - 1;
+    }else if(follower_cnts > 50000 && follower_cnts <= 100000){
+        cpm_tier = cpm - 2;
+    }else if(follower_cnts > 100000 && follower_cnts <= 200000){
+        cpm_tier = cpm - 3;
+    }else{
+        cpm_tier = cpm - 4;
+    }
+    let commission_dollar = Math.min(Math.max(cpm_tier * 5 * follower_5k_mod - product_cost, 0), max_commission);
+
+    let bonus_dollar = Math.floor(commission_dollar * bonus_rate);
+    commission_dollar = Math.floor(commission_dollar / 10) * 10;
+    return {
+        commission_dollar,
+        bonus_dollar
+    }
+}
+
+
+/**
+ *
+ * @param influencer_list {Array}: list of influencers, each item is an object with: influencer id, follower counts,
+ * @param max_commission {number} : this is the max base commission for each influencer
+ * @param bonus_percentage {number} : percentage of the bonus. Used to calculate the bonus dollar amount.
+ * @param product_cost {number} : this is the expected cost of the product. Will affect the commission each influencer receives.
+ * @param cpm {number} : this is the base cpm for each 1k followers.
+ * Note: here we hardcode the pricing rules and bonus rounding rules in the server side.
+ */
+function calculateCommission(influencer_list, max_commission, bonus_percentage, product_cost, cpm  ){
+    let results = [];
+    influencer_list.forEach(influencer => {
+        const inf_id = influencer.inf_id;
+        const follower_cnts = influencer.follower_cnts;
+        if(bonus_percentage > 1){
+            bonus_percentage = bonus_percentage / 100;
+        }
+        const influencer_commission = commissisonRule(follower_cnts, product_cost, cpm, bonus_percentage, max_commission);
+        results.push({
+            inf_id,
+            commission_dollar: influencer_commission.commission_dollar,
+            bonus_dollar: influencer_commission.bonus_dollar
+        })
+    })
+    return results;
+}
+
 module.exports = {
     getCampaign,
     getAllCampaign,
@@ -1409,6 +1468,7 @@ module.exports = {
     isInvOpen,
     acceptInvitation,
     declineInvitation,
+    calculateCommission,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

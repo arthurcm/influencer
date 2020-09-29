@@ -1,0 +1,12 @@
+{
+  "influencers": [
+    {
+      "inf_id": "arthur",
+      "follower_cnts": 123013
+    }
+  ],
+  "max_commission": 1000,
+  "bonus_percentage": 0.2,
+  "product_cost": 20,
+  "cpm": 9
+}

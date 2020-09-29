@@ -1787,7 +1787,6 @@ app.get('/share/recruit-status/brand_campaign_id/:brand_campaign_id', (req, res,
 // The scenarios are as follows:
 // 1. If expired, not able to accept nor decline;
 // 1. If open, accept, update invitation and campaign recruit
-
 app.put('/share/accept-invitation/brand_campaign_id/:brand_campaign_id/accept/:accept', (req, res, next) =>{
     const brand_campaign_id = req.params.brand_campaign_id;
     const accept = req.params.accept;
@@ -1819,4 +1818,22 @@ app.put('/share/accept-invitation/brand_campaign_id/:brand_campaign_id/accept/:a
             return res.status(200).send({status: 'Already accepted'});
         })
         .catch(next);
+});
+
+
+app.post('/am/commission', (req, res, next) => {
+    const data = req.body;
+    const influencer_list = data.influencers;
+    const max_commission = data.max_commission;
+    const bonus_percentage = data.bonus_percentage;
+    let product_cost = data.product_cost;
+    let cpm = data.cpm;
+    if(! product_cost){
+        product_cost = 20;
+    }
+    if(! cpm){
+        cpm = 9;
+    }
+    const results = campaign.calculateCommission(influencer_list, max_commission, bonus_percentage, product_cost, cpm);
+    return res.status(200).send(results);
 });
