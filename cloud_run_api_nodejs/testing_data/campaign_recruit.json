@@ -1,0 +1,18 @@
+{
+  "brand_campaign_id": "0PZuDGsAnvMZKkVGSjjI",
+  "influencer_commissions": {
+    "arthur": 100,
+    "Alex": 10,
+    "xosimplysteph": 10
+  },
+  "inf_emails": {
+    "arthur": "arthur.meng@lifo.ai",
+    "Alex": "alexnew@gmail.com",
+    "xosimplysteph": "mengcsu@gmail.com"
+  },
+  "quota": 10,
+  "bonus_percentage": 0.2,
+  "bonus_time": 48,
+  "max_time": 72,
+  "inv_deadline": 123214213
+}

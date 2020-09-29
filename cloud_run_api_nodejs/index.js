@@ -30,7 +30,7 @@ const SUPPORTED_BRAND_TEMPLATES = ['email_temp_library', 'offer_detail_temp'];
 app.use((req, res, next) => {
 
     // all /share/* endpoints require no authorization
-    if (req.path.startsWith('/share') && !req.headers.authorization){
+    if (req.path.startsWith('/share')){
         return next();
     }
 
@@ -1751,6 +1751,72 @@ app.put('/influencer/complete-sign-up', (req, res, next) => {
         .then(user => res.status(200).send(user))
         .catch(next);
 
-})
+});
+
+app.post('/am/campaign_recruit', (req, res, next) => {
+    console.debug(`${req.path} received  ${req.body}`);
+    const data = req.body;
+    return campaign.createCampaignRecruit(data)
+        .then(results => res.status(200).send(results))
+        .catch(next);
+});
 
 
+app.put('/am/stop_recruit/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    return campaign.closeRecruit(brand_campaign_id)
+        .then(results => res.status(200).send({status: results}))
+        .catch(next);
+});
+
+
+// this is a pull API. Likely we need a client-side push API which listens to the status.
+// When read, it will update the recruit status according to existing quota vs recruit numbers.
+app.get('/share/recruit-status/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id;
+    return campaign.recruitStatus(brand_campaign_id)
+        .then(results => res.status(200).send({status: results}))
+        .catch(next);
+});
+
+
+// Note(09/28/2020): This API is designed to handle commission based campaign type, which requires login in to actually
+// being able to accept the invitation. If the account has not logged in, user will be redirected to the login page.
+// Later on, once our commission based campaign (marketplace product) stablizes, we will combine SaaS with Marketplace
+// and all campaign invitations should go through this API.
+// The scenarios are as follows:
+// 1. If expired, not able to accept nor decline;
+// 1. If open, accept, update invitation and campaign recruit
+
+app.put('/share/accept-invitation/brand_campaign_id/:brand_campaign_id/accept/:accept', (req, res, next) =>{
+    const brand_campaign_id = req.params.brand_campaign_id;
+    const accept = req.params.accept;
+    const idToken = req.headers.authorization;
+    if(!idToken){
+        console.info('User not logged in for campaign', brand_campaign_id);
+        return res.redirect(301, 'https://influencer.lifo.ai/sign-in');
+    }
+    return admin.auth().verifyIdToken(idToken)
+        .then(decodedToken => {
+            const uid = decodedToken.uid;
+            console.info('received decoded token', decodedToken);
+            if(decodedToken.store_account){
+                return res.status(403).json({ error: 'Not authorized'});
+            }
+            const ins_id = influencer.getInstagramIDByUID(uid); // 'xosimplysteph'
+            if(accept === 'true'){
+                console.info(`influencer ${ins_id} is accepting invitation ${brand_campaign_id}`);
+                return campaign.acceptInvitation(brand_campaign_id, ins_id, uid);
+            }else{
+                console.info(`influencer ${ins_id} is declining invitation ${brand_campaign_id}`);
+                return campaign.declineInvitation(brand_campaign_id, ins_id, uid);
+            }
+        })
+        .then(results => {
+            if(results){
+                return res.status(200).send({status: 'OK'});
+            }
+            return res.status(200).send({status: 'Already accepted'});
+        })
+        .catch(next);
+});

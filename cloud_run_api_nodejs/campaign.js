@@ -29,6 +29,18 @@ const NEWLY_DISCOVERED = 'New influencers discovered';
 const NEED_MORE_INFLUENCERS = 'Need more influencers';
 const RESULTS_VIEWED = 'Results viewed';
 
+
+
+const CAMPAIGN_RECRUIT_RT = 'campaign_recruit';
+const INVITATIONS_RT = 'invitations';
+const RECRUIT_OPEN = 'Open';
+const RECRUIT_CLOSED = 'Closed';
+const INV_OPEN = 'Open';
+const INV_EXPIRED = 'Expired';
+const INV_ACCEPTED = 'Accepted';
+const INV_DECLINED = 'Declined';
+
+
 function uriParse(media_name){
     const tokens = media_name.split('/');
     const results = {
@@ -1114,6 +1126,233 @@ function receiveShipping(brand_campaign_id, influencer_id) {
 }
 
 
+// For each campaign, create a recruit object for managing/updating the recruit lifecycle
+function createCampaignRecruit(data){
+    const brand_campaign_id = data.brand_campaign_id;
+    const quota = data.quota;
+    const influencer_commissions = data.influencer_commissions;
+    const influencer_emails = data.inf_emails;
+    const bonus_percentage = data.bonus_percentage;
+    const bonus_time = data.bonus_time;
+    const max_time = data.max_time;
+    const inv_deadline = data.inv_deadline;
+
+    const invited_ins_influencers = [];
+    const inf_commissions = [];
+    const inf_emails = [];
+    for (const [inf, commission] of Object.entries(influencer_commissions)) {
+        invited_ins_influencers.push(inf);
+        inf_commissions.push(commission);
+        inf_emails.push(influencer_emails[inf]);
+    }
+   return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
+        .then(snapshot => {
+            const FieldValue = admin.firestore.FieldValue;
+            const brand_campaign_data = snapshot.data();
+            const campaign_recruit_ref = admin.database().ref(`${CAMPAIGN_RECRUIT_RT}/` + brand_campaign_id);
+            const product_name = brand_campaign_data.product_name;
+            const brand = brand_campaign_data.brand;
+            const status = RECRUIT_OPEN;
+            const recruited_influencers = [];
+            return campaign_recruit_ref.set({
+                    product_name,
+                    brand,
+                    status,
+                    quota,
+                    invited_ins_influencers,
+                    inf_commissions,
+                    inf_emails,
+                    recruited_influencers,
+                    timestamp: FieldValue.serverTimestamp(),
+                });
+        })
+       .then(results => {
+           return createInvitations(brand_campaign_id, influencer_commissions, bonus_percentage, bonus_time, max_time, inv_deadline, influencer_emails);
+       });
+}
+
+
+// For each influencer ID (ins or not), create an invitation with meta data under RT firebase: invitations/
+function createInvitations(brand_campaign_id, influencer_commissions_map, bonus, bonus_time, max_time, inv_deadline, influencer_emails){
+    return Object.entries(influencer_commissions_map).forEach((inf_id_tuple, index) => {
+        const commission = inf_id_tuple[1];
+        const inf_id = inf_id_tuple[0];
+        const inf_email = influencer_emails[inf_id];
+        const invitation_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
+        return invitation_ref.set({
+            brand_campaign_id,
+            commission,
+            bonus,
+            bonus_time,
+            max_time,
+            inv_deadline,
+            inf_email,
+            status: INV_OPEN,
+        });
+    })
+}
+
+/**
+ *
+ * @param brand_campaign_id {string}
+ * @param inf_id {string} : this is the social media ID as opposed to internal uid
+ */
+async function getInvitation(inf_id, brand_campaign_id){
+    const invitation_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
+    return await invitation_ref.once('value', function(snapshot) {
+        return snapshot.val();
+    });
+}
+
+
+async function recruitStatus(brand_campaign_id){
+    const campaign_recruit_ref = admin.database().ref(`${CAMPAIGN_RECRUIT_RT}/${brand_campaign_id}` );
+    const snapdata = await campaign_recruit_ref.once('value',  function(snapshot) {
+        const data = snapshot.val();
+        return data;
+    });
+    const data = snapdata.val();
+    const status = data.status;
+    console.info('recruit data is', data);
+    console.info('recruit data is', Object.keys(data.recruited_influencers).length);
+
+
+    // when recruit is open, check the quota vs recruited influencers, update status if needed
+    if(status === RECRUIT_OPEN){
+        if(!data.recruited_influencers){
+            return RECRUIT_OPEN;
+        }
+        if(data.quota <= Object.keys(data.recruited_influencers).length){
+            await campaign_recruit_ref.update({status: RECRUIT_CLOSED});
+            return RECRUIT_CLOSED;
+        }
+        return RECRUIT_OPEN;
+    }else{
+
+        if(!data.recruited_influencers){
+            return data.status;
+        }
+        // if for some reason the quota is larger than the recruit size, open the recruit.
+        if(data.quota > Object.keys(data.recruited_influencers).length){
+            await campaign_recruit_ref.update({status: RECRUIT_OPEN});
+            return RECRUIT_OPEN;
+        }
+    }
+}
+
+
+function closeRecruit(brand_campaign_id){
+    const campaign_recruit_ref = admin.database().ref(`${CAMPAIGN_RECRUIT_RT}/${brand_campaign_id}` );
+    return campaign_recruit_ref.update({status: RECRUIT_CLOSED});
+}
+
+
+/**
+ *
+ * @param brand_campaign_id {string}
+ * @param inf_id {string} : this is the social media ID as opposed to internal uid
+ */
+async function checkInvStatus(brand_campaign_id, inf_id){
+    const FieldValue = admin.firestore.FieldValue;
+    const inv_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
+    const data = await inv_ref.once('value',  snapshot => {
+        const data = snapshot.val();
+        return data;
+    });
+    if(data.status === INV_OPEN){
+        if(data.deadline <= FieldValue.serverTimestamp()){
+            console.info('Invitation expired for', brand_campaign_id, inf_id);
+            await inv_ref.update({
+                status: INV_EXPIRED,
+            });
+            return INV_EXPIRED;
+        }
+    }
+    console.log('invitation data is', data.val());
+    return data.val().status;
+}
+
+
+/**
+ *
+ * @param brand_campaign_id {string}
+ * @param inf_id {string} : this is the social media ID as opposed to internal uid
+ */
+function isInvOpen(brand_campaign_id, inf_id){
+    return checkInvStatus(brand_campaign_id, inf_id)
+        .then(status => {
+            console.log('current status is', status);
+            if (status === INV_OPEN){
+                return true;
+            }
+            return false;
+        })
+}
+
+
+/**
+ *
+ * @param brand_campaign_id {string}
+ * @param inf_id {string} : this is the social media ID as opposed to internal uid
+ * @param uid {string}: this is the internal account for each influencer
+ */
+function createInfCampaignCommissionStructured(brand_campaign_id, inf_id, uid){
+    const brand_campaigns_ref = db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id);
+    return getInvitation(inf_id, brand_campaign_id)
+        .then(snapshot =>{
+            const invitation_details = snapshot.val();
+            // return createCampaign(brand_campaign_data, uid,  false);
+            return brand_campaigns_ref.collection('influencers').doc(inf_id)
+                .set({
+                invitation_details: invitation_details
+            }, {
+                merge: true
+            });
+        });
+}
+
+
+/**
+ *
+ * @param brand_campaign_id {string}
+ * @param inf_id {string} : this is the social media ID as opposed to internal uid
+ * @param uid {string}: this is the internal account for each influencer
+ */
+function acceptInvitation(brand_campaign_id, inf_id, uid) {
+    return isInvOpen(brand_campaign_id, inf_id)
+        .then(is_open => {
+            if (is_open) {
+                return createInfCampaignCommissionStructured(brand_campaign_id, inf_id, uid)
+            }
+            console.info('Invitation not open for sign up');
+            return null;
+        })
+        .then(results => {
+            if (!results) {
+                return null;
+            }
+            const inv_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
+            const campaign_recruit_ref = admin.database().ref(`${CAMPAIGN_RECRUIT_RT}/${brand_campaign_id}`);
+            return Promise.all([
+                inv_ref.update( {status: INV_ACCEPTED}),
+                campaign_recruit_ref.child('recruited_influencers').push(inf_id)
+            ]);
+        });
+}
+
+
+/**
+ *
+ * @param brand_campaign_id {string}
+ * @param inf_id {string} : this is the social media ID as opposed to internal uid
+ * @param uid {string}: this is the internal account for each influencer
+ */
+function declineInvitation(brand_campaign_id, inf_id, uid) {
+    const inv_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
+    return inv_ref.update({status: INV_DECLINED});
+}
+
+
 module.exports = {
     getCampaign,
     getAllCampaign,
@@ -1161,6 +1400,15 @@ module.exports = {
     addNote,
     addShippingInfo,
     receiveShipping,
+    createCampaignRecruit,
+    getInvitation,
+    recruitStatus,
+    closeRecruit,
+    createInfCampaignCommissionStructured,
+    checkInvStatus,
+    isInvOpen,
+    acceptInvitation,
+    declineInvitation,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

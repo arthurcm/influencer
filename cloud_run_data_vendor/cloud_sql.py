@@ -287,6 +287,8 @@ class Sqlhandler:
                 stmt = stmt.bindparams(shop=shop)
                 result = conn.execute(stmt, {"shop": shop}).fetchall()
                 logging.info(f'the get shop auth succeeded')
+                if not result or len(result) == 0:
+                    return ''
                 return result[0][0]
         except Exception as e:
             self.logger.exception(e)

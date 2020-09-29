@@ -78,8 +78,19 @@ async function getInstagramProfileFromModash(userUid, authToken) {
     return sendGetRequest(`${DISCOVER_SERVICE_URL}/influencer/instagram/profile?userId=${userData.instagram_id}`, options)
 }
 
+/**
+ *
+ * @param userUid {string}
+ *
+ */
+async function getInstagramIDByUID(userUid){
+    const userData = await getInfluencerUserByUid(userUid);
+    return userData.instagram_id;
+}
+
 module.exports = {
     getInfluencerUserByUid,
     updateInfluencerUserById,
-    getInstagramProfileFromModash
+    getInstagramProfileFromModash,
+    getInstagramIDByUID
 }
