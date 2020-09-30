@@ -1177,6 +1177,14 @@ function createInvitations(brand_campaign_id, influencer_commissions_map, bonus,
     return Object.entries(influencer_commissions_map).forEach((inf_id_tuple, index) => {
         const commission = inf_id_tuple[1];
         const inf_id = inf_id_tuple[0];
+        let coupon_code_length = 4;
+        let default_coupon_code;
+        if(inf_id.length < coupon_code_length ){
+            default_coupon_code = inf_id
+        }else{
+            default_coupon_code = inf_id.substring(0, coupon_code_length);
+        }
+        default_coupon_code = default_coupon_code.toUpperCase();
         const inf_email = influencer_emails[inf_id];
         const invitation_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
         return invitation_ref.set({
@@ -1187,6 +1195,7 @@ function createInvitations(brand_campaign_id, influencer_commissions_map, bonus,
             max_time,
             inv_deadline,
             inf_email,
+            default_coupon_code,
             status: INV_OPEN,
         });
     })

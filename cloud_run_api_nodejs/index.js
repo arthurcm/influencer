@@ -1767,7 +1767,7 @@ app.post('/am/campaign_recruit', (req, res, next) => {
     console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
     return campaign.createCampaignRecruit(data)
-        .then(results => res.status(200).send(results))
+        .then(results => res.status(200).send({status: 'OK'}))
         .catch(next);
 });
 

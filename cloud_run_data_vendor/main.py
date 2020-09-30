@@ -767,9 +767,6 @@ def create_campaign_payment():
 
 @app.route('/brand/retrieve_campaign_charge', methods=['GET'])
 def retrieve_campaign_payment():
-    """
-    This endpoint is called to 
-    """
     # TODO: Idealy we get shop from token
     shop = flask.request.args.get('shop')
     res = get_shopify_access_token(shop)

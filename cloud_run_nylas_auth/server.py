@@ -653,7 +653,7 @@ def send_single_email_with_template():
         draft.tracking = {'links': 'true',
                           'opens': 'true',
                           'thread_replies': 'true',
-                          'payload': data.get('campaign_name') or f'<{sender_email}>'
+                          'payload': data.get('campaign_name')
                           }
 
         """
@@ -796,6 +796,38 @@ def system_notifications():
     return system_notification_util(subject, body, to_email, to_name)
 
 
+@app.route("/am/content_creation_deadline_notification", methods=['POST'])
+def content_creation_deadline_notification():
+    """
+    Called when product is delivered, and as such, the content creation stage is triggered passively
+    """
+    pass
+
+
+@app.route("/am/content_creation_reminder", methods=['POST'])
+def content_creation_reminder():
+    """
+    Called when AM clicks on the reminder button in control panel to remind influencers about content creation.
+    """
+    pass
+
+
+@app.route("/am/launch_content_notification", methods=['POST'])
+def content_creation_deadline_notification():
+    """
+    Called after content approved, notify that influencers need to post contents on social media within certain time.
+    """
+    pass
+
+
+@app.route("/am/commission_credit", methods=['POST'])
+def commission_credit():
+    """
+    Called after AM approves the content, and credits influencers' account with commission.
+    """
+    pass
+
+
 def system_notification_util(subject, body, to_email, to_name):
     """
     Generic util method for sending email notifications to AM
@@ -899,6 +931,38 @@ def discover_more_notifications():
     subject = f'{brand} {brand_contact_name} with email {brand_email} is requesting more influencers for campaign: {brand_campaign_name}'
     body = 'Please log into AM tool and push them more influencers'
     return customer_request_util(subject, body)
+
+
+@app.route("/invitation_accept_notifications", methods=["POST"])
+def invitation_accept_notifications():
+    """
+    Called when influencers accept campaign invitations.
+    """
+    pass
+
+
+@app.route("/content_uploaded_notifications", methods=["POST"])
+def content_uploaded_notifications():
+    """
+    Called when influencers upload content through Influencer portal.
+    """
+    pass
+
+
+@app.route("/content_launched_notifications", methods=["POST"])
+def content_launched_notifications():
+    """
+    Called when influencers upload content URL through Influencer portal.
+    """
+    pass
+
+
+@app.route("/payment_request_notification", methods=["POST"])
+def content_launched_notifications():
+    """
+    Called when influencers request payment through influencer portal.
+    """
+    pass
 
 
 @app.route("/files", methods=["POST", "GET"])
