@@ -1,4 +1,5 @@
 const INFLUENCERS = 'influencers';
+const BRAND_CAMPAIGNS = 'brand_campaigns';
 const admin = require('firebase-admin');
 const db = admin.firestore();
 const https = require('https');
@@ -88,9 +89,30 @@ async function getInstagramIDByUID(userUid){
     return userData.instagram_id;
 }
 
+
+/**
+ *
+ * @param uid {string}
+ */
+async function getCampaignsByUid(uid) {
+    const currentUser = await getInfluencerUserByUid(uid);
+    const ref = await db.collection(BRAND_CAMPAIGNS).get();
+
+    const campaignsWithInfluencer = await Promise.all(ref.docs.map(async docRef => {
+        const subCollectionName = 'influencers'
+        const subDoc = (await docRef.ref.collection(subCollectionName).doc(currentUser.instagram_id).get()).data();
+        const campaign = docRef.data();
+        campaign.influencer_info = subDoc
+        return campaign;
+    }));
+
+    return campaignsWithInfluencer.filter(campaign => !!campaign.influencer_info);
+}
+
 module.exports = {
     getInfluencerUserByUid,
     updateInfluencerUserById,
+    getInstagramIDByUID,
     getInstagramProfileFromModash,
-    getInstagramIDByUID
+    getCampaignsByUid
 }

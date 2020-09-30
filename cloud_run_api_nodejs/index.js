@@ -22,7 +22,7 @@ const influencer = require('./influencer');
 const contract_sign = require('./contract_sign');
 const reporting = require('./reporting')
 
-const CLIENT_ONBOARDING_EMAILS = ['arthur.meng@lifo.ai', 'alex.niu@lifo.ai', 'shuo.shan@lifo.ai', 'claire.zhou@lifo.ai', 'test@lifo.ai'];
+const CLIENT_ONBOARDING_EMAILS = ['arthur.meng@lifo.ai', 'alex.niu@lifo.ai', 'shuo.shan@lifo.ai', 'claire.zhou@lifo.ai', 'test@lifo.ai', 'alexander.tarasenko@lifo.ai'];
 const SUPPORTED_BRAND_TEMPLATES = ['email_temp_library', 'offer_detail_temp'];
 
 
@@ -1749,6 +1749,16 @@ app.put('/influencer/complete-sign-up', (req, res, next) => {
     const userUid = res.locals.uid;
     return influencer.updateInfluencerUserById(userUid, data)
         .then(user => res.status(200).send(user))
+        .catch(next);
+
+})
+
+
+app.get('/influencer/campaign', (req, res, next) => {
+    return influencer.getCampaignsByUid(res.locals.uid)
+        .then(campaigns => {
+            res.status(200).send(campaigns);
+        })
         .catch(next);
 
 });
