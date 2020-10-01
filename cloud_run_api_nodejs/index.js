@@ -1732,6 +1732,13 @@ app.get('/influencer/current-profile', (req, res, next) => {
 
 })
 
+app.put('/influencer/current-profile', (req, res, next) => {
+    const data = req.body;
+    return influencer.updateInfluencerUserById(res.locals.uid,data)
+        .then(user => res.status(200).send(user))
+        .catch(next);
+});
+
 app.get('/influencer/check-instagram', (req, res, next) => {
     return influencer.getInstagramProfileFromModash(res.locals.uid, req.headers.authorization)
         .then(modashResults => {
@@ -1762,6 +1769,8 @@ app.get('/influencer/campaign', (req, res, next) => {
         .catch(next);
 
 });
+
+// End of Influencer part
 
 app.post('/am/campaign_recruit', (req, res, next) => {
     console.debug(`${req.path} received  ${req.body}`);
