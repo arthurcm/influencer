@@ -201,9 +201,15 @@ def process_modash_profile(profile_ref, profile, platform='instagram'):
     mentions_flattened = convert_tuple_to_map(mentions, 'mention', 'tag')
 
     # the following three are single valued numerics
-    avg_likes = profile.get('stats').get('avgLikes').get('value')
-    followers = profile.get('stats').get('followers').get('value')
-    paidPostPerformance = profile.get('stats').get('paidPostPerformance')
+    profile_stats = profile.get('stats')
+    if profile_stats:
+        avg_likes = profile_stats.get('avgLikes').get('value')
+        followers = profile_stats.get('followers').get('value')
+        paidPostPerformance =profile_stats.get('paidPostPerformance')
+    else:
+        avg_likes = profile.get('profile').get('engagements')
+        followers = profile.get('profile').get('followers')
+        paidPostPerformance = profile.get('profile').get('paidPostPerformance')
 
     # the following audience data needs to be flattened so that it can be easier to query.
     audience = profile.get('audience')
@@ -331,11 +337,10 @@ def modash_match():
     return response
 
 
-@app.route("/am/instagram/profile", methods=["GET"])
-def instagram_report():
+def modash_report(social_platform='instagram'):
     """
-    This API pulls instagram full report from Modash
-    https://api.modash.io/v1/instagram/profile/{userId}/report
+    This API pulls instagram, tiktok, YouTube full report from Modash
+    https://api.modash.io/v1/{social_platform}/profile/{userId}/report
     The default behavior is to use a cached version of report stored in Lifo's SQL server.
     If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
     """
@@ -352,21 +357,21 @@ def instagram_report():
     profile = None
 
     if not force_update:
-        profile, update_time = sql_handler.get_profile(userId, platform='instagram')
+        profile, update_time = sql_handler.get_profile(userId, platform=social_platform)
         logging.info(f'Not forcing profile update, and obtained profile {profile}')
     if not profile or len(profile) == 0:
         for i in range(0, 5):
             logging.info(f'Fetching profile from Modash for userid {userId}: # {i+1}th try')
-            url = f'{MODASH_API_ENDPINT}/instagram/profile/{userId}/report'
+            url = f'{MODASH_API_ENDPINT}/{social_platform}/profile/{userId}/report'
             logging.info(f'Receiving request for url {url}')
             headers = {'Authorization': MODASH_AUTH_HEADER}
             profile_res = requests.get(url, headers=headers)
             profile_json = profile_res.json()
-            logging.info(f'Modash instagram profile response is: {profile_res.json()}')
+            logging.info(f'Modash {social_platform} profile response is: {profile_res.json()}')
             profile = profile_json.get('profile')
             if profile:
-                save_modash_profile_firebase(userId, profile)
-                sql_handler.save_profile(userId, 'instagram', profile)
+                save_modash_profile_firebase(userId, profile, social_platform)
+                sql_handler.save_profile(userId, social_platform, profile)
                 break
             else:
                 logging.warning('Modash API not responding, retrying')
@@ -375,9 +380,36 @@ def instagram_report():
         response = flask.jsonify(profile)
         response.status_code = 200
     else:
-        response = flask.jsonify({"error": "Failed to obtain instagram profile"})
+        response = flask.jsonify({"error": f"Failed to obtain {social_platform} profile"})
         response.status_code = 400
     return response
+
+
+@app.route("/am/instagram/profile", methods=["GET"])
+def instagram_report():
+    """
+    This API pulls instagram full report from Modash
+    https://api.modash.io/v1/instagram/profile/{userId}/report
+    The default behavior is to use a cached version of report stored in Lifo's SQL server.
+    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
+    """
+    return modash_report('instagram')
+
+
+@app.route("/am/modash/profile", methods=["GET"])
+def modash_report_api():
+    """
+    This API pulls instagram full report from Modash
+    https://api.modash.io/v1/instagram/profile/{userId}/report
+    The default behavior is to use a cached version of report stored in Lifo's SQL server.
+    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
+        return response
+    return modash_report(platform)
 
 
 @app.route("/influencer/instagram/profile", methods=["GET"])
@@ -389,45 +421,26 @@ def instagram_report_influencer():
     The default behavior is to use a cached version of report stored in Lifo's SQL server.
     If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
     """
-    userId = flask.request.args.get('userId')
-    if not userId:
-        response = flask.jsonify({"error": "Valid userId param required!"})
-        response.status_code = 412
+    return modash_report('instagram')
+
+
+@app.route("/influencer/modash/profile", methods=["GET"])
+def modash_report_influencer():
+    """
+    We need this endpoint to check if influencer has an Instagram account.
+    This API pulls instagram full report from Modash
+    https://api.modash.io/v1/modash/profile/{userId}/report
+    The default behavior is to use a cached version of report stored in Lifo's SQL server.
+    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
         return response
+    return modash_report(platform)
 
-    force_update = flask.request.args.get('force_update')
-    if not force_update:
-        force_update = False
 
-    profile = None
-
-    if not force_update:
-        profile, update_time = sql_handler.get_profile(userId, platform='instagram')
-        logging.info(f'Not forcing profile update, and obtained profile {profile}')
-    if not profile or len(profile) == 0:
-        for i in range(0, 5):
-            logging.info(f'Fetching profile from Modash for userid {userId}: # {i+1}th try')
-            url = f'{MODASH_API_ENDPINT}/instagram/profile/{userId}/report'
-            logging.info(f'Receiving request for url {url}')
-            headers = {'Authorization': MODASH_AUTH_HEADER}
-            profile_res = requests.get(url, headers=headers)
-            profile_json = profile_res.json()
-            logging.info(f'Modash instagram profile response is: {profile_res.json()}')
-            profile = profile_json.get('profile')
-            if profile:
-                save_modash_profile_firebase(userId, profile)
-                sql_handler.save_profile(userId, 'instagram', profile)
-                break
-            else:
-                logging.warning('Modash API not responding, retrying')
-                time.sleep(1)
-    if profile:
-        response = flask.jsonify(profile)
-        response.status_code = 200
-    else:
-        response = flask.jsonify({"error": "Failed to obtain instagram profile"})
-        response.status_code = 400
-    return response
 
 
 @app.route("/brand/instagram/interests", methods=["GET"])
@@ -437,7 +450,22 @@ def instagram_interests():
     This is to get the brands IDs provided by Modash. Essentially this is getting the enum
     for interests, which will be used for hooking up search functionalities.
     """
-    return modash_instagram_utils('interests')
+    return modash_utils('interests')
+
+
+@app.route("/brand/modash/interests", methods=["GET"])
+def modash_interests():
+    """
+    https://docs.modash.io/#tag/Instagram/paths/~1instagram~interests/get
+    This is to get the brands IDs provided by Modash. Essentially this is getting the enum
+    for interests, which will be used for hooking up search functionalities.
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
+        return response
+    return modash_utils('interests', social_platform=platform)
 
 
 @app.route("/brand/instagram/brands", methods=["GET"])
@@ -447,7 +475,22 @@ def instagram_brands():
     This is to get the brands IDs provided by Modash. Essentially this is getting the enum
     for brands, which will be used for hooking up search functionalities.
     """
-    return modash_instagram_utils('brands')
+    return modash_utils('brands')
+
+
+@app.route("/brand/modash/brands", methods=["GET"])
+def modash_brands():
+    """
+    https://docs.modash.io/#tag/Instagram/paths/~1instagram~brands/get
+    This is to get the brands IDs provided by Modash. Essentially this is getting the enum
+    for brands, which will be used for hooking up search functionalities.
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
+        return response
+    return modash_utils('brands', social_platform=platform)
 
 
 @app.route("/brand/instagram/languages", methods=["GET"])
@@ -459,7 +502,24 @@ def instagram_languages():
     There are so many languages, so it is better to hook up a standard location library and
     use the "query" parameter when calling.
     """
-    return modash_instagram_utils('languages')
+    return modash_utils('languages')
+
+
+@app.route("/brand/modash/languages", methods=["GET"])
+def modash_languages():
+    """
+    https://docs.modash.io/#tag/Instagram/paths/~1instagram~languages/get
+    This is to get the location IDs provided by Modash. Essentially this is getting the enum
+    for languages, which will be used for hooking up search functionalities.
+    There are so many languages, so it is better to hook up a standard location library and
+    use the "query" parameter when calling.
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
+        return response
+    return modash_utils('languages', social_platform=platform)
 
 
 @app.route("/brand/instagram/locations", methods=["GET"])
@@ -471,10 +531,27 @@ def instagram_locations():
     There are so many locations, so it is better to hook up a standard location library and
     use the "query" parameter when calling.
     """
-    return modash_instagram_utils('locations')
+    return modash_utils('locations')
 
 
-def modash_instagram_utils(endpoint_sufix):
+@app.route("/brand/modash/locations", methods=["GET"])
+def modash_locations():
+    """
+    https://docs.modash.io/#tag/Instagram/paths/~1instagram~1locations/get
+    This is to get the location IDs provided by Modash. Essentially this is getting the enum
+    for locations, which will be used for hooking up search functionalities.
+    There are so many locations, so it is better to hook up a standard location library and
+    use the "query" parameter when calling.
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
+        return response
+    return modash_utils('locations', social_platform=platform)
+
+
+def modash_utils(endpoint_suffix, social_platform='instagram'):
     try:
         query_string = flask.request.args.get('query')
         limit = flask.request.args.get('limit')
@@ -482,9 +559,9 @@ def modash_instagram_utils(endpoint_sufix):
             limit = MAX_RESULT_LIMIT
         params = {'limit': limit}
         if query_string:
-            logging.info(f'{endpoint_sufix} query string: {query_string}')
+            logging.info(f'{endpoint_suffix} query string: {query_string}')
             params['query'] = query_string
-        url = f'{MODASH_API_ENDPINT}/instagram/{endpoint_sufix}'
+        url = f'{MODASH_API_ENDPINT}/{social_platform}/{endpoint_suffix}'
         logging.info(f'Receiving request for url {url}')
         headers = {'Authorization': MODASH_AUTH_HEADER}
         res = requests.get(url, headers=headers, params=params)
@@ -492,8 +569,8 @@ def modash_instagram_utils(endpoint_sufix):
         response.status_code = 200
         return response
     except Exception as e:
-        logging.error(f'{endpoint_sufix} search error: {e}')
-        response = flask.jsonify({'Error': f'Failed to find {endpoint_sufix}'})
+        logging.error(f'{endpoint_suffix} search error: {e}')
+        response = flask.jsonify({'Error': f'Failed to find {endpoint_suffix}'})
         response.status_code = 400
     return response
 
