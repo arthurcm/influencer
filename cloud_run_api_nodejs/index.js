@@ -1772,6 +1772,17 @@ app.get('/influencer/campaign', (req, res, next) => {
 
 // End of Influencer part
 
+
+app.get('/influencer/campaign/:id', (req, res, next) => {
+    const brandCampaignId = req.params.id;
+    return influencer.getCampaignById(res.locals.uid, brandCampaignId)
+        .then(campaigns => {
+            res.status(200).send(campaigns);
+        })
+        .catch(next);
+
+});
+
 app.post('/am/campaign_recruit', (req, res, next) => {
     console.debug(`${req.path} received  ${req.body}`);
     const data = req.body;
