@@ -345,18 +345,17 @@ async function create_campaign_for_inf(brand_campaign_id, account_id) {
             // Logic is the same as signupToBrandCampaign() which is to be deprecated.
             // this section handles the influencers for brand side of the campaign.
             let collaborating_influencers = brand_campaign_data.collaborating_influencers;
-            if (!collaborating_influencers){
+            if (!collaborating_influencers) {
                 collaborating_influencers = [];
-            }else if(collaborating_influencers.includes(account_id)){
+            } else if(collaborating_influencers.includes(account_id)) {
                 console.debug('Influencer has already signed up');
                 return null;
             }
             collaborating_influencers.push(account_id);
             const uniq_inf = [...new Set(collaborating_influencers)];
             // brand_campaign_data.collaborating_influencers = uniq;
-
-            brand_campaign_data.commission_percentage = contract_data.percentage_commission;
-            brand_campaign_data.commission_dollar = contract_data.fixed_commission;
+            // brand_campaign_data.commission_percentage = contract_data.percentage_commission;
+            // brand_campaign_data.commission_dollar = contract_data.fixed_commission;
             console.info('Creating new campaign using data', brand_campaign_data);
             const results = campaign.createCampaign(brand_campaign_data, account_id, false);
 
@@ -372,6 +371,13 @@ async function create_campaign_for_inf(brand_campaign_id, account_id) {
             }
             inf_campaign_dict[account_id] = results.campaign_id;
             batch.set(brand_campaigns_ref, {inf_campaign_dict}, {merge: true});
+
+            // This is to update inf campaign id
+            campaign.access_influencer_subcollection(brand_campaign_id)
+                .doc(account_id)
+                .update({
+                    inf_campaign_id: results.campaign_id,
+                });
             return batch;
         });
 }
@@ -397,19 +403,14 @@ async function signature_complete(brand_campaign_id, signature_id, is_brand){
         throw new functions.https.HttpsError('not-found', 'the signature id is not found!');
     }
     const inf_ref = campaign.access_influencer_subcollection(brand_campaign_id).doc(inf_doc_id);
-    if(is_brand){
+    if (is_brand) {
         return inf_ref.update({
             brand_signing_status: CONTRACT_SIGNED,
         });
     }
-    return create_campaign_for_inf(brand_campaign_id, inf_doc_id)
-        .then(batch_promise => {
-            if(!batch_promise){
-                return batch_promise;
-            }
-            batch_promise.update(inf_ref, {inf_signing_status: CONTRACT_SIGNED});
-            return batch_promise.commit();
-        });
+    return inf_ref.update({
+        inf_signing_status: CONTRACT_SIGNED,
+    });
 };
 
 function update_status(brand_campaign_id, account_id, status_str){
@@ -471,7 +472,7 @@ function update_template(template_type, template_name, data){
 function check_contract_signing_status(brand_campaign_id, account_id){
     return get_inf_status(brand_campaign_id, account_id)
         .then(res => {
-            if(res.inf_status && res.inf_status.indexOf('contract') !== -1){
+            if (res.inf_status && res.inf_status.indexOf('contract') !== -1){
                 return true;
             }
             return false;
@@ -527,7 +528,7 @@ function get_influencer_offer_status(brand_campaign_id, account_id){
         .get()
         .then(snapshot => {
             const data = snapshot.data();
-            if(data.inf_signing_status === campaign.BRAND_CHOSEN){
+            if (data.inf_signing_status === campaign.BRAND_CHOSEN) {
                 return true;
             }
             return false;
@@ -569,6 +570,7 @@ module.exports = {
     get_influencer_offer_status,
     update_product_message,
     update_comp_message,
+    create_campaign_for_inf,
     hellosign,
     INFLUENCER_ROLE,
     BRAND_ROLE,

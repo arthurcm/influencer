@@ -1098,7 +1098,8 @@ function approveContent(inf_campaign_id, history_id){
             }
             return access_influencer_subcollection(data.brand_campaign_id).doc(data.uid)
                 .update({
-                    content_approval_version: history_id
+                    content_approval_version: history_id,
+                    content_approve_time: moment.utc().unix()
                 })
         })
 }
@@ -1124,7 +1125,6 @@ function receiveShipping(brand_campaign_id, influencer_id) {
             product_received_time: moment.utc().unix()
         });
 }
-
 
 // For each campaign, create a recruit object for managing/updating the recruit lifecycle
 function createCampaignRecruit(data){

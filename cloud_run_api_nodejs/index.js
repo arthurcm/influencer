@@ -16,6 +16,7 @@ admin.initializeApp({
     databaseURL: 'https://influencer-272204.firebaseio.com',
 });
 const db = admin.firestore();
+const pg = require('./db');
 
 const campaign = require('./campaign');
 const influencer = require('./influencer');
@@ -278,6 +279,44 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
         .catch(next);
 });
 
+app.put('/influencer/submit_content', async(req, res, next) => {
+    const data = req.body;
+    if (!data.brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if (!data.account_id) {
+        console.warn('account_id can not be empty');
+        res.status(412).send({status: 'account_id empty'});
+    }
+    
+    let first_time_submit = true;
+    await campaign.access_influencer_subcollection(brand_campaign_id)
+        .doc(data.account_id)
+        .get()
+        .then(querySnapshot => {
+            querySnapshot.docs.forEach(doc => {
+                if (doc.data().content_submit_time) {
+                    first_time_submit = false;
+                }
+            });
+            return first_time_submit;
+        });
+    
+    if (first_time_submit) {
+        return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
+            .set({
+                submit_post_time: moment().utc().unix(),
+            }, {merge:true})
+            .then(results => {
+                res.status(200).send({status: 'OK'});
+                return results;
+            })
+            .catch(next);
+    } else {
+        res.status(200).send({status: 'OK'});
+    }
+});
 
 app.put('/brand/approve/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
@@ -1333,7 +1372,8 @@ app.post('/brand/inf_comp_message/brand_campaign_id/:brand_campaign_id/account_i
 
 
 // this is to allow influencers to fill in detailed information for campaign after influencer accepts the offer.
-app.put('/share/influencer', (req, res, next) => {
+// This is used to accept offer now
+app.put('/share/influencer', async(req, res, next) => {
     const data = req.body;
     if(!data.brand_campaign_id){
         console.warn('brand_campaign_id can not be empty');
@@ -1349,10 +1389,20 @@ app.put('/share/influencer', (req, res, next) => {
         inf_phone: data.inf_phone,
         influencer_address1: data.influencer_address1,
         inf_signing_status: campaign.INFLUENCER_SIGNEDUP,
+        offer_accept_time: moment().utc().unix(),
     };
-    if(data.influencer_address2){
+    if (data.influencer_address2) {
         influencer_profile.influencer_address2 = data.influencer_address2;
     }
+
+    // Move this step early, create inf campaign after accept offer
+    await contract_sign.create_campaign_for_inf(data.brand_campaign_id, data.account_id).then(batch => {
+        if (batch) {
+            batch.commit();
+        }
+        return batch;
+    });
+
     return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
         .set(influencer_profile, {merge:true})
         .then(results => {
@@ -1361,7 +1411,6 @@ app.put('/share/influencer', (req, res, next) => {
         })
         .catch(next);
 });
-
 
 app.get('/share/offer_avail/brand_campaign_id/:brand_campaign_id/account_id/:account_id', (req, res, next) => {
     const brand_campaign_id = req.params.brand_campaign_id;
@@ -1409,12 +1458,12 @@ app.put('/share/influencer_offer', (req, res, next) => {
 
     // this is a hack to avoid unwanted bugs during test phase.
     let internal_test = false;
-    if(data.account_id === 'lifo' || data.account_id === 'Lifo'){
+    if (data.account_id === 'lifo' || data.account_id === 'Lifo') {
         internal_test = true;
     }
     return contract_sign.check_contract_signing_status(data.brand_campaign_id, data.account_id)
         .then(in_contract_status => {
-            if(!in_contract_status && !internal_test){
+            if (!in_contract_status && !internal_test) {
                 return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
                     .set(influencer_profile, {merge:true});
             }
@@ -1461,6 +1510,28 @@ app.post('/am/post_perf', (req, res, next)=>{
         .catch(next);
 });
 
+app.post('/influencer/post_content', (req, res, next)=>{
+    const data = req.body;
+    if (!data.brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        return res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    if (!data.account_id) {
+        console.warn('account_id can not be empty');
+        return res.status(412).send({status: 'account_id empty'});
+    }
+    if (!data.link) {
+        console.warn('link can not be empty');
+        return res.status(412).send({status: 'likes empty'});
+    }
+
+    return reporting.reportPostContent(data)
+        .then(results => {
+            res.status(200).send({status: 'OK'});
+            return results;
+        })
+        .catch(next);
+});
 
 app.get('/brand/post_perf/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
@@ -1632,7 +1703,7 @@ app.put('/am/campaign_configuration/brand_campaign_id/:brand_campaign_id', (req,
         .catch(next);
 });
 
-app.get('/brand/faq', (req, res, next) => {
+app.get('/common/faq', (req, res, next) => {
     return db.collection('faq').get()
         .then(snapshot => {
             const result = [];
@@ -1648,7 +1719,7 @@ app.get('/brand/faq', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/brand/faq/:id', (req, res, next) => {
+app.get('/common/faq/:id', (req, res, next) => {
     const faq_id = req.params.id;
     return db.collection('faq').doc(faq_id).get()
         .then(result => {
@@ -1690,6 +1761,68 @@ app.delete('/am/faq/:id', (req, res, next) => {
         .catch(next);
 });
 
+app.get('/influencer/account_balance', (req, res, next) => {
+    const influencer_id = res.locals.uid;
+    return pg.getUserBalance(influencer_id)
+        .then(result => {
+            if (result.rows.length <= 0) {
+                res.status(400).json({error: 'influencer not found'});
+            }
+            res.status(200).send(result.rows[0]);
+        })
+        .catch(next);
+});
+
+app.get('/influencer/transaction_history', (req, res, next) => {
+    const influencer_id = res.locals.uid;
+    return pg.getUserTransactionHistory(influencer_id)
+        .then(result => {
+            res.status(200).send(result.rows);
+        })
+        .catch(next);
+});
+
+app.post('/influencer/pay_campaign', async(req, res, next) => {
+    const influencer_id = res.locals.uid;
+    const data = req.body;
+    if (!data.campaign_id || !data.amount) {
+        res.status(400).json({error: 'missing campaign information'});
+    }
+    try {
+        const ret = await pg.addCampaignPayment(influencer_id, data.amount, data.campaign_id);
+        res.status(200).json(ret);
+    } catch (error) {
+        return next(error)
+    }
+});
+
+app.post('/influencer/cash_out', async(req, res, next) => {
+    const influencer_id = res.locals.uid;
+    const data = req.body;
+    if (!data.amount) {
+        res.status(400).json({error: 'missing amount information'});
+    }
+    try {
+        const ret = await pg.cashOutBalance(influencer_id, data.amount);
+        res.status(200).json(ret);
+    } catch (error) {
+        return next(error)
+    }
+});
+
+app.post('/influencer/convert_credit', async(req, res, next) => {
+    const influencer_id = res.locals.uid;
+    const data = req.body;
+    if (!data.date) {
+        res.status(400).json({error: 'missing date information'});
+    }
+    try {
+        const ret = await pg.convertCampaignPayment(influencer_id, data.date);
+        res.status(200).json(ret);
+    } catch (error) {
+        return next(error)
+    }
+});
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -1772,7 +1905,6 @@ app.get('/influencer/campaign', (req, res, next) => {
 
 // End of Influencer part
 
-
 app.get('/influencer/campaign/:id', (req, res, next) => {
     const brandCampaignId = req.params.id;
     return influencer.getCampaignById(res.locals.uid, brandCampaignId)
@@ -1782,6 +1914,7 @@ app.get('/influencer/campaign/:id', (req, res, next) => {
         .catch(next);
 
 });
+
 
 app.post('/am/campaign_recruit', (req, res, next) => {
     console.debug(`${req.path} received  ${req.body}`);

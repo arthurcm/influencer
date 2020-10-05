@@ -5,6 +5,7 @@ const FieldValue = admin.firestore.FieldValue;
 
 const campaign = require('./campaign');
 
+const moment = require('moment');
 const path = require('path');
 
 function reportPostingPerformance(data){
@@ -20,6 +21,23 @@ function reportPostingPerformance(data){
     });
     return batch.commit();
 };
+
+function reportPostContent(data) {
+    const batch = db.batch();
+    const influencer_ref = campaign.access_influencer_subcollection(data.brand_campaign_id)
+        .doc(data.account_id);
+    batch.set(influencer_ref, {
+        submit_post_time: moment.utc().unix(),
+        post_url: data.link,
+        post_perf: data
+    }, {merge: true});
+    const campaign_ref = db.collection(campaign.BRAND_CAMPAIGN_COLLECTIONS).doc(data.brand_campaign_id);
+    // Atomically add a new region to the "regions" array field.
+    batch.update(campaign_ref, {
+        inf_posted: admin.firestore.FieldValue.arrayUnion(data.account_id),
+    });
+    return batch.commit();
+}
 
 function calculatePerformance(campaign_data, all_inf_perfs){
     // console.info('Obtaining brand campaign data', campaign_data);
@@ -211,6 +229,7 @@ function get_affiliate_link(brand_campaign_id, account_id){
 
 module.exports = {
     reportPostingPerformance,
+    reportPostContent,
     campaignPerformance,
     campaignDashboard,
     registerBrandAccount,

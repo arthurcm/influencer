@@ -31,8 +31,9 @@ curl 'https://securetoken.googleapis.com/v1/token?key=AIzaSyBUv4Ms89_KK7nZ_fcw0s
 Download signed contract:
 curl  -H "Content-Type: application/json" -H "Authorization:<id_token>" -X GET https://campaign.lifo.ai/common/signature_request/files/signature_request_id/c1831d2f8fd90a37e6694a6cae227270c65cf328 --output test_contract.pdf
 
-
-
+Testing deploy
+gcloud builds submit --tag gcr.io/influencer-272204/api_nodejs_test
+gcloud run deploy api-nodejs-test --image gcr.io/influencer-272204/api_nodejs_test --platform managed --service-account=65044462485-compute@developer.gserviceaccount.com
 
 !!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!
