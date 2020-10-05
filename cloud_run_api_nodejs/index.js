@@ -289,7 +289,7 @@ app.put('/influencer/submit_content', async(req, res, next) => {
         console.warn('account_id can not be empty');
         res.status(412).send({status: 'account_id empty'});
     }
-    
+
     let first_time_submit = true;
     await campaign.access_influencer_subcollection(brand_campaign_id)
         .doc(data.account_id)
@@ -302,7 +302,7 @@ app.put('/influencer/submit_content', async(req, res, next) => {
             });
             return first_time_submit;
         });
-    
+
     if (first_time_submit) {
         return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
             .set({

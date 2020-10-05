@@ -102,7 +102,9 @@ async function getCampaignsByUid(uid) {
     const campaignsWithInfluencer = await Promise.all(ref.docs.map(async docRef => {
         const subDoc = (await docRef.ref.collection(BRAND_CAMPAIGNS_INFLUENCER_SUBCOLLECTION).doc(currentUser.instagram_id).get()).data();
         const campaign = docRef.data();
-        campaign.influencer_info = subDoc;
+        if (subDoc && !subDoc.offer_decline_time) {
+            campaign.influencer_info = subDoc;
+        }
         return campaign;
     }));
 
