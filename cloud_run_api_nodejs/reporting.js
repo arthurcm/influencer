@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-const db = admin.firestore();
+const appContainer = require('./app.container');
+const db = appContainer.firebaseService.firebaseDb;
+const admin = appContainer.firebaseService.admin;
 const FieldValue = admin.firestore.FieldValue;
 
 const campaign = require('./campaign');

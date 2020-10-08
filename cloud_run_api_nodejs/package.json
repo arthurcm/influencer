@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "develop": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json nodemon ./index.js"
+    "develop": "GOOGLE_APPLICATION_CREDENTIALS=service_account.json USE_REQUEST_LOGGER=true nodemon ./index.js"
   },
   "engines": {
     "node": "8"
@@ -25,6 +25,7 @@
     "is-valid-domain": "^0.0.14",
     "isomorphic-fetch": "^2.2.1",
     "moment": "^2.27.0",
+    "morgan": "^1.10.0",
     "nodemon": "^2.0.4",
     "path": "^0.12.7",
     "pg": "^8.3.3",

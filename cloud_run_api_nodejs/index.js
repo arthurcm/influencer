@@ -2,86 +2,37 @@ const express = require('express');
 const cors = require('cors');
 const functions = require('firebase-functions');
 const app = express();
-app.use(express.json());
-app.use(cors());
 require('isomorphic-fetch');
 const moment = require('moment');
 
 const isValidDomain = require('is-valid-domain');
 const validUrl = require('valid-url');
 
-const admin = require('firebase-admin');
-admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-    databaseURL: 'https://influencer-272204.firebaseio.com',
-});
-const db = admin.firestore();
 const pg = require('./db');
-
-const campaign = require('./campaign');
-const influencer = require('./influencer');
-const contract_sign = require('./contract_sign');
-const reporting = require('./reporting')
 
 const CLIENT_ONBOARDING_EMAILS = ['arthur.meng@lifo.ai', 'alex.niu@lifo.ai', 'shuo.shan@lifo.ai', 'claire.zhou@lifo.ai', 'test@lifo.ai', 'alexander.tarasenko@lifo.ai'];
 const SUPPORTED_BRAND_TEMPLATES = ['email_temp_library', 'offer_detail_temp'];
+const morgan = require('morgan');
 
 
-// middleware for token verification
-app.use((req, res, next) => {
+const globalRoutes = require('./routes');
+const appContainer = require('./app.container');
+const TokenVerificationMiddleware = require('./middlewares/token-verification.middleware');
 
-    // all /share/* endpoints require no authorization
-    if (req.path.startsWith('/share')){
-        return next();
-    }
+const campaign = require('./campaign');
+const contract_sign = require('./contract_sign');
+const reporting = require('./reporting');
 
-    // idToken comes from the client
-    if (!req.headers.authorization) {
-        console.warn(`request to ${req.path} did not provide authorization header`);
-        return res.status(401).json({ error: 'No credentials sent!' });
-    }
-    const idToken = req.headers.authorization;
-    return admin.auth().verifyIdToken(idToken)
-        .then(decodedToken => {
-            const uid = decodedToken.uid;
-            console.info('received decoded token', decodedToken);
-            // the following "additional claim" field "store_account" is set in shopify/sever.js to
-            // sign up store accounts
-            // /brand/* end points can only be accessed by store accounts
-            // /common/* endpoints require auth, can be accessed by both store and inf
-            // /am/* endpoints require account manager accounts, and can ONLY be accessed by account managers.
-            if (req.path.startsWith('/am/') && !decodedToken.account_manager){
-                console.warn(`request to ${req.path} was rejected`);
-                return res.status(403).json({ error: 'Not authorized'});
-            }
-            else if (req.path.startsWith('/common') || req.path.startsWith('/share')){
-                console.info('Received /common or /share endpoint request');
-            }
-            else if(req.path.startsWith('/brand') && !decodedToken.store_account && !decodedToken.account_manager){
-                console.warn(`request to ${req.path} was rejected`);
-                return res.status(403).json({ error: 'Not authorized'});
+const db = appContainer.firebaseService.firebaseDb;
+const admin = appContainer.firebaseService.admin;
 
-                // other campaign related end points (except for /share) are not accessible to store accounts.
-            }else if (!req.path.startsWith('/brand') && decodedToken.store_account){
-                console.warn(`request to ${req.path} was rejected`);
-                return res.status(403).json({ error: 'Not authorized'});
-            }
-            res.locals.uid = uid;
-            res.locals.from_shopify = decodedToken.from_shopify;
-            res.locals.store_account = decodedToken.store_account;
-            res.locals.account_manager = decodedToken.account_manager;
-            res.locals.name = decodedToken.name;
-            res.locals.email = decodedToken.email;
-            next();
-            return decodedToken;
-        })
-        .catch(error => {
-            console.error(error);
-            res.status(401).send({status: 'auth failure'});
-            next(error);
-        });
-});
-
+if (process.env.USE_REQUEST_LOGGER === 'true') {
+    app.use(morgan('dev'));
+}
+app.use(express.json());
+app.use(cors());
+app.use(TokenVerificationMiddleware(appContainer));
+app.use(globalRoutes(appContainer));
 
 app.get('/get_campaign/campaign_id/:campaign_id', (req, res, next) => {
     const uid = res.locals.uid;
@@ -279,44 +230,6 @@ app.put('/share/finalize_campaign/campaign_id/:campaign_id/history_id/:history_i
         .catch(next);
 });
 
-app.put('/influencer/submit_content', async(req, res, next) => {
-    const data = req.body;
-    if (!data.brand_campaign_id) {
-        console.warn('brand_campaign_id can not be empty');
-        res.status(412).send({status: 'brand_campaign_id empty'});
-    }
-    if (!data.account_id) {
-        console.warn('account_id can not be empty');
-        res.status(412).send({status: 'account_id empty'});
-    }
-
-    let first_time_submit = true;
-    await campaign.access_influencer_subcollection(brand_campaign_id)
-        .doc(data.account_id)
-        .get()
-        .then(querySnapshot => {
-            querySnapshot.docs.forEach(doc => {
-                if (doc.data().content_submit_time) {
-                    first_time_submit = false;
-                }
-            });
-            return first_time_submit;
-        });
-
-    if (first_time_submit) {
-        return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
-            .set({
-                submit_post_time: moment().utc().unix(),
-            }, {merge:true})
-            .then(results => {
-                res.status(200).send({status: 'OK'});
-                return results;
-            })
-            .catch(next);
-    } else {
-        res.status(200).send({status: 'OK'});
-    }
-});
 
 app.put('/brand/approve/campaign_id/:campaign_id/history_id/:history_id', (req, res, next) => {
     const campaign_id = req.params.campaign_id;
@@ -1510,29 +1423,6 @@ app.post('/am/post_perf', (req, res, next)=>{
         .catch(next);
 });
 
-app.post('/influencer/post_content', (req, res, next)=>{
-    const data = req.body;
-    if (!data.brand_campaign_id) {
-        console.warn('brand_campaign_id can not be empty');
-        return res.status(412).send({status: 'brand_campaign_id empty'});
-    }
-    if (!data.account_id) {
-        console.warn('account_id can not be empty');
-        return res.status(412).send({status: 'account_id empty'});
-    }
-    if (!data.link) {
-        console.warn('link can not be empty');
-        return res.status(412).send({status: 'likes empty'});
-    }
-
-    return reporting.reportPostContent(data)
-        .then(results => {
-            res.status(200).send({status: 'OK'});
-            return results;
-        })
-        .catch(next);
-});
-
 app.get('/brand/post_perf/brand_campaign_id/:brand_campaign_id', (req, res, next)=>{
     const brand_campaign_id = req.params.brand_campaign_id;
     if(!brand_campaign_id){
@@ -1761,69 +1651,6 @@ app.delete('/am/faq/:id', (req, res, next) => {
         .catch(next);
 });
 
-app.get('/influencer/account_balance', (req, res, next) => {
-    const influencer_id = res.locals.uid;
-    return pg.getUserBalance(influencer_id)
-        .then(result => {
-            if (result.rows.length <= 0) {
-                res.status(400).json({error: 'influencer not found'});
-            }
-            res.status(200).send(result.rows[0]);
-        })
-        .catch(next);
-});
-
-app.get('/influencer/transaction_history', (req, res, next) => {
-    const influencer_id = res.locals.uid;
-    return pg.getUserTransactionHistory(influencer_id)
-        .then(result => {
-            res.status(200).send(result.rows);
-        })
-        .catch(next);
-});
-
-app.post('/influencer/pay_campaign', async(req, res, next) => {
-    const influencer_id = res.locals.uid;
-    const data = req.body;
-    if (!data.campaign_id || !data.amount) {
-        res.status(400).json({error: 'missing campaign information'});
-    }
-    try {
-        const ret = await pg.addCampaignPayment(influencer_id, data.amount, data.campaign_id);
-        res.status(200).json(ret);
-    } catch (error) {
-        return next(error)
-    }
-});
-
-app.post('/influencer/cash_out', async(req, res, next) => {
-    const influencer_id = res.locals.uid;
-    const data = req.body;
-    if (!data.amount) {
-        res.status(400).json({error: 'missing amount information'});
-    }
-    try {
-        const ret = await pg.cashOutBalance(influencer_id, data.amount);
-        res.status(200).json(ret);
-    } catch (error) {
-        return next(error)
-    }
-});
-
-app.post('/influencer/convert_credit', async(req, res, next) => {
-    const influencer_id = res.locals.uid;
-    const data = req.body;
-    if (!data.date) {
-        res.status(400).json({error: 'missing date information'});
-    }
-    try {
-        const ret = await pg.convertCampaignPayment(influencer_id, data.date);
-        res.status(200).json(ret);
-    } catch (error) {
-        return next(error)
-    }
-});
-
 app.use((err, req, res, next) => {
     console.error(err.stack);
     if (res.headersSent) {
@@ -1839,82 +1666,9 @@ app.listen(port, () => {
 });
 
 // Influencer part
-app.post('/influencer/sign-up/influencer', (req, res, next) => {
-    console.debug(`${req.path} received  ${req.body}`);
-    const data = req.body;
-    return influencer.updateInfluencerUserById(res.locals.uid,data)
-        .then(user => res.status(200).send(user))
-        .catch(next);
-})
 
-app.get('/influencer/current-profile', (req, res, next) => {
-    return influencer.getInfluencerUserByUid(res.locals.uid)
-        .then(user => {
-            if (!user) {
-                const userData = {
-                    email: res.locals.email,
-                    user_id: res.locals.uid
-                }
-                return influencer.createInfluencerUser(userData)
-                    .then(newUser => res.status(200).send(newUser))
-            } else {
-                res.status(200).send(user);
-            }
-        })
-        .catch(next);
-
-})
-
-app.put('/influencer/current-profile', (req, res, next) => {
-    const data = req.body;
-    return influencer.updateInfluencerUserById(res.locals.uid,data)
-        .then(user => res.status(200).send(user))
-        .catch(next);
-});
-
-app.get('/influencer/check-instagram', (req, res, next) => {
-    return influencer.getInstagramProfileFromModash(res.locals.uid, req.headers.authorization)
-        .then(modashResults => {
-            if (modashResults) {
-                return influencer.updateInfluencerUserById(res.locals.uid, {is_instagram_checked: true});
-            }
-        })
-        .catch(next);
-
-})
-
-app.put('/influencer/complete-sign-up', (req, res, next) => {
-    console.debug(`${req.path} received  ${req.body}`);
-    const data = req.body;
-    const userUid = res.locals.uid;
-    return influencer.updateInfluencerUserById(userUid, data)
-        .then(user => res.status(200).send(user))
-        .catch(next);
-
-})
-
-
-app.get('/influencer/campaign', (req, res, next) => {
-    return influencer.getCampaignsByUid(res.locals.uid)
-        .then(campaigns => {
-            res.status(200).send(campaigns);
-        })
-        .catch(next);
-
-});
 
 // End of Influencer part
-
-app.get('/influencer/campaign/:id', (req, res, next) => {
-    const brandCampaignId = req.params.id;
-    return influencer.getCampaignById(res.locals.uid, brandCampaignId)
-        .then(campaigns => {
-            res.status(200).send(campaigns);
-        })
-        .catch(next);
-
-});
-
 
 app.post('/am/campaign_recruit', (req, res, next) => {
     console.debug(`${req.path} received  ${req.body}`);
@@ -1965,7 +1719,7 @@ app.put('/share/accept-invitation/brand_campaign_id/:brand_campaign_id/accept/:a
             if(decodedToken.store_account){
                 return res.status(403).json({ error: 'Not authorized'});
             }
-            const ins_id = influencer.getInstagramIDByUID(uid); // 'xosimplysteph'
+            const ins_id = appContainer.influencerService.getInstagramIDByUID(uid); // 'xosimplysteph'
             if(accept === 'true'){
                 console.info(`influencer ${ins_id} is accepting invitation ${brand_campaign_id}`);
                 return campaign.acceptInvitation(brand_campaign_id, ins_id, uid);
