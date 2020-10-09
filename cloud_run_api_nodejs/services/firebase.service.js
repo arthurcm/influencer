@@ -7,6 +7,7 @@ class FirebaseService {
      * @type {FirebaseFirestore.Firestore}
      */
     firebaseDb;
+    FieldValue;
 
     constructor() {
         this.admin = admin.initializeApp({
@@ -14,6 +15,7 @@ class FirebaseService {
             databaseURL: 'https://influencer-272204.firebaseio.com',
         });
         this.firebaseDb = this.admin.firestore();
+        this.FieldValue = admin.firestore.FieldValue;
     }
 
     /**

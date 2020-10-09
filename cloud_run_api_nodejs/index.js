@@ -4,6 +4,8 @@ const functions = require('firebase-functions');
 const app = express();
 require('isomorphic-fetch');
 const moment = require('moment');
+const axios = require("axios");
+const qs = require('qs');
 
 const isValidDomain = require('is-valid-domain');
 const validUrl = require('valid-url');
@@ -540,6 +542,21 @@ app.post('/brand/campaign', (req, res, next) => {
         .catch(next);
 });
 
+app.put('/brand/update_campaign/brand_campaign_id/:brand_campaign_id', (req, res, next) => {
+    const brand_campaign_id = req.params.brand_campaign_id
+    if (!brand_campaign_id) {
+        console.warn('brand_campaign_id can not be empty');
+        res.status(412).send({status: 'brand_campaign_id empty'});
+    }
+    console.debug(`${req.path} received  ${req.body}`);
+    const results = campaign.updateBrandCampaign(req.body, brand_campaign_id);
+    return results
+        .then(result => {
+            res.status(200).send(results);
+            return result;
+        })
+        .catch(next);
+});
 
 app.post('/brand/targeting_info', (req, res, next) => {
     console.debug('/brand/targeting_info received a request', req.body);
@@ -1303,6 +1320,7 @@ app.put('/share/influencer', async(req, res, next) => {
         influencer_address1: data.influencer_address1,
         inf_signing_status: campaign.INFLUENCER_SIGNEDUP,
         offer_accept_time: moment().utc().unix(),
+        user_id: res.locals.uid,
     };
     if (data.influencer_address2) {
         influencer_profile.influencer_address2 = data.influencer_address2;
@@ -1359,6 +1377,7 @@ app.put('/share/influencer_offer', (req, res, next) => {
             inf_signing_status: campaign.INFLUENCER_ACCEPT,
             offer_response : data,
             offer_accept_time: moment().utc().unix(),
+            user_id: res.locals.uid,
         };
     } else {
         console.log('Influencer declined the offer');
@@ -1633,7 +1652,7 @@ app.post('/am/faq', (req, res, next) => {
 
 app.put('/am/faq/:id', (req, res, next) => {
     const faq_id = req.params.id;
-    return db.collection('faq').doc(faq_id).set(req.body)
+    return db.collection('faq').doc(faq_id).set(req.body, {merge:true})
         .then(result => {
             res.status(200).send({status: 'OK'});
             return result;
@@ -1650,6 +1669,35 @@ app.delete('/am/faq/:id', (req, res, next) => {
         })
         .catch(next);
 });
+
+
+app.post('/brand/pay_campaign', async(req, res, next) => {
+    const data = req.body;
+    if (!data.account_id || !data.campaign_id || !data.amount) {
+        res.status(400).json({error: 'missing campaign information'});
+    }
+    try {
+        // Find influencer id by instagram id
+        const influencer_id =  await influencer.getUIDByInstagramID(data.account_id);
+        if (!influencer_id) {
+            res.status(400).json({error: 'influencer not found'});
+        }
+        const ret = await pg.addCampaignPayment(influencer_id, data.amount, data.campaign_id);
+        if (!ret['error']) {
+             // Set time and amount
+            await campaign.access_influencer_subcollection(data.campaign_id)
+            .doc(data.account_id)
+            .set({
+                commission_paid_time: moment().utc().unix(),
+                commission_paid_amount: data.amount,
+            }, {merge: true})
+        }
+        res.status(200).json(ret);
+    } catch (error) {
+        return next(error)
+    }
+});
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -1669,6 +1717,96 @@ app.listen(port, () => {
 
 
 // End of Influencer part
+
+
+// Get All influencer list
+app.get('/am/influencer_list', (req, res, next) => {
+    return db.collection('influencer_list').get()
+        .then(snapshot => {
+            const result = [];
+            snapshot.forEach(doc => {
+                result.push({
+                    id: doc.id,
+                    ...doc.data(),
+                })
+            });
+            res.status(200).send(result);
+            return result;
+        })
+        .catch(next);
+});
+
+// Get One influencer list with ID
+app.get('/am/influencer_list/:id', (req, res, next) => {
+    const influencer_list_id = req.params.id;
+    return db.collection('influencer_list').doc(influencer_list_id).get()
+        .then(result => {
+            res.status(200).send({
+                id: result.id,
+                ...result.data(),
+            });
+            return result;
+        })
+        .catch(next);
+});
+
+
+// Create a new influencer list
+app.post('/am/influencer_list', (req, res, next) => {
+    return db.collection('influencer_list').add(req.body)
+        .then(result => {
+            res.status(200).send({id: result.id});
+            return result;
+        })
+        .catch(next);
+});
+
+
+// Update an influencer list
+app.put('/am/influencer_list/:id', (req, res, next) => {
+    const influencer_list_id = req.params.id;
+    return db.collection('influencer_list').doc(influencer_list_id).set(req.body, {merge:true})
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+app.put('/am/influencer_list/add_influencer/:id', async(req, res, next) => {
+    const influencer_list_id = req.params.id;
+    const influencer_list_ref = db.collection('influencer_list').doc(influencer_list_id);
+    const snapshot = await influencer_list_ref.get()
+    if (snapshot.empty) {
+        console.log('No matching documents.');
+        return;
+    }
+    const ins_list = snapshot.data().ins_list;
+    console.log(ins_list)
+    req.body.ins_list.forEach(inf => {
+        if (ins_list.indexOf(inf) < 0) {
+            ins_list.push(inf);
+        }
+    })
+    return db.collection('influencer_list').doc(influencer_list_id).set({ins_list}, {merge:true})
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
+// Delete influencer list by ID
+app.delete('/am/influencer_list/:id', (req, res, next) => {
+    const influencer_list = req.params.id;
+    return db.collection('faq').doc(influencer_list).delete()
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
 
 app.post('/am/campaign_recruit', (req, res, next) => {
     console.debug(`${req.path} received  ${req.body}`);
@@ -1753,4 +1891,34 @@ app.post('/am/commission', (req, res, next) => {
     }
     const results = campaign.calculateCommission(influencer_list, max_commission, bonus_percentage, product_cost, cpm);
     return res.status(200).send(results);
+});
+
+app.get('/share/track_shipping/:carrier/:tracking_number', (req, res, next) => {
+    const carrier = req.params.carrier;
+    const tracking_number = req.params.tracking_number;
+    if (!carrier || !tracking_number) {
+        console.warn(`request to ${req.path} did not provide shipping number`);
+        res.status(422).send('Missing a valid tracking_number');
+    }
+    axios(
+        {
+            "method": "POST",
+            "url": "https://easypostapi-easypost-v1.p.rapidapi.com/v2/trackers",
+            "headers": {
+                "content-type": "application/x-www-form-urlencoded",
+                "x-rapidapi-host": "easypostapi-easypost-v1.p.rapidapi.com",
+                "x-rapidapi-key":" 87ce9b7202msh2cd25930b9a3f3bp16bf78jsnec59bcf7cfae",
+                "useQueryString": true
+            },
+            "data": qs.stringify({
+                'tracker[carrier]': carrier,
+                'tracker[tracking_code]': tracking_number
+            }),
+        }
+    ).then((response)=>{
+        console.log(response)
+        res.send(response.data);
+    }).catch((error) => {
+        console.log(error.response.data.error);
+    });
 });

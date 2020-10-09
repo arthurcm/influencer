@@ -2,7 +2,7 @@ const functions = require('firebase-functions');
 const appContainer = require('./app.container');
 const db = appContainer.firebaseService.firebaseDb;
 const admin = appContainer.firebaseService.admin;
-const FieldValue = admin.firestore.FieldValue;
+const FieldValue = appContainer.firebaseService.FieldValue;
 
 const campaign = require('./campaign');
 
@@ -18,7 +18,7 @@ function reportPostingPerformance(data){
     const campaign_ref = db.collection(campaign.BRAND_CAMPAIGN_COLLECTIONS).doc(data.brand_campaign_id);
     // Atomically add a new region to the "regions" array field.
     batch.update(campaign_ref,{
-        inf_posted: admin.firestore.FieldValue.arrayUnion(data.account_id),
+        inf_posted: FieldValue.arrayUnion(data.account_id),
     });
     return batch.commit();
 };
@@ -35,7 +35,7 @@ function reportPostContent(data) {
     const campaign_ref = db.collection(campaign.BRAND_CAMPAIGN_COLLECTIONS).doc(data.brand_campaign_id);
     // Atomically add a new region to the "regions" array field.
     batch.update(campaign_ref, {
-        inf_posted: admin.firestore.FieldValue.arrayUnion(data.account_id),
+        inf_posted: FieldValue.arrayUnion(data.account_id),
     });
     return batch.commit();
 }

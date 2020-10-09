@@ -2,8 +2,10 @@ const functions = require('firebase-functions');
 const appContainer = require('./app.container');
 const db = appContainer.firebaseService.firebaseDb;
 const admin = appContainer.firebaseService.admin;
+const FieldValue = appContainer.firebaseService.FieldValue;
 
 const path = require('path');
+const moment = require('moment');
 
 const PERCENTAGE_RATE = 'commission_per_sales_campaign';
 const FIXED_RATE = 'one_time_commission_campaign';
@@ -220,7 +222,6 @@ function getCampaign(data, uid, res) {
 }
 
 function updateCampaignData(campaign_id, data, history_id){
-    const FieldValue = admin.firestore.FieldValue;
     data.time_stamp = FieldValue.serverTimestamp();
     data.campaign_id = campaign_id;
     data.history_id = history_id;
@@ -319,7 +320,6 @@ function deleteCampaign(data, uid){
 // each feedback is an object defined by the function below.
 function createFeedbackObject(feedback_str, media_object_path, displayName='', like= [], dislike= [],
                               video_offset=0, image_bounding_box={}, extra_data={}){
-    const FieldValue = admin.firestore.FieldValue;
     return {
         displayName,
         feedback_str,
@@ -346,7 +346,7 @@ function createFeedbackThread(data, uid, name){
     }
     const feedback_str = data.feedback_str;
     const media_object_path = data.media_object_path;
-    const FieldValue = admin.firestore.FieldValue;
+
     const feedback_obj = createFeedbackObject(feedback_str, media_object_path, name);
     const new_thread = {
         media_object_path,
@@ -770,7 +770,6 @@ function createBrandCampaignData(brand_campaign_id, uid, data, is_new_camp=false
     if(!uid) {
         throw new functions.https.HttpsError('invalid-argument', 'New campaign must have a valid uid!');
     }
-    const FieldValue = admin.firestore.FieldValue;
 
     // This is actually very important field to link brand initiated campaign with influencer "signed-up" campaigns
     data.brand_campaign_id = brand_campaign_id;
@@ -868,16 +867,15 @@ function getTargetingInfo(brand_campaign_id){
 }
 
 
-function updateBrandCampaign(data, uid, brand_campaign_id){
+function updateBrandCampaign(data, brand_campaign_id){
     if(!brand_campaign_id){
         return new functions.https.HttpsError('failed-precondition', 'The function must be called ' +
             'with a specific campaign_id.');
     }
 
-    return db.collection('brands')
-        .doc(uid).collection(BRAND_CAMPAIGN_COLLECTIONS)
+    return db.collection(BRAND_CAMPAIGN_COLLECTIONS)
         .doc(brand_campaign_id)
-        .update(data);
+        .set(data, {merge: true});
 }
 
 
@@ -1119,7 +1117,7 @@ function addShippingInfo(brand_campaign_id, influencer_id, shipping_info) {
         });
 }
 
-function receiveShipping(brand_campaign_id, influencer_id) {
+function receiveShipping(brand_campaign_id, influencer_id, shipping_info) {
     // Need to get information here.
     return access_influencer_subcollection(brand_campaign_id).doc(influencer_id)
         .update({
@@ -1148,7 +1146,6 @@ function createCampaignRecruit(data){
     }
    return db.collection(BRAND_CAMPAIGN_COLLECTIONS).doc(brand_campaign_id).get()
         .then(snapshot => {
-            const FieldValue = admin.firestore.FieldValue;
             const brand_campaign_data = snapshot.data();
             const campaign_recruit_ref = admin.database().ref(`${CAMPAIGN_RECRUIT_RT}/` + brand_campaign_id);
             const product_name = brand_campaign_data.product_name;
@@ -1214,6 +1211,19 @@ async function getInvitation(inf_id, brand_campaign_id){
     });
 }
 
+async function getAllInvitations(inf_id) {
+    const invitation_ref = admin.database().ref(`${INVITATIONS_RT}/${inf_id}`);
+    return await invitation_ref.once('value', function(snapshot) {
+        return snapshot.val();
+    });
+}
+
+async function getInvitationsByCampaignId(inf_id, campaign_id) {
+    const invitation_ref = admin.database().ref(`${INVITATIONS_RT}/${inf_id}/${campaign_id}`);
+    return await invitation_ref.once('value', function(snapshot) {
+        return snapshot.val();
+    });
+}
 
 async function recruitStatus(brand_campaign_id){
     const campaign_recruit_ref = admin.database().ref(`${CAMPAIGN_RECRUIT_RT}/${brand_campaign_id}` );
@@ -1263,7 +1273,6 @@ function closeRecruit(brand_campaign_id){
  * @param inf_id {string} : this is the social media ID as opposed to internal uid
  */
 async function checkInvStatus(brand_campaign_id, inf_id){
-    const FieldValue = admin.firestore.FieldValue;
     const inv_ref = admin.database().ref(`${INVITATIONS_RT}/` + inf_id + `/${brand_campaign_id}`);
     const data = await inv_ref.once('value',  snapshot => {
         const data = snapshot.val();
@@ -1479,6 +1488,8 @@ module.exports = {
     acceptInvitation,
     declineInvitation,
     calculateCommission,
+    getAllInvitations,
+    getInvitationsByCampaignId,
     GENERIC_INF_CREATED_CAMPAIGN,
     BRAND_CAMPAIGN_COLLECTIONS,
     FIXED_RATE,

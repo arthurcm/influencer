@@ -1,6 +1,7 @@
 const GenericController = require('./generic/generic.controller');
 const campaign = require('../campaign');
 const reporting = require('../reporting');
+const moment = require('moment');
 
 class InfluencerController extends GenericController {
     afterConstruct() {
@@ -101,24 +102,20 @@ class InfluencerController extends GenericController {
             .doc(data.account_id)
             .get()
             .then(querySnapshot => {
-                querySnapshot.docs.forEach(doc => {
-                    if (doc.data().content_submit_time) {
-                        first_time_submit = false;
-                    }
-                });
+                if (querySnapshot.data().content_submit_time) {
+                    first_time_submit = false;
+                }
                 return first_time_submit;
             });
 
         if (first_time_submit) {
             return campaign.access_influencer_subcollection(data.brand_campaign_id).doc(data.account_id)
                 .set({
-                    submit_post_time: moment().utc().unix(),
+                    content_submit_time: moment().utc().unix(),
                 }, {merge: true})
                 .then(results => {
-                    res.status(200).send({status: 'OK'});
-                    return results;
-                })
-                .catch(next);
+                    return this.successResponse({status: 'OK'});
+                });
         } else {
             return this.successResponse({status: 'OK'});
         }
@@ -170,6 +167,23 @@ class InfluencerController extends GenericController {
         const ret = await this.sqlDbService.convertCampaignPayment(currentUser.uid, data.date);
         return this.successResponse(ret);
     }
+
+    // Get all invitations for a influencer
+    async getAllInvitations(req) {
+        const currentUser = req.current_user;
+        const ins_id = await this.influencerService.getInstagramIDByUID(currentUser.uid);
+        return campaign.getAllInvitations(ins_id)
+            .then(results => this.successResponse(results));
+    }
+
+    async getInvitationByCampaignId(req) {
+        const brand_campaign_id = req.params.brand_campaign_id;
+        const currentUser = req.current_user;
+        const ins_id = await this.influencerService.getInstagramIDByUID(currentUser.uid);
+        return campaign.getInvitationsByCampaignId(ins_id, brand_campaign_id)
+            .then(results => this.successResponse(results));
+    };
+
 }
 
 module.exports = InfluencerController;

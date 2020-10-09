@@ -62,6 +62,13 @@ module.exports = (container) => {
         return new InfluencerController(container, res).convertCreditsAction(req).catch(next);
     });
 
+    router.get('/invitations', (req, res, next) => {
+        return new InfluencerController(container, res).getAllInvitations(req).catch(next);
+    });
+
+    router.get('/invitation_by_cmapaign/:brand_campaign_id', (req, res, next) => {
+        return new InfluencerController(container, res).getInvitationByCampaignId(req).catch(next);
+    });
 
     return router;
 };

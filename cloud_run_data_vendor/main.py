@@ -19,16 +19,20 @@ import logging
 
 from cloud_sql import sql_handler
 # Instantiates a client
+# (Local Dev)
 client = google.cloud.logging.Client()
 
 # Connects the logger to the root logging handler; by default this captures
 # all logs at INFO level and higher
+# (Local Dev)
 client.setup_logging()
 logging.basicConfig(level=logging.INFO)
 
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
+# (Local Dev)
 CLIENT_SECRETS_FILE = "/tmp/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
+# CLIENT_SECRETS_FILE = "/Users/shuoshan/Downloads/influencer-272204-local-dev.json"
 
 # This is taken from https://marketer.modash.io/developer
 MODASH_API_ACCESS_KEY = "Xuomvq8poz8x9PdJNvKVadzUyO7xuj1X"
@@ -865,6 +869,155 @@ def retrieve_campaign_payment():
     response.status_code = 200
     return response
 
+
+@app.route('/brand/create_order', methods=['POST'])
+def create_shopify_order():
+    """
+    This endpoint is called to 
+    """
+    campaign_info = flask.request.json
+    shop = campaign_info['shop']
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    campaign_id = campaign_info['campaign_id']
+    campaign_ref = db.collection('brand_campaigns').document(campaign_id)
+    campaign = campaign_ref.get()
+    if not campaign.exists:
+        res = {'status': 'campaign not found'}
+        response = flask.jsonify(res)
+        response.status_code = 400
+        return response
+    influencer_ref = campaign_ref.collection('influencers').document(campaign_info['account_id'])
+    influencer = influencer_ref.get()
+    if not influencer.exists:
+        res = {'status': 'influencer not found'}
+        response = flask.jsonify(res)
+        response.status_code = 400
+        return response
+    
+    url = f'https://{shop}/admin/api/{API_VERSION}/orders.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    payload = {
+        "order": {
+            "email": campaign_info['email'],
+            "shipping_address": {
+                "first_name": campaign_info['first_name'],
+                "last_name": campaign_info['last_name'],
+                "address1": campaign_info['address_line_1'],
+                "address2": campaign_info['address_line_2'],
+                "phone": campaign_info['phone_number'],
+                "city": campaign_info['city'],
+                "province": campaign_info['province'],
+                "country": campaign_info['country'],
+                "zip": campaign_info['zip']
+            },
+            "line_items": [
+                {
+                    "variant_id": campaign_info['variant_id'],
+                    "quantity": 1
+                }
+            ],
+            "financial_status": "paid"
+        }
+    }   
+
+    app.logger.info(f'paylod {json.dumps(payload)}')
+    res = requests.post(url, json=payload, headers=headers)
+    logging.info(f'Create order for {shop}: {res.json()}')
+    influencer_ref.set(res.json(), merge=True)
+    response = flask.jsonify(res.json())
+    response.status_code = 200
+    return response
+
+@app.route('/brand/view_order', methods=['GET'])
+def view_shopify_order():
+    """
+    This endpoint is called to 
+    """
+    shop = flask.request.args.get('shop')
+    order_id = flask.request.args.get('order_id')
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    url = f'https://{shop}/admin/api/{API_VERSION}/orders/{order_id}.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    res = requests.get(url, headers=headers)
+    logging.info(f'get order for {shop}: {res.json()}')
+    # Status could be pending, accepted, declined
+    response = flask.jsonify(res.json())
+    response.status_code = 200
+    return response
+
+@app.route('/brand/update_order', methods=['PUT'])
+def update_shopify_order():  
+    order_info = flask.request.json
+    shop = order_info['shop']
+    res = get_shopify_access_token(shop)
+    if not res:
+        res = {'status': 'access token not found'}
+        response = flask.jsonify(res)
+        response.status_code = 404
+        return response
+    shop_access_token = res
+
+    campaign_id = order_info['campaign_id']
+    campaign_ref = db.collection('brand_campaigns').document(campaign_id)
+    campaign = campaign_ref.get()
+    if not campaign.exists:
+        res = {'status': 'campaign not found'}
+        response = flask.jsonify(res)
+        response.status_code = 400
+        return response
+    influencer_ref = campaign_ref.collection('influencers').document(order_info['account_id'])
+    influencer = influencer_ref.get()
+    if not influencer.exists:
+        res = {'status': 'influencer not found'}
+        response = flask.jsonify(res)
+        response.status_code = 400
+        return response
+
+    influencer_data = influencer.to_dict()
+    order_id = ''
+    if influencer_data.get('order') and influencer_data.get('order').get('id'):
+        order_id = influencer_data.get('order').get('id')
+    if not order_id:
+        res = {'status': 'order not found'}
+        response = flask.jsonify(res)
+        response.status_code = 400
+        return response
+
+    url = f'https://{shop}/admin/api/{API_VERSION}/orders/{order_id}.json'
+    logging.info(f'Receiving request for url {url}')
+    headers = {"X-Shopify-Access-Token": shop_access_token}
+    res = requests.get(url, headers=headers)
+    logging.info(f'get order for {shop}: {res.json()}')
+    # Status could be pending, accepted, declined
+    order_data = res.json()
+    # If Shipping Info
+    if (order_data['order']['fulfillments'] and len(order_data['order']['fulfillments']) > 0):
+        shipping_info = {
+            'tracking_number': order_data['order']['fulfillments'][0]['tracking_number'],
+            'carrier': order_data['order']['fulfillments'][0]['tracking_company'] 
+        }
+        order_data['shipping_info'] = shipping_info
+        order_data['product_ship_time'] = datetime.datetime.fromisoformat(order_data['order']['fulfillments'][0]['created_at']).timestamp()
+    influencer_ref.set(order_data, merge=True)
+    response = flask.jsonify(order_data)
+    response.status_code = 200
+    return response
 
 def get_client_secret():
     """
