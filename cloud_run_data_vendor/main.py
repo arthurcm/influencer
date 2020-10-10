@@ -340,24 +340,7 @@ def modash_match():
     response.status_code = 200
     return response
 
-
-def modash_report(social_platform='instagram'):
-    """
-    This API pulls instagram, tiktok, YouTube full report from Modash
-    https://api.modash.io/v1/{social_platform}/profile/{userId}/report
-    The default behavior is to use a cached version of report stored in Lifo's SQL server.
-    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
-    """
-    userId = flask.request.args.get('userId')
-    if not userId:
-        response = flask.jsonify({"error": "Valid userId param required!"})
-        response.status_code = 412
-        return response
-
-    force_update = flask.request.args.get('force_update')
-    if not force_update:
-        force_update = False
-
+def fetch_single_profile(force_update, userId, social_platform='instagram'):
     profile = None
 
     if not force_update:
@@ -380,8 +363,55 @@ def modash_report(social_platform='instagram'):
             else:
                 logging.warning('Modash API not responding, retrying')
                 time.sleep(1)
+    return profile
+
+def modash_report(social_platform='instagram'):
+    """
+    This API pulls instagram, tiktok, YouTube full report from Modash
+    https://api.modash.io/v1/{social_platform}/profile/{userId}/report
+    The default behavior is to use a cached version of report stored in Lifo's SQL server.
+    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
+    """
+    userId = flask.request.args.get('userId')
+    if not userId:
+        response = flask.jsonify({"error": "Valid userId param required!"})
+        response.status_code = 412
+        return response
+
+    force_update = flask.request.args.get('force_update')
+    if not force_update:
+        force_update = False
+
+    profile = fetch_single_profile(force_update, userId, social_platform='instagram')
+
     if profile:
         response = flask.jsonify(profile)
+        response.status_code = 200
+    else:
+        response = flask.jsonify({"error": f"Failed to obtain {social_platform} profile"})
+        response.status_code = 400
+    return response
+
+def modash_batch_report(social_platform='instagram'):
+    body = flask.request.json
+    influencer_list = body['influencer_list']
+    if not influencer_list or len(influencer_list) <= 0:
+        response = flask.jsonify({"error": "Valid influencer ids required!"})
+        response.status_code = 412
+        return response
+
+    force_update = flask.request.args.get('force_update')
+    if not force_update:
+        force_update = False
+
+    influencer_profiles = {}
+    for userId in influencer_list:
+        profile = fetch_single_profile(force_update, userId, social_platform)
+        if profile:
+            influencer_profiles[userId] = profile
+    
+    if influencer_profiles:
+        response = flask.jsonify(influencer_profiles)
         response.status_code = 200
     else:
         response = flask.jsonify({"error": f"Failed to obtain {social_platform} profile"})
@@ -415,6 +445,20 @@ def modash_report_api():
         return response
     return modash_report(platform)
 
+@app.route("/am/modash/batch_profile", methods=["POST"])
+def modash_batch_report_api():
+    """
+    This API pulls instagram full report from Modash
+    https://api.modash.io/v1/instagram/profile/{userId}/report
+    The default behavior is to use a cached version of report stored in Lifo's SQL server.
+    If "force_update" parameter is true, the profile will then be updated, each pull of which costs ~$0.40
+    """
+    platform = flask.request.args.get('platform')
+    if platform not in {'instagram', 'tiktok', 'youtube'}:
+        response = flask.jsonify({"error": f"{platform} not supported"})
+        response.status_code = 422
+        return response
+    return modash_batch_report(platform)
 
 @app.route("/influencer/instagram/profile", methods=["GET"])
 def instagram_report_influencer():

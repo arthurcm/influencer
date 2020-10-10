@@ -35,3 +35,8 @@ curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/instagram/inter
 
 Test get shopify shop information:
 curl  -H "Authorization:<id_token>" "https://discover.lifo.ai/am/shopify_shop_info?shop=meteneus.myshopify.com" -X GET
+
+
+Deploy to testing
+gcloud builds submit --tag gcr.io/influencer-272204/data_vendor_test
+gcloud run deploy data-vendor-test  --image gcr.io/influencer-272204/data_vendor_test --service-account=65044462485-compute@developer.gserviceaccount.com --add-cloudsql-instances influencer-272204:us-central1:influencersql --update-env-vars INSTANCE_CONNECTION_NAME="influencer-272204:us-central1:influencersql"
