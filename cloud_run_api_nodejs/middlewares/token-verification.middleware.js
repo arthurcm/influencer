@@ -51,6 +51,11 @@ const TokenVerificationMiddleware =
                 res.locals.email = decodedToken.email;
 
                 req.current_user = await container.influencerService.getInfluencerUserByUid(uid);
+                if (!req.current_user) {
+                    req.current_user = {
+                        uid,
+                    };
+                }
                 next();
                 return decodedToken;
             } catch (error) {
