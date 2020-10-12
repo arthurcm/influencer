@@ -1796,6 +1796,29 @@ app.put('/am/influencer_list/add_influencer/:id', async(req, res, next) => {
         .catch(next);
 });
 
+app.put('/am/influencer_list/remove_influencer/:id/:influencer_id', async(req, res, next) => {
+    const influencer_list_id = req.params.id;
+    const influencer_list_ref = db.collection('influencer_list').doc(influencer_list_id);
+    const snapshot = await influencer_list_ref.get()
+    if (snapshot.empty) {
+        console.log('No matching documents.');
+        return;
+    }
+    
+    const ins_list = snapshot.data().ins_list;
+    const influencer_id = req.params.influencer_id;
+    if (ins_list.indexOf(influencer_id) >= 0) {
+        ins_list.splice(ins_list.indexOf(influencer_id), 1);
+    }
+    
+    return db.collection('influencer_list').doc(influencer_list_id).set({ins_list}, {merge:true})
+        .then(result => {
+            res.status(200).send({status: 'OK'});
+            return result;
+        })
+        .catch(next);
+});
+
 // Delete influencer list by ID
 app.delete('/am/influencer_list/:id', (req, res, next) => {
     const influencer_list = req.params.id;
