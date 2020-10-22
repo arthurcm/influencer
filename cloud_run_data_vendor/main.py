@@ -5,7 +5,6 @@ import flask
 import json
 import datetime
 import time
-
 from validator_collection import checkers
 import shopify
 
@@ -16,6 +15,15 @@ from flask_cors import CORS
 # Imports the Google Cloud client library
 import google.cloud.logging
 import logging
+
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate,MigrateCommand
+from flask_script import Shell,Manager
+# SQLALCHEMY_DATABASE_URI = 'postgresql://gcf:967Shoreline@localhost:5432/auth'
+# SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+
+from flask_admin import Admin, BaseView, expose
 
 from cloud_sql import sql_handler
 # Instantiates a client
@@ -31,8 +39,8 @@ logging.basicConfig(level=logging.INFO)
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
 # (Local Dev)
-CLIENT_SECRETS_FILE = "/tmp/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
-# CLIENT_SECRETS_FILE = "/Users/shuoshan/Downloads/influencer-272204-local-dev.json"
+# CLIENT_SECRETS_FILE = "/tmp/client_secret_65044462485-6h2vnliteh06hllhb5n1o4g95h3v52tq.apps.googleusercontent.com.json"
+CLIENT_SECRETS_FILE = "/Users/fuyou/Desktop/influencer-272204-local-dev.json"
 
 # This is taken from https://marketer.modash.io/developer
 MODASH_API_ACCESS_KEY = "Xuomvq8poz8x9PdJNvKVadzUyO7xuj1X"
@@ -88,18 +96,29 @@ from firebase_admin import credentials
 from firebase_admin import exceptions
 from firebase_admin import firestore
 
-
+print('111')
 firebase_app = firebase_admin.initialize_app()
-
+print(firebase_app)
 # here the db variable is a firestore client. We name it as "db" just to be consistent with JS side.
 db = firestore.client()
+from influencer import app,d_b
 
-app = flask.Flask(__name__)
+manage = Manager(app)
+#flask实例，Sqlalchemy数据库实例
+migrate = Migrate(app,d_b)
+
+manage.add_command('d_b',MigrateCommand)
+
 CORS(app)
+
+
+
+
 # Note: A secret key is included in the sample so that it works.
 # If you use this code in your application, replace this with a truly secret
 # key. See https://flask.palletsprojects.com/quickstart/#sessions.
 app.secret_key = 'REPLACE ME - this value is here as a placeholder.'
+
 
 
 def token_verification(id_token):
@@ -1108,15 +1127,26 @@ def write_client_secret():
     else:
         print('Client secret file found. Continue')
 
+@app.route('/')
+def hellp_world():
+    return 'hello world'
+
+
+
+
 
 if __name__ == '__main__':
   # When running locally, disable OAuthlib's HTTPs verification.
-  # ACTION ITEM for developers:
+  # ACTION ITEM for developers
   #     When running in production *do not* leave this option enabled.
   os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
   os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = 'True'
   write_client_secret()
-
   # Specify a hostname and port that are set as a valid redirect URI
   # for your API project in the Google API Console.
-  app.run('0.0.0.0', 8080, debug=True)
+  # d_b.create_all()
+  #查看路由映射
+  print(app.url_map)
+  manage.run()
+
+

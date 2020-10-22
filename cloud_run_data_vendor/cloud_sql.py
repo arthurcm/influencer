@@ -41,9 +41,8 @@ class Sqlhandler:
                 username=self.db_user,
                 password=self.db_password,
                 database=self.db_name,
-                # (Local Dev) host='34.70.211.131'
-                query={'unix_sock': '/cloudsql/{}/.s.PGSQL.5432'.format(self.connection_name)}
-            ),
+                host='localhost'
+             ),
             # ... Specify additional properties here.
             # [START_EXCLUDE]
 
@@ -126,6 +125,16 @@ class Sqlhandler:
             Column('timestamp', DateTime)
         )
 
+        #influencer_transaction
+        # self.INFLUENCER_TRANSACTION = Table(
+        #     'influencer_transaction', MetaData(),
+        #     Column('influencer_id',String),
+            # Column('transaction_type',String(63)),
+            # Column('status',String(63)),
+            # Column('influencer_id',String(127)),
+            # Column('influencer_id',String(127)),
+        # )
+
         # Create tables (if they don't already exist)
         with self.db.connect() as conn:
             conn.execute(
@@ -192,6 +201,13 @@ class Sqlhandler:
                 );
                 """
             )
+            # conn.execute(
+            #     """
+            #     CREATE TABLE IF NOT EXISTS influencer_transaction(
+            #         influence_id text
+            #     );
+            #     """
+            # )
 
     def save_profile(self, account_id, platform, profile_json):
         try:
